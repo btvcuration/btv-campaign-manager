@@ -57,6 +57,7 @@
       { type: 'LONG_BANNER', name: '롱배너', icon: Smartphone, ratio: '129:181.5', size: '800 x 1600', desc: '세로형 긴 배너. 카피 가독성이 매우 중요함.' },
       { type: 'STRIP_BANNER', name: '띠배너', icon: RectangleHorizontal, ratio: '397:65.5', size: '가변', desc: '콘텐츠 사이 삽입되는 가로형 긴 띠배너.' },
       { type: 'SYNOPSIS_BANNER', name: '시놉시스 배너', icon: RectangleHorizontal, ratio: '가변', size: '534 x 160', desc: '콘텐츠 시놉시스 화면에 노출되는 쿠폰/할인 띠배너.' }
+      { type: 'PROMO_POPUP', name: '프로모션 팝업', icon: Sparkles, ratio: '4:3', size: '1000 x 750', desc: '중앙 팝업 공지. 메인 이미지와 하단 액션 버튼으로 구성됩니다.' }
     ];
     
     const getAssetIcon = (type) => {
@@ -115,6 +116,18 @@
     // 신규: 시놉시스 배너 디폴트
     const DEFAULT_SYNOPSIS_BANNER = {
       mainTitle: '2,000명 추첨 증정', subTitle: '~7.20 | 다음날 발급', imageUrl: '', badgeText: '영화 쿠폰\n3,300원', landingValue: 'UI_PATH: /join', gnb: '콘텐츠', note: '', memos: [], startDate: '', dueDate: ''
+    };
+
+    const DEFAULT_PROMO_POPUP = {
+      imageUrl: '', // 음영 처리된 메인 이미지 영역
+      buttonText: '가입하기', // 왼쪽 메인 버튼 문구
+      closeText: '닫기', // 오른쪽 닫기 버튼 문구
+      landingValue: 'UI_PATH: /join',
+      gnb: '홈',
+      note: '',
+      memos: [],
+      startDate: '',
+      dueDate: ''
     };
 
     // --- 개별 드래그가 가능한 다중 메모 컴포넌트 ---
@@ -429,6 +442,28 @@
                       <div><label className="block text-xs font-bold text-slate-400 mb-1.5 mt-2">랜딩값</label><input type="text" value={block.data?.landingValue || ''} onChange={e => onUpdate(block.id, 'landingValue', e.target.value)} className="w-full bg-[#1a1c26] border border-[#303340] rounded-lg p-2.5 text-sm text-white outline-none" /></div>
                     </>
                   )}
+                  {block.type === 'PROMO_POPUP' && (
+                    <>
+                      <div>
+                        <label className="block text-xs font-bold text-slate-400 mb-1.5">메인 이미지 URL (중앙 영역)</label>
+                        <input type="text" value={block.data?.imageUrl || ''} onChange={e => onUpdate(block.id, 'imageUrl', e.target.value)} className="w-full bg-[#1a1c26] border border-[#303340] rounded-lg p-2.5 text-sm text-white outline-none" placeholder="이미지 주소를 입력하세요" />
+                      </div>
+                      <div className="flex gap-2">
+                        <div className="flex-1">
+                          <label className="block text-xs font-bold text-slate-400 mb-1.5">메인 버튼 문구</label>
+                          <input type="text" value={block.data?.buttonText || ''} onChange={e => onUpdate(block.id, 'buttonText', e.target.value)} className="w-full bg-[#1a1c26] border border-[#303340] rounded-lg p-2.5 text-sm text-white outline-none" />
+                        </div>
+                        <div className="flex-1">
+                          <label className="block text-xs font-bold text-slate-400 mb-1.5">닫기 버튼 문구</label>
+                          <input type="text" value={block.data?.closeText || ''} onChange={e => onUpdate(block.id, 'closeText', e.target.value)} className="w-full bg-[#1a1c26] border border-[#303340] rounded-lg p-2.5 text-sm text-white outline-none" />
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-slate-400 mb-1.5">랜딩값</label>
+                        <input type="text" value={block.data?.landingValue || ''} onChange={e => onUpdate(block.id, 'landingValue', e.target.value)} className="w-full bg-[#1a1c26] border border-[#303340] rounded-lg p-2.5 text-sm text-white outline-none" />
+                      </div>
+                    </>
+                  )}
 
                   <div className="pt-5 mt-3 border-t border-[#262833] space-y-4">
                     <div>
@@ -695,6 +730,28 @@
                   )}
                 </div>
               </div>
+            ) : block.type === 'PROMO_POPUP' ? (
+              <div className="flex flex-col items-center gap-6 animate-in zoom-in-95 duration-300">
+                <div className="relative w-[600px] aspect-[4/3] bg-[#1a1c26] rounded-xl overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.7)] border border-white/10">
+                  <div className="absolute inset-0 bg-cover bg-center transition-all duration-500" 
+                       style={{ backgroundImage: checkIsUrl(block.data?.imageUrl) ? `url(${block.data.imageUrl})` : 'none' }}>
+                    {!checkIsUrl(block.data?.imageUrl) && (
+                       <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-purple-900/40 to-slate-900">
+                         <ImageIcon size={64} className="text-white/10" />
+                       </div>
+                    )}
+                    <FallbackText text={block.data?.imageUrl} />
+                  </div>
+                </div>
+                <div className="flex gap-4 w-[600px]">
+                  <div className="flex-1 py-4 bg-[#3b27e6] hover:bg-[#4631e6] text-white rounded-xl font-bold text-xl flex items-center justify-center shadow-lg transition-colors cursor-pointer">
+                    {block.data?.buttonText || '가입하기'}
+                  </div>
+                  <div className="flex-1 py-4 bg-[#1a1c26] hover:bg-[#262833] text-slate-300 rounded-xl font-bold text-xl flex items-center justify-center border border-white/10 transition-colors cursor-pointer">
+                    {block.data?.closeText || '닫기'}
+                  </div>
+                </div>
+              </div>
             ) : (
               <div className="w-[320px] aspect-[129/181.5] bg-[#0a0a0f] rounded-[24px] relative overflow-hidden shadow-2xl border border-[#303340] flex flex-col shrink-0">
                 <div className="flex-1 w-full bg-[#1a1c26] relative bg-cover bg-center" style={{ backgroundImage: checkIsUrl(block.data?.imageUrl) ? `url(${block.data.imageUrl})` : 'none' }}>
@@ -765,6 +822,7 @@
               else if (aiAsset.type === 'LONG_BANNER') baseData = { ...DEFAULT_LONG_BANNER };
               else if (aiAsset.type === 'STRIP_BANNER') baseData = { ...DEFAULT_STRIP_BANNER };
               else if (aiAsset.type === 'SYNOPSIS_BANNER') baseData = { ...DEFAULT_SYNOPSIS_BANNER };
+              else if (aiAsset.type === 'PROMO_POPUP') baseData = { ...DEFAULT_PROMO_POPUP };
 
               return {
                 id: `ai-asset-${index}-${timestamp}`,
@@ -821,6 +879,7 @@
         else if (type === 'LONG_BANNER') newData = { ...DEFAULT_LONG_BANNER };
         else if (type === 'STRIP_BANNER') newData = { ...DEFAULT_STRIP_BANNER };
         else if (type === 'SYNOPSIS_BANNER') newData = { ...DEFAULT_SYNOPSIS_BANNER };
+        else if (type === 'PROMO_POPUP') newData = { ...DEFAULT_PROMO_POPUP };
         
         newData.startDate = campaignMeta.startDate;
         newData.dueDate = campaignMeta.dueDate;
