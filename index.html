@@ -120,8 +120,8 @@
 
     const DEFAULT_PROMO_POPUP = {
       imageUrl: '', // 음영 처리된 메인 이미지 영역
-      buttonText: '가입하기', // 왼쪽 메인 버튼 문구
-      closeText: '닫기', // 오른쪽 닫기 버튼 문구
+      buttonText: '바로가기', // 👈 이미지 참고하여 기본값 변경
+      closeText: '닫기', 
       landingValue: 'UI_PATH: /join',
       gnb: '홈',
       note: '',
@@ -731,24 +731,33 @@
                 </div>
               </div>
             ) : block.type === 'PROMO_POPUP' ? (
-              <div className="flex flex-col items-center gap-6 animate-in zoom-in-95 duration-300">
-                <div className="relative w-[600px] aspect-[4/3] bg-[#1a1c26] rounded-xl overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.7)] border border-white/10">
-                  <div className="absolute inset-0 bg-cover bg-center transition-all duration-500" 
-                       style={{ backgroundImage: checkIsUrl(block.data?.imageUrl) ? `url(${block.data.imageUrl})` : 'none' }}>
-                    {!checkIsUrl(block.data?.imageUrl) && (
-                       <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-purple-900/40 to-slate-900">
-                         <ImageIcon size={64} className="text-white/10" />
-                       </div>
-                    )}
-                    <FallbackText text={block.data?.imageUrl} />
+              <div className="flex flex-col items-center justify-center h-full animate-in zoom-in-95 duration-300 mt-4">
+                {/* 📺 TV 팝업 모달 외곽 컨테이너 (다크 그레이 톤 바탕) */}
+                <div className="bg-[#26272e] p-5 rounded-xl shadow-[0_20px_60px_rgba(0,0,0,0.8)] border border-white/5 flex flex-col w-[760px]">
+                  
+                  {/* 메인 이미지/콘텐츠 영역 (첨부해주신 이미지의 안쪽 내용 부분) */}
+                  <div className="relative w-full aspect-[16/9] bg-[#0c0920] rounded-lg overflow-hidden border border-black/30 mb-6 shadow-inner">
+                    <div className="absolute inset-0 bg-cover bg-center transition-all duration-500" 
+                         style={{ backgroundImage: checkIsUrl(block.data?.imageUrl) ? `url(${block.data.imageUrl})` : 'none' }}>
+                      {!checkIsUrl(block.data?.imageUrl) && (
+                         <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-[#1a1359] to-[#0a0812]">
+                           <ImageIcon size={64} className="text-white/10" />
+                         </div>
+                      )}
+                      <FallbackText text={block.data?.imageUrl} />
+                    </div>
                   </div>
-                </div>
-                <div className="flex gap-4 w-[600px]">
-                  <div className="flex-1 py-4 bg-[#3b27e6] hover:bg-[#4631e6] text-white rounded-xl font-bold text-xl flex items-center justify-center shadow-lg transition-colors cursor-pointer">
-                    {block.data?.buttonText || '가입하기'}
-                  </div>
-                  <div className="flex-1 py-4 bg-[#1a1c26] hover:bg-[#262833] text-slate-300 rounded-xl font-bold text-xl flex items-center justify-center border border-white/10 transition-colors cursor-pointer">
-                    {block.data?.closeText || '닫기'}
+                  
+                  {/* 하단 버튼 영역 */}
+                  <div className="flex justify-center gap-3 w-full pb-2">
+                    {/* 메인 액션 버튼 (바로가기) */}
+                    <div className="w-[240px] py-3.5 bg-[#401ce8] hover:bg-[#5233ed] text-white rounded-lg font-extrabold text-xl flex items-center justify-center shadow-[0_4px_15px_rgba(64,28,232,0.4)] border border-[#5a3cf0] transition-colors cursor-pointer tracking-tight">
+                      {block.data?.buttonText || '바로가기'}
+                    </div>
+                    {/* 닫기 버튼 */}
+                    <div className="w-[240px] py-3.5 bg-[#1f2026] hover:bg-[#2a2c36] text-slate-200 rounded-lg font-bold text-xl flex items-center justify-center border border-[#3b3d4a] transition-colors cursor-pointer tracking-tight shadow-md">
+                      {block.data?.closeText || '닫기'}
+                    </div>
                   </div>
                 </div>
               </div>
