@@ -57,8 +57,13 @@
       { type: 'LONG_BANNER', name: '롱배너', icon: Smartphone, ratio: '129:181.5', size: '800 x 1600', desc: '세로형 긴 배너. 카피 가독성이 매우 중요함.' },
       { type: 'STRIP_BANNER', name: '띠배너', icon: RectangleHorizontal, ratio: '397:65.5', size: '가변', desc: '콘텐츠 사이 삽입되는 가로형 긴 띠배너.' },
       { type: 'SYNOPSIS_BANNER', name: '시놉시스 배너', icon: RectangleHorizontal, ratio: '가변', size: '534 x 160', desc: '콘텐츠 시놉시스 화면에 노출되는 쿠폰/할인 띠배너.' },
-      { type: 'PROMO_POPUP', name: '프로모션 팝업', icon: Sparkles, ratio: '4:3', size: '1000 x 750', desc: '중앙 팝업 공지. 메인 이미지와 하단 액션 버튼으로 구성됩니다.' }
+      { type: 'PROMO_POPUP', name: '프로모션 팝업', icon: Sparkles, ratio: '4:3', size: '1000 x 750', desc: '중앙 팝업 공지. 메인 이미지와 하단 액션 버튼으로 구성됩니다.' },
+      { type: 'MINI_EPG_BANNER', name: '실시간 EPG 배너', icon: Tv, ratio: '가변', size: '미니 EPG', desc: '실시간 방송 시청 중 하단 미니 EPG 좌측에 노출되는 썸네일 배너입니다.' }
     ];
+    
+    const DEFAULT_MINI_EPG_BANNER = {
+      imageUrl: '', landingValue: 'UI_PATH: /join', gnb: '실시간 채널', note: '', memos: [], startDate: '', dueDate: ''
+    };
     
     const getAssetIcon = (type) => {
       const spec = BANNER_SPECS.find(s => s.type === type);
@@ -273,12 +278,13 @@
                     </label>
                     <div className="flex flex-wrap gap-1.5">
                       {GNB_OPTIONS.map(opt => {
-                        // 1. 고정 타입 판별 (배열로 관리)
-                        const isFixed = block.type === 'TODAY_BTV' || block.type === 'SYNOPSIS_BANNER';
+                        // 1. 고정 타입 판별 (배열로 관리) - 기존 코드 수정
+                        const isFixed = block.type === 'TODAY_BTV' || block.type === 'SYNOPSIS_ বাধাNER' || block.type === 'MINI_EPG_BANNER';
                         let currentGnbs = Array.isArray(block.data?.gnb) ? block.data.gnb : [block.data?.gnb || '홈'];
                         
                         if (block.type === 'TODAY_BTV') currentGnbs = ['홈'];
                         if (block.type === 'SYNOPSIS_BANNER') currentGnbs = ['콘텐츠'];
+                        if (block.type === 'MINI_EPG_BANNER') currentGnbs = ['실시간 채널']; // 👈 신규 추가
                   
                         const isSelected = currentGnbs.includes(opt);
                   
@@ -314,6 +320,7 @@
                     </div>
                     {block.type === 'TODAY_BTV' && <p className="text-[10px] text-slate-500 mt-1.5 ml-1">* Today B tv는 '홈' 메뉴로 고정됩니다.</p>}
                     {block.type === 'SYNOPSIS_BANNER' && <p className="text-[10px] text-slate-500 mt-1.5 ml-1">* 시놉시스 배너는 '콘텐츠' 메뉴로 고정됩니다.</p>}
+                    {block.type === 'MINI_EPG_BANNER' && <p className="text-[10px] text-slate-500 mt-1.5 ml-1">* 실시간 EPG 배너는 '실시간 채널' 메뉴로 고정됩니다.</p>}
                   </div>
 
                   {block.type === 'TODAY_BTV' && (
@@ -460,6 +467,19 @@
                       </div>
                       <div>
                         <label className="block text-xs font-bold text-slate-400 mb-1.5">랜딩값</label>
+                        <input type="text" value={block.data?.landingValue || ''} onChange={e => onUpdate(block.id, 'landingValue', e.target.value)} className="w-full bg-[#1a1c26] border border-[#303340] rounded-lg p-2.5 text-sm text-white outline-none" />
+                      </div>
+                    </>
+                  )}
+                  
+                  {block.type === 'MINI_EPG_BANNER' && (
+                    <>
+                      <div>
+                        <label className="block text-xs font-bold text-[#7387ff] mb-1.5 flex items-center gap-1.5"><Tv size={14}/> 썸네일 이미지</label>
+                        <input type="text" value={block.data?.imageUrl || ''} onChange={e => onUpdate(block.id, 'imageUrl', e.target.value)} className="w-full bg-[#1a1c26] border border-[#303340] rounded-lg p-2.5 text-sm text-white outline-none" placeholder="이미지 URL을 입력하세요" />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-slate-400 mb-1.5 mt-1">랜딩값</label>
                         <input type="text" value={block.data?.landingValue || ''} onChange={e => onUpdate(block.id, 'landingValue', e.target.value)} className="w-full bg-[#1a1c26] border border-[#303340] rounded-lg p-2.5 text-sm text-white outline-none" />
                       </div>
                     </>
@@ -761,6 +781,37 @@
                   </div>
                 </div>
               </div>
+            ) : block.type === 'MINI_EPG_BANNER' ? (
+              <div className="relative w-full aspect-[16/9] max-w-[1000px] bg-[#0a0a0f] rounded-[24px] overflow-hidden shadow-2xl border border-[#303340] shrink-0 mt-4">
+                {/* 가상의 TV 방송 화면 배경 */}
+                <div className="absolute inset-0 bg-cover bg-center opacity-40 grayscale-[30%]" style={{ backgroundImage: 'url(https://images.unsplash.com/photo-1601049676869-702ea24cfd58?q=80&w=2072&auto=format&fit=crop)' }}></div>
+                
+                {/* 하단 미니 EPG UI 바 */}
+                <div className="absolute bottom-[8%] left-[5%] right-[5%] h-[140px] bg-gradient-to-t from-[#12141c]/95 to-[#1a1c26]/90 rounded-2xl border border-white/10 shadow-2xl flex items-center p-4 backdrop-blur-md">
+                  
+                  {/* 🌟 타겟 배너 영역 (첨부해주신 이미지 규격 적용) */}
+                  <div className="h-full aspect-[1.48/1] bg-[#0a0a0f] rounded-xl relative overflow-hidden ring-4 ring-[#d9d9d9] shadow-[0_0_20px_rgba(255,255,255,0.2)] shrink-0 flex items-center justify-center">
+                    <div className="absolute inset-0 bg-contain bg-center bg-no-repeat transition-transform" 
+                         style={{ backgroundImage: checkIsUrl(block.data?.imageUrl) ? `url(${block.data.imageUrl})` : 'none' }}>
+                      {!checkIsUrl(block.data?.imageUrl) && <ImageIcon size={32} className="text-white/20"/>}
+                    </div>
+                    <FallbackText text={block.data?.imageUrl} />
+                  </div>
+        
+                  {/* 우측 EPG 방송 정보 텍스트 (시뮬레이션용 더미) */}
+                  <div className="ml-6 flex-1 h-full flex flex-col justify-center pb-2">
+                    <div className="flex items-center gap-2 mb-1 text-[#5ea3ff] font-bold text-[15px] tracking-wider">
+                      <span>003 ★</span><span>tvN</span>
+                    </div>
+                    <h3 className="text-white font-black text-[1.9rem] drop-shadow-md mb-2">벌거벗은 세계사 206회 <span className="text-[10px] bg-white/20 px-1 py-0.5 rounded ml-1 align-middle">ALL</span></h3>
+                    <div className="flex items-center gap-3 w-full border-t border-white/20 pt-2">
+                      <span className="text-slate-300 text-[13px] font-bold">14:00</span>
+                      <div className="w-[150px] h-[3px] bg-[#333] rounded-full overflow-hidden"><div className="w-[60%] h-full bg-[#5ea3ff]"></div></div>
+                      <span className="text-slate-400 text-[12px] font-bold">16:00 | 현재 시각 15:32</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
             ) : (
               <div className="w-[320px] aspect-[129/181.5] bg-[#0a0a0f] rounded-[24px] relative overflow-hidden shadow-2xl border border-[#303340] flex flex-col shrink-0">
                 <div className="flex-1 w-full bg-[#1a1c26] relative bg-cover bg-center" style={{ backgroundImage: checkIsUrl(block.data?.imageUrl) ? `url(${block.data.imageUrl})` : 'none' }}>
@@ -835,6 +886,7 @@
               else if (aiAsset.type === 'STRIP_BANNER') baseData = { ...DEFAULT_STRIP_BANNER };
               else if (aiAsset.type === 'SYNOPSIS_BANNER') baseData = { ...DEFAULT_SYNOPSIS_BANNER };
               else if (aiAsset.type === 'PROMO_POPUP') baseData = { ...DEFAULT_PROMO_POPUP };
+              else if (aiAsset.type === 'MINI_EPG_BANNER') baseData = { ...DEFAULT_MINI_EPG_BANNER }; // 👈 양쪽 모두 추가
 
               return {
                 id: `ai-asset-${index}-${timestamp}`,
@@ -1138,7 +1190,7 @@
                               <span className="truncate">{asset.name}</span>
                             </td>
                             <td className="p-5 font-medium text-slate-400 whitespace-nowrap overflow-hidden text-ellipsis">
-                              {asset.type === 'GENERAL_BANNER' ? `${asset.data.colType} 배너` : asset.type === 'BIG_BANNER' ? '빅배너' : asset.type === 'STRIP_BANNER' ? '띠배너' : asset.type === 'FULL_PROMO_BANNER' ? '풀프로모션' : asset.type === 'LONG_BANNER' ? '롱배너' : asset.type === 'SYNOPSIS_BANNER' ? '시놉시스 배너' : 'Today B tv'}
+                              {asset.type === 'GENERAL_BANNER' ? `${asset.data.colType} 배너` : asset.type === 'BIG_BANNER' ? '빅배너' : asset.type === 'MINI_EPG_BANNER' ? '실시간 EPG 배너' : asset.type === 'STRIP_BANNER' ? '띠배너' : asset.type === 'FULL_PROMO_BANNER' ? '풀프로모션' : asset.type === 'LONG_BANNER' ? '롱배너' : asset.type === 'SYNOPSIS_BANNER' ? '시놉시스 배너' : 'Today B tv'}
                             </td>
                             <td className="p-5 font-bold text-[#7387ff] whitespace-nowrap overflow-hidden text-ellipsis">
                               [디자인] {campaignMeta.campaignName} - {asset.name}
