@@ -62,7 +62,11 @@
     ];
     
     const DEFAULT_MINI_EPG_BANNER = {
-      imageUrl: '', landingValue: 'UI_PATH: /join', gnb: '실시간 채널', note: '', memos: [], startDate: '', dueDate: ''
+      imageUrl: '', 
+      buttonText: '감상하기', // 👈 신규 추가
+      landingValue: 'UI_PATH: /join', 
+      gnb: '실시간 채널', 
+      note: '', memos: [], startDate: '', dueDate: ''
     };
     
     const getAssetIcon = (type) => {
@@ -478,8 +482,13 @@
                         <label className="block text-xs font-bold text-[#7387ff] mb-1.5 flex items-center gap-1.5"><Tv size={14}/> 썸네일 이미지</label>
                         <input type="text" value={block.data?.imageUrl || ''} onChange={e => onUpdate(block.id, 'imageUrl', e.target.value)} className="w-full bg-[#1a1c26] border border-[#303340] rounded-lg p-2.5 text-sm text-white outline-none" placeholder="이미지 URL을 입력하세요" />
                       </div>
+                      {/* 👇 신규 추가: 버튼 문구 입력 폼 */}
                       <div>
-                        <label className="block text-xs font-bold text-slate-400 mb-1.5 mt-1">랜딩값</label>
+                        <label className="block text-xs font-bold text-slate-400 mb-1.5 mt-3">액션 버튼 문구 (우측 UI에 겹쳐짐)</label>
+                        <input type="text" value={block.data?.buttonText || ''} onChange={e => onUpdate(block.id, 'buttonText', e.target.value)} className="w-full bg-[#1a1c26] border border-[#303340] rounded-lg p-2.5 text-sm text-white outline-none" placeholder="예: 감상하기, 바로가기" />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-slate-400 mb-1.5 mt-3">랜딩값</label>
                         <input type="text" value={block.data?.landingValue || ''} onChange={e => onUpdate(block.id, 'landingValue', e.target.value)} className="w-full bg-[#1a1c26] border border-[#303340] rounded-lg p-2.5 text-sm text-white outline-none" />
                       </div>
                     </>
@@ -782,23 +791,40 @@
                 </div>
               </div>
             ) : block.type === 'MINI_EPG_BANNER' ? (
-              <div className="relative w-full aspect-[16/9] max-w-[1000px] bg-[#0a0a0f] rounded-[24px] overflow-hidden shadow-2xl border border-[#303340] shrink-0 mt-4">
-                {/* 가상의 TV 방송 화면 배경 */}
-                <div className="absolute inset-0 bg-cover bg-center opacity-40 grayscale-[30%]" style={{ backgroundImage: 'url(https://images.unsplash.com/photo-1601049676869-702ea24cfd58?q=80&w=2072&auto=format&fit=crop)' }}></div>
+              <div className="relative w-full aspect-[16/9] max-w-[1000px] bg-[#0c0d14] rounded-[24px] overflow-hidden shadow-2xl border border-[#303340] shrink-0 mt-4">
+                
+                {/* 🌟 수정됨: 심플한 LIVE 텍스트 배경 */}
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0">
+                  <span className="text-white/[0.03] font-black text-[180px] tracking-[0.2em] select-none">LIVE</span>
+                </div>
                 
                 {/* 하단 미니 EPG UI 바 */}
-                <div className="absolute bottom-[8%] left-[5%] right-[5%] h-[140px] bg-gradient-to-t from-[#12141c]/95 to-[#1a1c26]/90 rounded-2xl border border-white/10 shadow-2xl flex items-center p-4 backdrop-blur-md">
+                <div className="absolute bottom-[8%] left-[5%] right-[5%] h-[140px] bg-gradient-to-t from-[#12141c]/95 to-[#1a1c26]/90 rounded-2xl border border-white/10 shadow-2xl flex items-center p-4 backdrop-blur-md z-10">
                   
-                  {/* 🌟 타겟 배너 영역 (첨부해주신 이미지 규격 적용) */}
+                  {/* 타겟 배너 영역 */}
                   <div className="h-full aspect-[1.48/1] bg-[#0a0a0f] rounded-xl relative overflow-hidden ring-4 ring-[#d9d9d9] shadow-[0_0_20px_rgba(255,255,255,0.2)] shrink-0 flex items-center justify-center">
-                    <div className="absolute inset-0 bg-contain bg-center bg-no-repeat transition-transform" 
+                    {/* 배너 배경 이미지 */}
+                    <div className="absolute inset-0 bg-cover bg-center bg-no-repeat transition-transform z-0" 
                          style={{ backgroundImage: checkIsUrl(block.data?.imageUrl) ? `url(${block.data.imageUrl})` : 'none' }}>
                       {!checkIsUrl(block.data?.imageUrl) && <ImageIcon size={32} className="text-white/20"/>}
                     </div>
+                    
+                    {/* 🌟 신규 추가: (OK) 버튼과 텍스트 오버레이 영역 */}
+                    {/* 텍스트 가독성을 위한 하단 딤(Dim) 그라데이션 */}
+                    <div className="absolute inset-x-0 bottom-0 h-[45%] bg-gradient-to-t from-black/90 to-transparent pointer-events-none z-10"></div>
+                    
+                    {/* 실제 버튼과 텍스트 UI */}
+                    <div className="absolute bottom-2.5 left-2.5 flex items-center gap-1.5 z-20">
+                      <div className="bg-white text-[#111] font-black text-[11px] px-2.5 py-0.5 rounded-[12px] shadow-md tracking-tighter">OK</div>
+                      <div className="text-white font-extrabold text-[15px] tracking-tight drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">
+                        {block.data?.buttonText || '감상하기'}
+                      </div>
+                    </div>
+        
                     <FallbackText text={block.data?.imageUrl} />
                   </div>
         
-                  {/* 우측 EPG 방송 정보 텍스트 (시뮬레이션용 더미) */}
+                  {/* 우측 EPG 방송 정보 텍스트 (기존 유지) */}
                   <div className="ml-6 flex-1 h-full flex flex-col justify-center pb-2">
                     <div className="flex items-center gap-2 mb-1 text-[#5ea3ff] font-bold text-[15px] tracking-wider">
                       <span>003 ★</span><span>tvN</span>
