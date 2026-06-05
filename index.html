@@ -867,6 +867,7 @@
 
     // --- Main App Component ---
     function App() {
+      const [isSidebarOpen, setIsSidebarOpen] = useState(true);
       const [campaignMeta, setCampaignMeta] = useState({ 
         campaignName: '신규 캠페인', 
         target: 'MASS', 
@@ -1097,6 +1098,16 @@
             <div className="w-11 h-11 bg-gradient-to-br from-[#7387ff] to-[#4631e6] rounded-xl flex items-center justify-center mb-10 shadow-lg shadow-[#7387ff]/20">
               <Tv className="text-white" size={24} />
             </div>
+            {/* 🌟 신규 추가: 사이드바 토글 햄버거 버튼 */}
+            <div className="flex flex-col gap-6 w-full px-3 mb-6">
+              <button 
+                onClick={() => setIsSidebarOpen(!isSidebarOpen)} 
+                className={`w-full aspect-square rounded-xl flex items-center justify-center transition-all ${isSidebarOpen ? 'bg-[#1a1c26] text-white border border-[#303340]' : 'text-slate-500 hover:text-white hover:bg-[#1a1c26]'}`}
+                title="캠페인 정보 사이드바 열기/닫기"
+              >
+                <Menu size={20} />
+              </button>
+            </div>
             <div className="flex flex-col gap-6 w-full px-3">
               {/* 캠페인 매니저 버튼만 심플하게 남김 (클릭 이벤트 제거) */}
               <div className="w-full aspect-square rounded-xl flex items-center justify-center bg-[#262833] text-[#7387ff] shadow-inner cursor-default" title="캠페인 매니저">
@@ -1108,72 +1119,76 @@
                 <Settings size={24} />
               </button>
             </div>
+            
           </nav>
 
           {/* 2. 사이드바 (메타 정보 폼) */}
-          <aside className="w-[320px] bg-[#12141c] border-r border-[#262833] flex flex-col h-full z-10 animate-in slide-in-from-left-4 shrink-0">
-            <div className="p-6 border-b border-[#262833] bg-[#0f111a] flex flex-col gap-1">
-              <h1 className="text-xl font-black text-white tracking-tight">B tv Campaign</h1>
-              <p className="text-[10px] text-slate-500 uppercase tracking-widest font-bold mt-1">CMS Orchestrator</p>
-            </div>
-            
-            <div className="flex-1 overflow-y-auto p-6 space-y-8 custom-scrollbar">
-              <button onClick={handleExport} className="w-full bg-gradient-to-r from-[#4f3df6] to-[#7387ff] text-white px-5 py-3 rounded-xl text-sm font-bold flex items-center justify-center gap-2 shadow-lg hover:brightness-110 active:scale-95 transition-all">
-                <Send size={16} /> Jira 다중 일감 전송 <span className="bg-white/20 px-2 py-0.5 rounded-md text-xs">{assets.length}</span>
-              </button>
+          {/* 🌟 수정됨: isSidebarOpen이 true일 때만 아래 aside 전체를 렌더링함 */}
+          {isSidebarOpen && (
+            <aside className="w-[320px] bg-[#12141c] border-r border-[#262833] flex flex-col h-full z-10 animate-in slide-in-from-left-4 shrink-0">
+              <div className="p-6 border-b border-[#262833] bg-[#0f111a] flex flex-col gap-1">
+                <h1 className="text-xl font-black text-white tracking-tight">B tv Campaign</h1>
+                <p className="text-[10px] text-slate-500 uppercase tracking-widest font-bold mt-1">CMS Orchestrator</p>
+              </div>
               
-              <div>
-                <h2 className="text-[11px] font-bold text-[#7387ff] uppercase mb-4 flex items-center gap-1.5"><Layout size={14}/> 캠페인 기본 정보</h2>
-                <div className="space-y-4">
-                  <div><label className="block text-[10px] font-bold text-slate-400 mb-1.5">프로젝트명</label><input type="text" name="campaignName" value={campaignMeta.campaignName} onChange={handleMetaChange} className="w-full bg-[#1a1c26] border border-[#303340] rounded-lg p-2.5 text-sm text-white focus:border-[#7387ff] outline-none transition-all" /></div>
-                  <div>
-                    <label className="block text-[10px] font-bold text-slate-400 mb-1.5">타겟 구분</label>
-                    <select 
-                      name="target" 
-                      value={campaignMeta.target} 
-                      onChange={handleMetaChange} 
-                      className="w-full bg-[#1a1c26] border border-[#303340] rounded-lg p-2.5 text-sm text-white focus:border-[#7387ff] outline-none transition-all"
-                    >
-                      <option value="MASS">MASS (전체 노출)</option>
-                      <option value="TARGET">TARGET (특정 타겟팅)</option>
-                    </select>
-                  </div>
-                  
-                  <div>
-                    <label className="block text-[10px] font-bold text-slate-400 mb-1.5">타겟 수량</label>
-                    <input 
-                      type="text" 
-                      name="targetSize" 
-                      value={campaignMeta.targetSize || ''} 
-                      onChange={handleMetaChange} 
-                      disabled={campaignMeta.target !== 'TARGET'} 
-                      placeholder={campaignMeta.target === 'TARGET' ? "예: 50,000명" : "MASS 캠페인은 입력 불가"} 
-                      className={`w-full bg-[#1a1c26] border border-[#303340] rounded-lg p-2.5 text-sm text-white focus:border-[#7387ff] outline-none transition-all ${
-                        campaignMeta.target !== 'TARGET' ? 'opacity-40 cursor-not-allowed bg-slate-900/50 text-slate-500' : ''
-                      }`} 
-                    />
-                  </div>
-                  <div><label className="block text-[10px] font-bold text-slate-400 mb-1.5">톤앤매너</label><input type="text" name="toneAndManner" value={campaignMeta.toneAndManner} onChange={handleMetaChange} className="w-full bg-[#1a1c26] border border-[#303340] rounded-lg p-2.5 text-sm text-white focus:border-[#7387ff] outline-none transition-all" /></div>
-                </div>
-              </div>
-
-              <div>
-                <h2 className="text-[11px] font-bold text-[#7387ff] uppercase mb-4 flex items-center gap-1.5"><Calendar size={14}/> 릴리스 및 배포 정보</h2>
-                <div className="space-y-4">
-                  <div className="bg-[#0a0812] p-3 rounded-xl border border-[#262833]">
-                    <div className="grid grid-cols-2 gap-3 mb-3">
-                      <div><label className="block text-[10px] text-slate-500 mb-1">시작일</label><input type="date" name="startDate" value={campaignMeta.startDate} onChange={handleMetaChange} className="w-full bg-transparent text-xs text-white outline-none [&::-webkit-calendar-picker-indicator]:filter [&::-webkit-calendar-picker-indicator]:invert" /></div>
-                      <div><label className="block text-[10px] text-slate-500 mb-1">종료일</label><input type="date" name="dueDate" value={campaignMeta.dueDate} onChange={handleMetaChange} className="w-full bg-transparent text-xs text-white outline-none [&::-webkit-calendar-picker-indicator]:filter [&::-webkit-calendar-picker-indicator]:invert" /></div>
+              <div className="flex-1 overflow-y-auto p-6 space-y-8 custom-scrollbar">
+                <button onClick={handleExport} className="w-full bg-gradient-to-r from-[#4f3df6] to-[#7387ff] text-white px-5 py-3 rounded-xl text-sm font-bold flex items-center justify-center gap-2 shadow-lg hover:brightness-110 active:scale-95 transition-all">
+                  <Send size={16} /> Jira 다중 일감 전송 <span className="bg-white/20 px-2 py-0.5 rounded-md text-xs">{assets.length}</span>
+                </button>
+                
+                <div>
+                  <h2 className="text-[11px] font-bold text-[#7387ff] uppercase mb-4 flex items-center gap-1.5"><Layout size={14}/> 캠페인 기본 정보</h2>
+                  <div className="space-y-4">
+                    <div><label className="block text-[10px] font-bold text-slate-400 mb-1.5">프로젝트명</label><input type="text" name="campaignName" value={campaignMeta.campaignName} onChange={handleMetaChange} className="w-full bg-[#1a1c26] border border-[#303340] rounded-lg p-2.5 text-sm text-white focus:border-[#7387ff] outline-none transition-all" /></div>
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-400 mb-1.5">타겟 구분</label>
+                      <select 
+                        name="target" 
+                        value={campaignMeta.target} 
+                        onChange={handleMetaChange} 
+                        className="w-full bg-[#1a1c26] border border-[#303340] rounded-lg p-2.5 text-sm text-white focus:border-[#7387ff] outline-none transition-all"
+                      >
+                        <option value="MASS">MASS (전체 노출)</option>
+                        <option value="TARGET">TARGET (특정 타겟팅)</option>
+                      </select>
                     </div>
-                    <button onClick={applyDatesToAll} className="w-full py-1.5 bg-[#1a1c26] hover:bg-[#262833] border border-[#303340] rounded text-[10px] font-bold text-slate-400 transition-colors">
-                      ↓ 전체 배너에 일정 일괄 적용
-                    </button>
+                    
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-400 mb-1.5">타겟 수량</label>
+                      <input 
+                        type="text" 
+                        name="targetSize" 
+                        value={campaignMeta.targetSize || ''} 
+                        onChange={handleMetaChange} 
+                        disabled={campaignMeta.target !== 'TARGET'} 
+                        placeholder={campaignMeta.target === 'TARGET' ? "예: 50,000명" : "MASS 캠페인은 입력 불가"} 
+                        className={`w-full bg-[#1a1c26] border border-[#303340] rounded-lg p-2.5 text-sm text-white focus:border-[#7387ff] outline-none transition-all ${
+                          campaignMeta.target !== 'TARGET' ? 'opacity-40 cursor-not-allowed bg-slate-900/50 text-slate-500' : ''
+                        }`} 
+                      />
+                    </div>
+                    <div><label className="block text-[10px] font-bold text-slate-400 mb-1.5">톤앤매너</label><input type="text" name="toneAndManner" value={campaignMeta.toneAndManner} onChange={handleMetaChange} className="w-full bg-[#1a1c26] border border-[#303340] rounded-lg p-2.5 text-sm text-white focus:border-[#7387ff] outline-none transition-all" /></div>
                   </div>
-                  <div><label className="block text-[10px] font-bold text-slate-400 mb-1.5">담당자 지정</label><input type="text" name="assignee" value={campaignMeta.assignee} onChange={handleMetaChange} className="w-full bg-[#1a1c26] border border-[#303340] rounded-lg p-2.5 text-sm text-white focus:border-[#7387ff] outline-none transition-all" /></div>
+                </div>
+
+                <div>
+                  <h2 className="text-[11px] font-bold text-[#7387ff] uppercase mb-4 flex items-center gap-1.5"><Calendar size={14}/> 릴리스 및 배포 정보</h2>
+                  <div className="space-y-4">
+                    <div className="bg-[#0a0812] p-3 rounded-xl border border-[#262833]">
+                      <div className="grid grid-cols-2 gap-3 mb-3">
+                        <div><label className="block text-[10px] text-slate-500 mb-1">시작일</label><input type="date" name="startDate" value={campaignMeta.startDate} onChange={handleMetaChange} className="w-full bg-transparent text-xs text-white outline-none [&::-webkit-calendar-picker-indicator]:filter [&::-webkit-calendar-picker-indicator]:invert" /></div>
+                        <div><label className="block text-[10px] text-slate-500 mb-1">종료일</label><input type="date" name="dueDate" value={campaignMeta.dueDate} onChange={handleMetaChange} className="w-full bg-transparent text-xs text-white outline-none [&::-webkit-calendar-picker-indicator]:filter [&::-webkit-calendar-picker-indicator]:invert" /></div>
+                      </div>
+                      <button onClick={applyDatesToAll} className="w-full py-1.5 bg-[#1a1c26] hover:bg-[#262833] border border-[#303340] rounded text-[10px] font-bold text-slate-400 transition-colors">
+                        ↓ 전체 배너에 일정 일괄 적용
+                      </button>
+                    </div>
+                    <div><label className="block text-[10px] font-bold text-slate-400 mb-1.5">담당자 지정</label><input type="text" name="assignee" value={campaignMeta.assignee} onChange={handleMetaChange} className="w-full bg-[#1a1c26] border border-[#303340] rounded-lg p-2.5 text-sm text-white focus:border-[#7387ff] outline-none transition-all" /></div>
+                  </div>
                 </div>
               </div>
-            </div>
-          </aside>
+            </aside>
+          )}
 
           {/* 3. 메인 콘텐츠 영역 (목록 & 프리뷰) */}
           <main className="flex-1 flex flex-col min-w-0 bg-[#06070a] relative">
