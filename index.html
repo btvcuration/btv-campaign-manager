@@ -1252,7 +1252,7 @@
           children: childIssues 
         };
         
-        const event = new CustomEvent('TRANSFER_TO_JIRA', { detail: finalData });
+        const event = new CustomEvent('TEST_JIRA_SEND', { detail: finalData });
         window.dispatchEvent(event);
       };
       
