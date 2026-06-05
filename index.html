@@ -1177,6 +1177,8 @@
         setTimeout(() => { hideSpinner(); }, 2000);
       };
 
+      const activeAsset = assets.find(a => a.id === activeTabId);
+
       return (
         <div className="flex h-screen w-full bg-[#0a0812] text-slate-200 overflow-hidden select-none">
           
