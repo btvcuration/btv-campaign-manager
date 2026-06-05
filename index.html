@@ -1064,15 +1064,21 @@
         alert("🗺️ 완성된 시안들을 연결하여 워크플로우(Userflow) 종합 이미지를 자동 생성합니다...");
 
         let workflowDataUrl = null;
+        
+        const canvasOptions = { 
+          backgroundColor: '#0f111a', 
+          scale: 2, 
+          useCORS: true, 
+          allowTaint: true 
+        };
 
         // =====================================================================
-        // 🌟 플랜 A: AI가 넘겨준 Mermaid 코드가 있을 경우 (실제 시안 이미지로 텍스트 치환!)
+        // 🌟 플랜 A: AI가 넘겨준 Mermaid 코드가 있을 경우
         // =====================================================================
         if (mermaidCode && mermaidCode.trim().length > 0) {
           try {
             let finalMermaidCode = mermaidCode;
             
-            // 배너 순서대로, 해당 배너 타입의 GitHub 빈 URL을 찾아서 -> 방금 캡처한 '진짜 시안(Base64)'으로 바꿉니다.
             assets.forEach(asset => {
               const tplUrl = TEMPLATE_URLS[asset.type];
               if (tplUrl && capturedImages[asset.id]) {
@@ -1080,74 +1086,78 @@
               }
             });
 
-            // 보이지 않는 렌더링용 도화지 생성
             const mermaidContainer = document.createElement('div');
-            mermaidContainer.style.cssText = 'position:fixed; top:-9999px; left:-9999px; width: 1400px; background: #0f111a; padding: 50px; border-radius: 20px; color: white; z-index: -100; font-family: Pretendard, sans-serif;';
+            mermaidContainer.style.cssText = 'position:absolute; top:0; left:0; width:1400px; background:#0f111a; padding:50px; border-radius:20px; color:white; z-index:-9999; font-family:Pretendard, sans-serif;';
             
             mermaidContainer.innerHTML = `
-              <div style="width: 100%; text-align: left; margin-bottom: 40px; border-bottom: 2px solid #262833; padding-bottom: 15px;">
-                <h2 style="color: #7387ff; margin: 0; font-size: 28px; font-weight: 900;">🎯 B tv Campaign Userflow</h2>
-                <p style="color: #cbd5e1; margin: 8px 0 0 0; font-size: 16px;">${meta.campaignName || "신규 캠페인"}</p>
+              <div style="width:100%; text-align:left; margin-bottom:40px; border-bottom:2px solid #262833; padding-bottom:15px;">
+                <h2 style="color:#7387ff; margin:0; font-size:28px; font-weight:900;">🎯 B tv Campaign Userflow</h2>
+                <p style="color:#cbd5e1; margin:8px 0 0 0; font-size:16px;">${meta.campaignName || "신규 캠페인"}</p>
               </div>
               <div id="mermaid-render-target"></div>
             `;
             document.body.appendChild(mermaidContainer);
 
-            // Admin 자체적으로 Mermaid 렌더링
-            mermaid.initialize({ startOnLoad: false, theme: 'dark' });
+            // 🌟 에러 해결: Base64 이미지 텍스트 길이를 감당하도록 maxTextSize 5천만 자까지 대폭 해제
+            mermaid.initialize({ 
+              startOnLoad: false, 
+              theme: 'dark', 
+              securityLevel: 'loose',
+              maxTextSize: 50000000 
+            });
             const { svg } = await mermaid.render('mermaid-export-svg', finalMermaidCode);
             document.getElementById('mermaid-render-target').innerHTML = svg;
 
-            // 이미지가 안정적으로 로드되도록 1초 대기
-            await new Promise(r => setTimeout(r, 1000));
+            await new Promise(r => setTimeout(r, 1500));
             
-            // 완성된 도화지를 Canvas로 찰칵
-            const workflowCanvas = await window.html2canvas(mermaidContainer, { backgroundColor: '#0f111a', scale: 2 });
+            const workflowCanvas = await window.html2canvas(mermaidContainer, canvasOptions);
             workflowDataUrl = workflowCanvas.toDataURL('image/png');
             document.body.removeChild(mermaidContainer);
             
           } catch (error) {
-            console.error("🚨 Mermaid 시안 치환 렌더링 에러 (기본 모드로 폴백):", error);
+            console.error("🚨 Mermaid 시안 치환 렌더링 에러:", error);
           }
         }
 
         // =====================================================================
-        // 🌟 플랜 B: 프롬프트 업데이트 전이라 Mermaid 코드가 없거나 에러 났을 경우 (직렬 폴백)
+        // 🌟 플랜 B: Mermaid 코드가 없거나 에러 났을 경우 (직렬 폴백)
         // =====================================================================
         if (!workflowDataUrl) {
           const workflowContainer = document.createElement('div');
-          workflowContainer.style.cssText = 'position:fixed; top:-9999px; left:-9999px; width: 1400px; background: #0f111a; padding: 50px; border-radius: 20px; display: flex; flex-direction: column; align-items: center; color: white; font-family: Pretendard, sans-serif; z-index: -100;';
+          workflowContainer.style.cssText = 'position:absolute; top:0; left:0; width:1400px; background:#0f111a; padding:50px; border-radius:20px; display:flex; flex-direction:column; align-items:center; color:white; font-family:Pretendard, sans-serif; z-index:-9999;';
           
           let flowHtml = `
-            <div style="width: 100%; text-align: left; margin-bottom: 40px; border-bottom: 2px solid #262833; padding-bottom: 15px;">
-              <h2 style="color: #7387ff; margin: 0; font-size: 28px; font-weight: 900;">🎯 B tv Campaign Userflow</h2>
-              <p style="color: #cbd5e1; margin: 8px 0 0 0; font-size: 16px;">${meta.campaignName || "신규 캠페인"}</p>
+            <div style="width:100%; text-align:left; margin-bottom:40px; border-bottom:2px solid #262833; padding-bottom:15px;">
+              <h2 style="color:#7387ff; margin:0; font-size:28px; font-weight:900;">🎯 B tv Campaign Userflow</h2>
+              <p style="color:#cbd5e1; margin:8px 0 0 0; font-size:16px;">${meta.campaignName || "신규 캠페인"}</p>
             </div>
-            <div style="display: flex; align-items: center; justify-content: center; gap: 20px; width: 100%; flex-wrap: wrap;">
+            <div style="display:flex; align-items:center; justify-content:center; gap:20px; width:100%; flex-wrap:wrap;">
           `;
           
           assets.forEach((asset, idx) => {
              const imgData = capturedImages[asset.id];
              flowHtml += `
-               <div style="display: flex; flex-direction: column; align-items: center; width: 280px;">
-                 <div style="width: 100%; background: #1a1c26; padding: 15px; border-radius: 16px; border: 1px solid #303340; box-shadow: 0 10px 25px rgba(0,0,0,0.5);">
-                   <img src="${imgData}" style="width: 100%; border-radius: 8px; object-fit: contain;" />
+               <div style="display:flex; flex-direction:column; align-items:center; width:280px;">
+                 <div style="width:100%; background:#1a1c26; padding:15px; border-radius:16px; border:1px solid #303340; box-shadow:0 10px 25px rgba(0,0,0,0.5);">
+                   <img src="${imgData}" style="width:100%; border-radius:8px; object-fit:contain; display:block;" />
                  </div>
-                 <div style="margin-top: 20px; text-align: center;">
-                   <span style="background: #4f3df6; color: white; padding: 5px 12px; border-radius: 20px; font-size: 13px; font-weight: bold;">Step ${idx + 1}</span>
-                   <p style="margin: 10px 0 0 0; font-size: 15px; font-weight: bold; color: #e2e8f0; word-break: keep-all;">${asset.name}</p>
-                   <p style="margin: 5px 0 0 0; font-size: 12px; color: #7387ff; font-weight: bold;">[${asset.data?.gnb || '미지정'}]</p>
+                 <div style="margin-top:20px; text-align:center;">
+                   <span style="background:#4f3df6; color:white; padding:5px 12px; border-radius:20px; font-size:13px; font-weight:bold;">Step ${idx + 1}</span>
+                   <p style="margin:10px 0 0 0; font-size:15px; font-weight:bold; color:#e2e8f0; word-break:keep-all;">${asset.name}</p>
+                   <p style="margin:5px 0 0 0; font-size:12px; color:#7387ff; font-weight:bold;">[${asset.data?.gnb || '미지정'}]</p>
                  </div>
                </div>
              `;
-             if (idx < assets.length - 1) { flowHtml += `<div style="color: #7387ff; font-size: 32px; font-weight: bold; margin-bottom: 50px;">➔</div>`; }
+             if (idx < assets.length - 1) { flowHtml += `<div style="color:#7387ff; font-size:32px; font-weight:bold; margin-bottom:50px;">➔</div>`; }
           });
           
           flowHtml += `</div>`;
           workflowContainer.innerHTML = flowHtml;
           document.body.appendChild(workflowContainer);
           
-          const workflowCanvas = await window.html2canvas(workflowContainer, { backgroundColor: '#0f111a', scale: 2 });
+          await new Promise(r => setTimeout(r, 1000));
+
+          const workflowCanvas = await window.html2canvas(workflowContainer, canvasOptions);
           workflowDataUrl = workflowCanvas.toDataURL('image/png');
           document.body.removeChild(workflowContainer);
         }
@@ -1155,26 +1165,27 @@
         alert("🚀 캡처 완료! 지라(Jira) 서버로 데이터를 쏩니다.");
 
         // =====================================================================
-        // 🌟 3. 표 생성 및 이미지 배열 삽입 로직
+        // 🌟 3. 표 생성 및 이미지 배열 삽입 로직 (VPN 툴 HTML 양식 적용)
         // =====================================================================
         let parentTable = `
-        <table border="1" style="border-collapse: collapse; width: 100%; text-align: center; font-size: 13px;">
-            <tbody>
-                <tr style="background-color: #f4f5f7; color: #333;">
-                    <td style="padding: 10px; font-weight: bold; width: 5%;">순번</td>
-                    <td style="padding: 10px; font-weight: bold; width: 25%;">배너명</td>
-                    <td style="padding: 10px; font-weight: bold; width: 15%;">편성 GNB</td>
-                    <td style="padding: 10px; font-weight: bold; width: 25%;">랜딩 URL</td>
-                    <td style="padding: 10px; font-weight: bold; width: 30%;">시안 미리보기</td>
-                </tr>`;
+<table border="1" style="border-collapse: collapse; width: 100%; text-align: center; font-size: 13px;">
+    <tbody>
+        <tr style="background-color: #f4f5f7; color: #333;">
+            <td style="padding: 10px; font-weight: bold; width: 5%;">순번</td>
+            <td style="padding: 10px; font-weight: bold; width: 25%;">배너명</td>
+            <td style="padding: 10px; font-weight: bold; width: 15%;">편성 GNB</td>
+            <td style="padding: 10px; font-weight: bold; width: 25%;">랜딩 URL</td>
+            <td style="padding: 10px; font-weight: bold; width: 30%;">시안 미리보기</td>
+        </tr>`;
         
         let parentImagesToUpload = [];
 
-        // 방금 만든 워크플로우를 0번 파일로 큐에 등록
-        parentImagesToUpload.push({
-          filename: 'workflow_summary.png',
-          dataUrl: workflowDataUrl
-        });
+        if (workflowDataUrl) {
+          parentImagesToUpload.push({
+            filename: 'workflow_summary.png',
+            dataUrl: workflowDataUrl
+          });
+        }
 
         const childIssues = assets.map((asset, idx) => {
           const data = asset?.data || {};
@@ -1187,17 +1198,15 @@
           
           const imgName = `banner_preview_${idx + 1}.png`;
           
-          // 부모 일감 HTML 표 안에 행(Row) 추가
           parentTable += `
-                <tr>
-                    <td style="padding: 10px;">${idx + 1}</td>
-                    <td style="padding: 10px; font-weight: bold;">${asset?.name || '미지정'}</td>
-                    <td style="padding: 10px;">${targetGnbs.join(', ')}</td>
-                    <td style="padding: 10px; word-break: break-all;">${data.landingValue || '미지정'}</td>
-                    <td style="padding: 10px;">!${imgName}|width=250!</td>
-                </tr>`;
+        <tr>
+            <td style="padding: 10px;">${idx + 1}</td>
+            <td style="padding: 10px; font-weight: bold;">${asset?.name || '미지정'}</td>
+            <td style="padding: 10px;">${targetGnbs.join(', ')}</td>
+            <td style="padding: 10px; word-break: break-all;">${data.landingValue || '미지정'}</td>
+            <td style="padding: 10px;">!${imgName}|width=250!</td>
+        </tr>`;
           
-          // 해당 배너의 캡처본을 부모 일감 업로드 큐에 넣습니다.
           if (capturedImages[asset.id]) {
             parentImagesToUpload.push({
               filename: imgName,
@@ -1217,8 +1226,8 @@
         });
 
         parentTable += `
-            </tbody>
-        </table>`;
+    </tbody>
+</table>`;
 
         if (meta.target === 'TARGET') {
           const bannerTypes = assets.map(a => a.name).join(', '); 
@@ -1234,7 +1243,6 @@
         const finalData = {
           parent: {
             title: `[캠페인] ${meta.campaignName || "신규 캠페인"}`, 
-            // 🌟 HTML 표와 자동 생성된 워크플로우를 Description에 삽입!
             desc: `h3. 📌 캠페인 공통 정보\n* *캠페인명*: ${meta.campaignName || "신규 캠페인"}\n* *총 요청 건수*: ${assets.length}건\n\nh3. 🗺️ 고객 이동 경로 (Userflow)\n!workflow_summary.png|width=800!\n\nh3. 📊 배너 편성 종합표\n${parentTable}\n\n----\n하위 작업(Sub-task)으로 개별 배너 상세 기획안이 첨부되어 있습니다.`,
             assignee: cleanAssignee,
             startDate: meta.startDate,
@@ -1244,7 +1252,7 @@
           children: childIssues 
         };
         
-        const event = new CustomEvent('TEST_JIRA_SEND', { detail: finalData });
+        const event = new CustomEvent('TRANSFER_TO_JIRA', { detail: finalData });
         window.dispatchEvent(event);
       };
       
