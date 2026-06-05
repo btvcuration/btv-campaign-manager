@@ -365,7 +365,8 @@
                     <>
                       <div>
                         <label className="block text-xs font-bold text-slate-400 mb-1.5">빅배너 세부 유형</label>
-                        <select value={block.data?.subType || '기본형'} onChange={e => onUpdate(block.id, 'subType', e.target.value)} className="w-full bg-[#1a1c26] border border-[#303340] rounded-lg p-2 text-sm text-white outline-none">
+                        {/* 🌟 수정됨: 값이 '가입하기형'이 아니면 무조건 '기본형'이 선택되도록 방어 */}
+                        <select value={block.data?.subType === '가입하기형' ? '가입하기형' : '기본형'} onChange={e => onUpdate(block.id, 'subType', e.target.value)} className="w-full bg-[#1a1c26] border border-[#303340] rounded-lg p-2 text-sm text-white outline-none">
                           <option value="기본형">기본형 (텍스트 + 우측 컨테이너)</option>
                           <option value="가입하기형">가입하기형 (풀배경 + 월정액 가입)</option>
                         </select>
@@ -387,7 +388,7 @@
                         {/* 버튼명 폼 삭제, 이미지 URL만 남김 */}
                         <div>
                           <label className="block text-xs font-bold text-slate-400 mb-1.5 mt-2">
-                            {(!block.data?.subType || block.data?.subType === '기본형') ? '우측 이미지 URL' : '배경 이미지 URL'}
+                            {block.data?.subType !== '가입하기형' ? '우측 이미지 URL' : '배경 이미지 URL'}
                           </label>
                           <input type="text" value={block.data?.imageUrl || ''} onChange={e => onUpdate(block.id, 'imageUrl', e.target.value)} className="w-full bg-[#1a1c26] border border-[#303340] rounded-lg p-2.5 text-sm text-white outline-none" />
                         </div>
@@ -673,7 +674,8 @@
             ) : block.type === 'BIG_BANNER' ? (
               <div className="w-full max-w-[1000px] h-[250px] bg-[#0f111a] rounded-[24px] relative overflow-hidden shadow-2xl border border-[#303340] flex items-center shrink-0">
                 
-                {(!block.data?.subType || block.data?.subType === '기본형') ? (
+                {/* 🌟 수정됨: 값이 '가입하기형'이 아닐 경우 무조건 기본형 시안 렌더링 */}
+                {block.data?.subType !== '가입하기형' ? (
                   <>
                     <div className="w-[37%] h-full flex flex-col justify-center items-start pl-12 pr-4 text-left z-10 shrink-0">
                       <h2 className="text-white font-black whitespace-pre-wrap leading-[1.1] text-[2.2rem] tracking-tight drop-shadow-xl">
@@ -913,7 +915,17 @@
               else if (aiAsset.type === 'STRIP_BANNER') baseData = { ...DEFAULT_STRIP_BANNER };
               else if (aiAsset.type === 'SYNOPSIS_BANNER') baseData = { ...DEFAULT_SYNOPSIS_BANNER };
               else if (aiAsset.type === 'PROMO_POPUP') baseData = { ...DEFAULT_PROMO_POPUP };
-              else if (aiAsset.type === 'MINI_EPG_BANNER') baseData = { ...DEFAULT_MINI_EPG_BANNER }; // 👈 양쪽 모두 추가
+              else if (aiAsset.type === 'MINI_EPG_BANNER') baseData = { ...DEFAULT_MINI_EPG_BANNER };
+
+              // 🌟 신규 추가: GNB 오타 자동 교정 로직
+              let rawGnb = aiAsset.data?.gnb || baseData.gnb;
+              let gnbArray = Array.isArray(rawGnb) ? rawGnb : [rawGnb];
+              let cleanedGnb = gnbArray.map(g => {
+                if (g.includes('영화') && g.includes('시리즈')) return '영화시리즈'; // '영화/시리즈', '영화 시리즈' 방어
+                if (g.includes('TV') && g.includes('방송')) return 'TV 방송'; // 'TV방송' 방어
+                if (g === 'OTT 홈' || g === 'OTT') return 'OTT홈';
+                return g;
+              });
 
               return {
                 id: `ai-asset-${index}-${timestamp}`,
@@ -921,7 +933,8 @@
                 name: aiAsset.name || `${aiAsset.type.replace('_', ' ')} (AI)`, 
                 data: { 
                   ...baseData, 
-                  ...aiAsset.data, // GEMS가 보낸 세부 데이터를 data 객체에 병합
+                  ...aiAsset.data, 
+                  gnb: cleanedGnb, // 👈 덮어쓰기: 교정된 GNB 배열 적용
                   startDate: payload.campaignMeta?.startDate || baseData.startDate,
                   dueDate: payload.campaignMeta?.dueDate || baseData.dueDate
                 } 
