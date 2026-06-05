@@ -44,14 +44,12 @@
       X, User, ExternalLink, Monitor, Layout, Type, RectangleHorizontal, FileText, CalendarDays, MessageSquare
     } from 'lucide-react';
 
-    // GNB 신규 옵션 추가
     const GNB_OPTIONS = [
       '홈', 'Btv+', '영화시리즈', 'TV 방송', '무료', 
       '애니메이션', '해피시니어', '키즈', 'OTT홈', '실시간 채널',
       '광고 홈', '콘텐츠', '기타'
     ];
 
-    // 🌟 신규 추가: Mermaid 코드 텍스트 치환을 위한 템플릿 URL 매핑 사전
     const TEMPLATE_URLS = {
       'TODAY_BTV': 'https://raw.githubusercontent.com/btvcuration/campaign/main/assets/images/ui-templates/today_btv.png',
       'GENERAL_BANNER': 'https://raw.githubusercontent.com/btvcuration/campaign/main/assets/images/ui-templates/general_banner_2col.png',
@@ -64,7 +62,6 @@
       'MINI_EPG_BANNER': 'https://raw.githubusercontent.com/btvcuration/campaign/main/assets/images/ui-templates/mini_epg.png'
     };
 
-    // --- Specifications & Templates ---
     const BANNER_SPECS = [
       { type: 'TODAY_BTV', name: 'Today B tv', icon: MonitorPlay, ratio: '16:9', size: '3840 x 2160', desc: '홈 최상단 대형 배너. 75% 이미지 배치.' },
       { type: 'GENERAL_BANNER', name: '일반 배너 (1/2/3단)', icon: LayoutPanelLeft, ratio: '가변', size: '1단/2단/3단', desc: '배경 프리뷰(좌/우)와 하단 배너 카드(내/외)가 세트로 구성됩니다.' },
@@ -78,11 +75,7 @@
     ];
     
     const DEFAULT_MINI_EPG_BANNER = {
-      imageUrl: '', 
-      buttonText: '감상하기', // 👈 신규 추가
-      landingValue: 'UI_PATH: /join', 
-      gnb: '실시간 채널', 
-      note: '', memos: [], startDate: '', dueDate: ''
+      imageUrl: '', buttonText: '감상하기', landingValue: 'UI_PATH: /join', gnb: '실시간 채널', note: '', memos: [], startDate: '', dueDate: ''
     };
     
     const getAssetIcon = (type) => {
@@ -115,55 +108,20 @@
     };
 
     const DEFAULT_BIG_BANNER = {
-      subType: '기본형', 
-      mainTitle: '메인 문구', 
-      subTitle: '서브 타이틀', 
-      desc: '상세 설명글을 입력해주세요.', 
-      buttonText: '바로가기',
-      imageUrl: '', 
-      logoImg: '',
-      landingValue: 'UI_PATH: /join', 
-      gnb: '홈', 
-      note: '', 
-      memos: [], 
-      startDate: '', 
-      dueDate: ''
+      subType: '기본형', mainTitle: '메인 문구', subTitle: '서브 타이틀', desc: '상세 설명글을 입력해주세요.', buttonText: '바로가기', imageUrl: '', logoImg: '', landingValue: 'UI_PATH: /join', gnb: '홈', note: '', memos: [], startDate: '', dueDate: ''
     };
 
-    const DEFAULT_LONG_BANNER = {
-      copy: '세로형 배너 메인 카피', subTitle: '서브 카피 입력', imageUrl: '', landingValue: 'UI_PATH: /join', gnb: '홈', note: '', memos: [], startDate: '', dueDate: ''
-    };
+    const DEFAULT_LONG_BANNER = { copy: '세로형 배너 메인 카피', subTitle: '서브 카피 입력', imageUrl: '', landingValue: 'UI_PATH: /join', gnb: '홈', note: '', memos: [], startDate: '', dueDate: '' };
+    const DEFAULT_STRIP_BANNER = { mainTitle: '메인 이벤트 타이틀', subTitle: '서브 프로모션 텍스트', imageUrl: '', landingValue: 'UI_PATH: /join', gnb: '이벤트', note: '', memos: [], startDate: '', dueDate: '' };
+    const DEFAULT_SYNOPSIS_BANNER = { mainTitle: '2,000명 추첨 증정', subTitle: '~7.20 | 다음날 발급', imageUrl: '', badgeText: '영화 쿠폰\n3,300원', landingValue: 'UI_PATH: /join', gnb: '콘텐츠', note: '', memos: [], startDate: '', dueDate: '' };
+    const DEFAULT_PROMO_POPUP = { imageUrl: '', buttonText: '바로가기', closeText: '닫기', landingValue: 'UI_PATH: /join', gnb: '홈', note: '', memos: [], startDate: '', dueDate: '' };
 
-    const DEFAULT_STRIP_BANNER = {
-      mainTitle: '메인 이벤트 타이틀', subTitle: '서브 프로모션 텍스트', imageUrl: '', landingValue: 'UI_PATH: /join', gnb: '이벤트', note: '', memos: [], startDate: '', dueDate: ''
-    };
-
-    // 신규: 시놉시스 배너 디폴트
-    const DEFAULT_SYNOPSIS_BANNER = {
-      mainTitle: '2,000명 추첨 증정', subTitle: '~7.20 | 다음날 발급', imageUrl: '', badgeText: '영화 쿠폰\n3,300원', landingValue: 'UI_PATH: /join', gnb: '콘텐츠', note: '', memos: [], startDate: '', dueDate: ''
-    };
-
-    const DEFAULT_PROMO_POPUP = {
-      imageUrl: '', // 음영 처리된 메인 이미지 영역
-      buttonText: '바로가기', // 👈 이미지 참고하여 기본값 변경
-      closeText: '닫기', 
-      landingValue: 'UI_PATH: /join',
-      gnb: '홈',
-      note: '',
-      memos: [],
-      startDate: '',
-      dueDate: ''
-    };
-
-    // --- 개별 드래그가 가능한 다중 메모 컴포넌트 ---
     const DraggableMemo = ({ memo, updateMemo, removeMemo }) => {
       const [pos, setPos] = useState({ x: memo.x || 100, y: memo.y || 100 });
       const isDragging = useRef(false);
       const dragStart = useRef({ mouseX: 0, mouseY: 0, boxX: 0, boxY: 0 });
 
-      useEffect(() => {
-        setPos({ x: memo.x || 100, y: memo.y || 100 });
-      }, [memo.x, memo.y]);
+      useEffect(() => { setPos({ x: memo.x || 100, y: memo.y || 100 }); }, [memo.x, memo.y]);
 
       const handleMouseDown = (e) => {
         if (e.target.tagName === 'TEXTAREA' || e.target.closest('button')) return;
@@ -239,7 +197,6 @@
       );
     };
 
-    // --- BlockRenderer (프리뷰 및 폼 구성 코어) ---
     const BlockRenderer = ({ block, onUpdate, readOnly = false }) => {
       if (!block) return null;
       const [localShowSafeZone, setLocalShowSafeZone] = useState(false);
@@ -262,22 +219,14 @@
 
       const handleAddMemo = () => {
         const currentMemos = block.data?.memos || [];
-        const offset = currentMemos.length * 20; // 겹치지 않게 오프셋 부여
-        const newMemo = { 
-          id: `memo-${Date.now()}`, 
-          text: '', 
-          x: 100 + offset, // 롱배너에서도 보이도록 중앙 좌측으로 생성 좌표 수정
-          y: 100 + offset 
-        };
+        const offset = currentMemos.length * 20; 
+        const newMemo = { id: `memo-${Date.now()}`, text: '', x: 100 + offset, y: 100 + offset };
         onUpdate(block.id, 'memos', [...currentMemos, newMemo]);
       };
 
       return (
         <div className="absolute inset-0 p-6 flex flex-col xl:flex-row gap-6 animate-in fade-in duration-300">
           
-          {/* ========================================================= */}
-          {/* 1. 입력 폼 영역 (Left Column) */}
-          {/* ========================================================= */}
           <div className="w-full xl:w-[400px] flex-shrink-0 h-full overflow-y-auto custom-scrollbar pr-4 pb-12">
             <div className="space-y-6 pb-8">
               <div className="bg-[#12141c] border border-[#262833] rounded-2xl p-6 space-y-5 shadow-2xl">
@@ -291,30 +240,26 @@
                 </div>
                 
                 <div className="space-y-4">
-                  {/* 모든 배너에 GNB 셀렉트 박스 노출 */}
                   <div>
                     <label className="block text-xs font-bold text-[#7387ff] mb-1.5 flex items-center gap-1">
                       <Grid size={12}/> 편성 메뉴 (GNB) <span className="text-[10px] text-slate-500 font-normal ml-1">(다중 선택)</span>
                     </label>
                     <div className="flex flex-wrap gap-1.5">
                       {GNB_OPTIONS.map(opt => {
-                        // 1. 고정 타입 판별 (배열로 관리) - 기존 코드 수정
-                        const isFixed = block.type === 'TODAY_BTV' || block.type === 'SYNOPSIS_ বাধাNER' || block.type === 'MINI_EPG_BANNER';
+                        const isFixed = block.type === 'TODAY_BTV' || block.type === 'SYNOPSIS_BANNER' || block.type === 'MINI_EPG_BANNER';
                         let currentGnbs = Array.isArray(block.data?.gnb) ? block.data.gnb : [block.data?.gnb || '홈'];
                         
                         if (block.type === 'TODAY_BTV') currentGnbs = ['홈'];
                         if (block.type === 'SYNOPSIS_BANNER') currentGnbs = ['콘텐츠'];
-                        if (block.type === 'MINI_EPG_BANNER') currentGnbs = ['실시간 채널']; // 👈 신규 추가
+                        if (block.type === 'MINI_EPG_BANNER') currentGnbs = ['실시간 채널'];
                   
                         const isSelected = currentGnbs.includes(opt);
                   
-                        // 2. 토글 로직
                         const toggleGnb = () => {
                           if (isFixed) return; 
                           let newGnbs = [...currentGnbs];
                           if (isSelected) {
                              newGnbs = newGnbs.filter(g => g !== opt);
-                             // 이 부분을 조금 더 안전하게 보완합니다.
                              if (newGnbs.length === 0) newGnbs = ['홈']; 
                           } else {
                              newGnbs.push(opt);
@@ -381,7 +326,6 @@
                     <>
                       <div>
                         <label className="block text-xs font-bold text-slate-400 mb-1.5">빅배너 세부 유형</label>
-                        {/* 🌟 수정됨: 값이 '가입하기형'이 아니면 무조건 '기본형'이 선택되도록 방어 */}
                         <select value={block.data?.subType === '가입하기형' ? '가입하기형' : '기본형'} onChange={e => onUpdate(block.id, 'subType', e.target.value)} className="w-full bg-[#1a1c26] border border-[#303340] rounded-lg p-2 text-sm text-white outline-none">
                           <option value="기본형">기본형 (텍스트 + 우측 컨테이너)</option>
                           <option value="가입하기형">가입하기형 (풀배경 + 월정액 가입)</option>
@@ -391,7 +335,6 @@
                       <div className="space-y-4 pt-2 border-t border-[#262833]">
                         <div><label className="block text-xs font-bold text-slate-400 mb-1.5">메인 문구</label><input type="text" value={block.data?.mainTitle || ''} onChange={e => onUpdate(block.id, 'mainTitle', e.target.value)} className="w-full bg-[#1a1c26] border border-[#303340] rounded-lg p-2.5 text-sm text-white outline-none" /></div>
                         
-                        {/* 가입하기형일 때만 로고 이미지 필드 노출 */}
                         {block.data?.subType === '가입하기형' && (
                           <div><label className="block text-xs font-bold text-slate-400 mb-1.5">브랜드 로고 URL (좌측 상단)</label><input type="text" value={block.data?.logoImg || ''} onChange={e => onUpdate(block.id, 'logoImg', e.target.value)} className="w-full bg-[#1a1c26] border border-[#303340] rounded-lg p-2.5 text-sm text-white outline-none" placeholder="비어있을 경우 '월정액 로고'로 표시됩니다." /></div>
                         )}
@@ -401,7 +344,6 @@
                           <div className="flex-1"><label className="block text-[10px] font-bold text-slate-400 mb-1.5">상세 설명글</label><input type="text" value={block.data?.desc || ''} onChange={e => onUpdate(block.id, 'desc', e.target.value)} className="w-full bg-[#1a1c26] border border-[#303340] rounded-lg p-2.5 text-sm text-white outline-none" /></div>
                         </div>
                         
-                        {/* 버튼명 폼 삭제, 이미지 URL만 남김 */}
                         <div>
                           <label className="block text-xs font-bold text-slate-400 mb-1.5 mt-2">
                             {block.data?.subType !== '가입하기형' ? '우측 이미지 URL' : '배경 이미지 URL'}
@@ -499,7 +441,6 @@
                         <label className="block text-xs font-bold text-[#7387ff] mb-1.5 flex items-center gap-1.5"><Tv size={14}/> 썸네일 이미지</label>
                         <input type="text" value={block.data?.imageUrl || ''} onChange={e => onUpdate(block.id, 'imageUrl', e.target.value)} className="w-full bg-[#1a1c26] border border-[#303340] rounded-lg p-2.5 text-sm text-white outline-none" placeholder="이미지 URL을 입력하세요" />
                       </div>
-                      {/* 👇 신규 추가: 버튼 문구 입력 폼 */}
                       <div>
                         <label className="block text-xs font-bold text-slate-400 mb-1.5 mt-3">액션 버튼 문구 (우측 UI에 겹쳐짐)</label>
                         <input type="text" value={block.data?.buttonText || ''} onChange={e => onUpdate(block.id, 'buttonText', e.target.value)} className="w-full bg-[#1a1c26] border border-[#303340] rounded-lg p-2.5 text-sm text-white outline-none" placeholder="예: 감상하기, 바로가기" />
@@ -539,13 +480,8 @@
             </div>
           </div>
 
-          {/* ========================================================= */}
-          {/* 2. 시뮬레이터 프리뷰 영역 (Right Column) */}
-          {/* ========================================================= */}
-          {/* 🌟 [추가됨] 화면 캡처를 위해 id 부여 */}
           <div id="capture-preview-area" className="flex-1 flex flex-col items-center justify-start pt-16 pb-8 px-8 bg-[#06070a] border border-[#1a1c26] rounded-2xl overflow-y-auto relative shadow-inner min-w-[700px] custom-scrollbar h-full">
             
-            {/* 상단 툴바 영역 (GNB & 메모 추가 버튼) */}
             <div className="w-full max-w-[1000px] flex justify-between items-center mb-6 mt-2">
               <div className="flex items-center gap-2 text-[#7387ff] bg-[#7387ff]/10 px-4 py-1.5 rounded-full border border-[#7387ff]/30 shadow-md">
                 <Grid size={14}/>
@@ -690,7 +626,6 @@
             ) : block.type === 'BIG_BANNER' ? (
               <div className="w-full max-w-[1000px] h-[250px] bg-[#0f111a] rounded-[24px] relative overflow-hidden shadow-2xl border border-[#303340] flex items-center shrink-0">
                 
-                {/* 🌟 수정됨: 값이 '가입하기형'이 아닐 경우 무조건 기본형 시안 렌더링 */}
                 {block.data?.subType !== '가입하기형' ? (
                   <>
                     <div className="w-[37%] h-full flex flex-col justify-center items-start pl-12 pr-4 text-left z-10 shrink-0">
@@ -716,7 +651,6 @@
                   </>
                 ) : (
                   <>
-                    {/* 가입하기형: 이미지 w-[70%] 원복 및 최적화된 그라데이션 적용 */}
                     <div className="absolute inset-0 z-0">
                       <div className="absolute right-0 top-0 w-[70%] h-full bg-no-repeat bg-cover bg-right-top transition-all duration-500" style={{ backgroundImage: checkIsUrl(block.data?.imageUrl) ? `url(${block.data.imageUrl})` : 'none' }}>
                         {!checkIsUrl(block.data?.imageUrl) && !checkHasText(block.data?.imageUrl) && <div className="absolute inset-0 bg-gradient-to-br from-indigo-900/30 to-[#0a0a0f] flex items-center justify-end pr-32"><ImageIcon size={64} className="text-white/10"/></div>}
@@ -759,7 +693,6 @@
               </div>
             ) : block.type === 'SYNOPSIS_BANNER' ? (
               <div className="w-[450px] h-[120px] bg-gradient-to-r from-[#1a1a1a] to-[#2a2a2a] rounded-xl relative overflow-hidden shadow-[0_10px_40px_rgba(0,0,0,0.5)] border border-[#303340] flex items-center justify-between p-6 shrink-0 mt-4 group cursor-pointer">
-                {/* 오로라 배경 (은은한 효과) */}
                 <div className="absolute -bottom-10 -right-10 w-[150px] h-[150px] bg-cyan-500/20 blur-3xl rounded-full pointer-events-none"></div>
 
                 <div className="flex flex-col justify-center z-10">
@@ -779,10 +712,8 @@
               </div>
             ) : block.type === 'PROMO_POPUP' ? (
               <div className="flex flex-col items-center justify-center h-full animate-in zoom-in-95 duration-300 mt-4">
-                {/* 📺 TV 팝업 모달 외곽 컨테이너 (다크 그레이 톤 바탕) */}
                 <div className="bg-[#26272e] p-5 rounded-xl shadow-[0_20px_60px_rgba(0,0,0,0.8)] border border-white/5 flex flex-col w-[760px]">
                   
-                  {/* 메인 이미지/콘텐츠 영역 (첨부해주신 이미지의 안쪽 내용 부분) */}
                   <div className="relative w-full aspect-[16/9] bg-[#0c0920] rounded-lg overflow-hidden border border-black/30 mb-6 shadow-inner">
                     <div className="absolute inset-0 bg-cover bg-center transition-all duration-500" 
                          style={{ backgroundImage: checkIsUrl(block.data?.imageUrl) ? `url(${block.data.imageUrl})` : 'none' }}>
@@ -795,13 +726,10 @@
                     </div>
                   </div>
                   
-                  {/* 하단 버튼 영역 */}
                   <div className="flex justify-center gap-3 w-full pb-2">
-                    {/* 메인 액션 버튼 (바로가기) */}
                     <div className="w-[240px] py-3.5 bg-[#401ce8] hover:bg-[#5233ed] text-white rounded-lg font-extrabold text-xl flex items-center justify-center shadow-[0_4px_15px_rgba(64,28,232,0.4)] border border-[#5a3cf0] transition-colors cursor-pointer tracking-tight">
                       {block.data?.buttonText || '바로가기'}
                     </div>
-                    {/* 닫기 버튼 */}
                     <div className="w-[240px] py-3.5 bg-[#1f2026] hover:bg-[#2a2c36] text-slate-200 rounded-lg font-bold text-xl flex items-center justify-center border border-[#3b3d4a] transition-colors cursor-pointer tracking-tight shadow-md">
                       {block.data?.closeText || '닫기'}
                     </div>
@@ -811,27 +739,20 @@
             ) : block.type === 'MINI_EPG_BANNER' ? (
               <div className="relative w-full aspect-[16/9] max-w-[1000px] bg-[#0c0d14] rounded-[24px] overflow-hidden shadow-2xl border border-[#303340] shrink-0 mt-4">
                 
-                {/* 🌟 수정됨: 심플한 LIVE 텍스트 배경 */}
                 <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0">
                   <span className="text-white/[0.03] font-black text-[180px] tracking-[0.2em] select-none">LIVE</span>
                 </div>
                 
-                {/* 하단 미니 EPG UI 바 */}
                 <div className="absolute bottom-[8%] left-[5%] right-[5%] h-[140px] bg-gradient-to-t from-[#12141c]/95 to-[#1a1c26]/90 rounded-2xl border border-white/10 shadow-2xl flex items-center p-4 backdrop-blur-md z-10">
                   
-                  {/* 타겟 배너 영역 */}
                   <div className="h-full aspect-[1.48/1] bg-[#0a0a0f] rounded-xl relative overflow-hidden ring-4 ring-[#d9d9d9] shadow-[0_0_20px_rgba(255,255,255,0.2)] shrink-0 flex items-center justify-center">
-                    {/* 배너 배경 이미지 */}
                     <div className="absolute inset-0 bg-cover bg-center bg-no-repeat transition-transform z-0" 
                          style={{ backgroundImage: checkIsUrl(block.data?.imageUrl) ? `url(${block.data.imageUrl})` : 'none' }}>
                       {!checkIsUrl(block.data?.imageUrl) && <ImageIcon size={32} className="text-white/20"/>}
                     </div>
                     
-                    {/* 🌟 신규 추가: (OK) 버튼과 텍스트 오버레이 영역 */}
-                    {/* 텍스트 가독성을 위한 하단 딤(Dim) 그라데이션 */}
                     <div className="absolute inset-x-0 bottom-0 h-[45%] bg-gradient-to-t from-black/90 to-transparent pointer-events-none z-10"></div>
                     
-                    {/* 실제 버튼과 텍스트 UI */}
                     <div className="absolute bottom-2.5 left-2.5 flex items-center gap-1.5 z-20">
                       <div className="bg-white text-[#111] font-black text-[11px] px-2.5 py-0.5 rounded-[12px] shadow-md tracking-tighter">OK</div>
                       <div className="text-white font-extrabold text-[15px] tracking-tight drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">
@@ -842,7 +763,6 @@
                     <FallbackText text={block.data?.imageUrl} />
                   </div>
         
-                  {/* 우측 EPG 방송 정보 텍스트 (기존 유지) */}
                   <div className="ml-6 flex-1 h-full flex flex-col justify-center pb-2">
                     <div className="flex items-center gap-2 mb-1 text-[#5ea3ff] font-bold text-[15px] tracking-wider">
                       <span>003 ★</span><span>tvN</span>
@@ -875,24 +795,20 @@
               {block.type === 'GENERAL_BANNER' ? '배너 포커스 시 배경과 카드가 어떻게 어우러지는지 시뮬레이션 합니다.' : '현재 매체의 렌더링 시뮬레이션 입니다.'}
             </div>
 
-            {/* 시뮬레이터 전체 위에 띄워지는 독립된 메모 영역 */}
             <OverlayMemos block={block} onUpdate={onUpdate} />
           </div>
         </div>
       );
     };
     
-
-    // --- Main App Component ---
     function App() {
       const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-      const [mermaidCode, setMermaidCode] = useState(''); // 🌟 신규 추가: 제미나이의 Mermaid 텍스트 보관소
+      const [mermaidCode, setMermaidCode] = useState(''); 
       const [campaignMeta, setCampaignMeta] = useState({ 
         campaignName: '신규 캠페인', 
         target: 'MASS', 
         targetSize: '',
         toneAndManner: '타이틀 이미지 중심', 
-        assignee: '담당자', 
         startDate: '2026-04-01', 
         dueDate: '2026-04-30' 
       });
@@ -901,12 +817,27 @@
         { id: 'asset-1', type: 'TODAY_BTV', name: 'Today B tv', data: { ...DEFAULT_TODAY_BTV, gnb: ['홈'] } }
       ]);
 
+      // 🌟 신규: 스피너 상태 관리
+      const [isLoading, setIsLoading] = useState(false);
+      const [loadingMsg, setLoadingMsg] = useState('');
+      const showSpinner = (msg) => { setLoadingMsg(msg); setIsLoading(true); };
+      const hideSpinner = () => { setIsLoading(false); };
+
+      // 🌟 신규: 설정(Jira ID) 클릭 핸들러
+      const handleSettingsClick = () => {
+        const currentId = localStorage.getItem('myJiraId') || '';
+        const newId = prompt("⚙️ 본인의 Jira ID를 입력해주세요.\n(캠페인 상위 일감의 기본 담당자로 자동 할당되며, 하위 일감에 자동 멘션됩니다.)", currentId);
+        if (newId !== null) {
+          localStorage.setItem('myJiraId', newId.trim());
+          alert("✅ Jira ID가 성공적으로 저장되었습니다: " + newId.trim());
+        }
+      };
+
       useEffect(() => {
         const handleAiData = (event) => {
           const payload = event.detail;
           if (!payload || payload.action !== "CREATE_CAMPAIGN_ASSETS") return;
 
-          // 🌟 신규 추가: payload에 mermaidCode가 있으면 State에 저장
           if (payload.mermaidCode) {
             setMermaidCode(payload.mermaidCode);
           }
@@ -916,8 +847,8 @@
             setCampaignMeta(prev => ({ 
               ...prev, 
               campaignName: payload.campaignMeta.campaignName || prev.campaignName,
-              target: payload.campaignMeta.target || prev.target, // 👈 신규 추가
-              targetSize: payload.campaignMeta.targetSize || prev.targetSize, // 👈 신규 추가
+              target: payload.campaignMeta.target || prev.target,
+              targetSize: payload.campaignMeta.targetSize || prev.targetSize,
               startDate: payload.campaignMeta.startDate || prev.startDate,
               dueDate: payload.campaignMeta.dueDate || prev.dueDate
             }));
@@ -937,12 +868,11 @@
               else if (aiAsset.type === 'PROMO_POPUP') baseData = { ...DEFAULT_PROMO_POPUP };
               else if (aiAsset.type === 'MINI_EPG_BANNER') baseData = { ...DEFAULT_MINI_EPG_BANNER };
 
-              // 🌟 신규 추가: GNB 오타 자동 교정 로직
               let rawGnb = aiAsset.data?.gnb || baseData.gnb;
               let gnbArray = Array.isArray(rawGnb) ? rawGnb : [rawGnb];
               let cleanedGnb = gnbArray.map(g => {
-                if (g.includes('영화') && g.includes('시리즈')) return '영화시리즈'; // '영화/시리즈', '영화 시리즈' 방어
-                if (g.includes('TV') && g.includes('방송')) return 'TV 방송'; // 'TV방송' 방어
+                if (g.includes('영화') && g.includes('시리즈')) return '영화시리즈';
+                if (g.includes('TV') && g.includes('방송')) return 'TV 방송';
                 if (g === 'OTT 홈' || g === 'OTT') return 'OTT홈';
                 return g;
               });
@@ -954,18 +884,17 @@
                 data: { 
                   ...baseData, 
                   ...aiAsset.data, 
-                  gnb: cleanedGnb, // 👈 덮어쓰기: 교정된 GNB 배열 적용
+                  gnb: cleanedGnb,
                   startDate: payload.campaignMeta?.startDate || baseData.startDate,
                   dueDate: payload.campaignMeta?.dueDate || baseData.dueDate
                 } 
               };
             });
 
-            // 화면 상태 업데이트
             setAssets(newAssets);
             setActiveTabId('OVERVIEW'); 
             
-            // 시각적 피드백
+            // AI 데이터 수신 완료 알림은 남겨둡니다.
             alert(`🎉 Gemini 기획안(${newAssets.length}건)이 성공적으로 반영되었습니다!`);
           }
         };
@@ -978,7 +907,6 @@
       const [isAddAssetModalOpen, setIsAddAssetModalOpen] = useState(false);
       const handleMetaChange = (e) => setCampaignMeta({ ...campaignMeta, [e.target.name]: e.target.value });
       
-      // X, Y 좌표 저장 시 충돌 방지용 prevAssets 업데이트 로직
       const handleAssetChange = (id, field, value) => {
         setAssets(prevAssets => prevAssets.map(asset => 
           asset.id === id ? { ...asset, data: { ...asset.data, [field]: value } } : asset
@@ -1020,18 +948,18 @@
         if (activeTabId === id) setActiveTabId('OVERVIEW');
       };
 
-      // ✅ GNB 레이블 및 WBS 간트 날짜 연동을 위한 handleExport
       const handleExport = async () => {
         if (!assets || assets.length === 0) return alert("전송할 배너 기획안이 없습니다.");
         const meta = campaignMeta || {};
 
-        let rawAssignee = meta.assignee || '';
-        if (rawAssignee.trim() === '' || rawAssignee === '담당자') {
-          return alert("🚨 담당자가 누락되었습니다!\n왼쪽 [배포 정보] 탭에서 본인의 '지라 로그인 ID'를 반드시 입력해 주세요.");
+        // 🌟 수정됨: 저장된 Jira ID 불러오기 (없으면 폼 입력 없이 바로 체크)
+        const myJiraId = localStorage.getItem('myJiraId') || '';
+        if (!myJiraId) {
+          return alert("🚨 지라 전송을 위해 담당자 ID가 필요합니다!\n좌측 하단의 ⚙️ 설정 버튼을 눌러 본인의 Jira ID를 먼저 저장해주세요.");
         }
-        const cleanAssignee = rawAssignee.split('@')[0].trim();
+        const cleanAssignee = myJiraId.split('@')[0].trim();
 
-        alert("📸 시안 이미지를 추출합니다.\n화면 탭이 자동으로 전환되니 잠시만 마우스 클릭을 멈춰주세요!");
+        showSpinner("📸 시안 이미지를 추출하고 있습니다..."); // 🌟 alert 제거 및 스피너 대체
         let capturedImages = {};
 
         for (const asset of assets) {
@@ -1061,7 +989,7 @@
           }
         }
 
-        alert("🗺️ 완성된 시안들을 연결하여 워크플로우(Userflow) 종합 이미지를 자동 생성합니다...");
+        showSpinner("🗺️ 완성된 시안들을 연결하여 워크플로우 종합 이미지를 생성합니다..."); // 🌟 alert 제거
 
         let workflowDataUrl = null;
         
@@ -1072,9 +1000,6 @@
           allowTaint: true 
         };
 
-        // =====================================================================
-        // 🌟 플랜 A: AI가 넘겨준 Mermaid 코드가 있을 경우
-        // =====================================================================
         if (mermaidCode && mermaidCode.trim().length > 0) {
           try {
             let finalMermaidCode = mermaidCode;
@@ -1098,7 +1023,6 @@
             `;
             document.body.appendChild(mermaidContainer);
 
-            // 🌟 에러 해결: Base64 이미지 텍스트 길이를 감당하도록 maxTextSize 5천만 자까지 대폭 해제
             mermaid.initialize({ 
               startOnLoad: false, 
               theme: 'dark', 
@@ -1119,9 +1043,6 @@
           }
         }
 
-        // =====================================================================
-        // 🌟 플랜 B: Mermaid 코드가 없거나 에러 났을 경우 (직렬 폴백)
-        // =====================================================================
         if (!workflowDataUrl) {
           const workflowContainer = document.createElement('div');
           workflowContainer.style.cssText = 'position:absolute; top:0; left:0; width:1400px; background:#0f111a; padding:50px; border-radius:20px; display:flex; flex-direction:column; align-items:center; color:white; font-family:Pretendard, sans-serif; z-index:-9999;';
@@ -1162,11 +1083,8 @@
           document.body.removeChild(workflowContainer);
         }
 
-        alert("🚀 캡처 완료! 지라(Jira) 서버로 데이터를 쏩니다.");
+        showSpinner("🚀 캡처 완료! 지라(Jira) 일감을 생성하는 중입니다..."); // 🌟 alert 제거
 
-        // =====================================================================
-        // 🌟 3. 표 생성 및 이미지 배열 삽입 로직 (VPN 툴 HTML 양식 적용)
-        // =====================================================================
         let parentTable = `
 <table border="1" style="border-collapse: collapse; width: 100%; text-align: center; font-size: 13px;">
     <tbody>
@@ -1215,9 +1133,9 @@
           }
 
           return {
-            title: `[디자인] ${asset?.name || '미지정'} 제작`,
-            desc: `h3. 🖼️ 상세 기획\n* *편성 GNB*: ${targetGnbs.join(', ')}\n* *편성 일정*: ${dateInfo}\n* *주요 카피*: ${copyText}\n* *랜딩 URL*: ${data.landingValue || '미지정'}\n* *비고*: ${data.note || '없음'}\n\nh3. 🎨 시뮬레이터 캡처 시안\n!preview.png!`,
-            assignee: cleanAssignee,
+            title: `[디자인] ${meta.campaignName || "신규 캠페인"} _ ${asset?.name || '미지정'}`, // 🌟 수정됨: 캠페인명 + 언더바 추가
+            desc: `h3. 🖼️ 상세 기획\n* *편성 GNB*: ${targetGnbs.join(', ')}\n* *담당자 호출*: [~${cleanAssignee}]\n* *편성 일정*: ${dateInfo}\n* *주요 카피*: ${copyText}\n* *랜딩 URL*: ${data.landingValue || '미지정'}\n* *비고*: ${data.note || '없음'}\n\nh3. 🎨 시뮬레이터 캡처 시안\n!preview.png!`, // 🌟 수정됨: 담당자 호출 멘션 추가
+            assignee: "", // 🌟 수정됨: 하위 일감 담당자는 공란으로 비움
             imageData: capturedImages[asset.id],
             startDate: data.startDate, 
             dueDate: data.dueDate,
@@ -1234,8 +1152,8 @@
           const targetDate = meta.startDate ? `${meta.startDate} ~ ${meta.dueDate || ''}` : '미지정';
           childIssues.push({
             title: `[운영] ${meta.campaignName || "신규 캠페인"} 타겟팅 세팅 요청`,
-            desc: `h3. 🎯 타겟팅 캠페인 운영 요청\n* *노출 배너 유형*: ${bannerTypes}\n* *편성 일정*: ${targetDate}\n* *예상 타겟 모수*: ${meta.targetSize || '기획자와 모수 확인 필요'}\n\n위 내용으로 타겟팅 배너 세팅을 요청드립니다.`,
-            assignee: 'yukyung.cho', 
+            desc: `h3. 🎯 타겟팅 캠페인 운영 요청\n* *노출 배너 유형*: ${bannerTypes}\n* *담당자 호출*: [~${cleanAssignee}]\n* *편성 일정*: ${targetDate}\n* *예상 타겟 모수*: ${meta.targetSize || '기획자와 모수 확인 필요'}\n\n위 내용으로 타겟팅 배너 세팅을 요청드립니다.`,
+            assignee: '', // 🌟 수정됨: 운영건 담당자도 공란으로
             gnb: ['기타'] 
           });
         }
@@ -1244,7 +1162,7 @@
           parent: {
             title: `[캠페인] ${meta.campaignName || "신규 캠페인"}`, 
             desc: `h3. 📌 캠페인 공통 정보\n* *캠페인명*: ${meta.campaignName || "신규 캠페인"}\n* *총 요청 건수*: ${assets.length}건\n\nh3. 🗺️ 고객 이동 경로 (Userflow)\n!workflow_summary.png|width=800!\n\nh3. 📊 배너 편성 종합표\n${parentTable}\n\n----\n하위 작업(Sub-task)으로 개별 배너 상세 기획안이 첨부되어 있습니다.`,
-            assignee: cleanAssignee,
+            assignee: cleanAssignee, // 🌟 부모는 본인으로 유지
             startDate: meta.startDate,
             dueDate: meta.dueDate,
             images: parentImagesToUpload 
@@ -1254,27 +1172,18 @@
         
         const event = new CustomEvent('TEST_JIRA_SEND', { detail: finalData });
         window.dispatchEvent(event);
-      };
-      
-      const activeAsset = assets.find(a => a.id === activeTabId);
-
-      const copyToClipboard = () => {
-        if (!modalState.payloads || modalState.payloads.length === 0) return;
-        const text = modalState.payloads.map(p => `${p.title}\n${p.desc}`).join('\n\n---\n\n');
-        navigator.clipboard.writeText(text).then(() => {
-          alert("마크다운 텍스트가 클립보드에 복사되었습니다.");
-        });
+        
+        // 🌟 수정됨: 이벤트 전송 후 2초 뒤 스피너 닫기
+        setTimeout(() => { hideSpinner(); }, 2000);
       };
 
       return (
         <div className="flex h-screen w-full bg-[#0a0812] text-slate-200 overflow-hidden select-none">
           
-          {/* 1. 좌측 슬림 네비게이션 바 */}
           <nav className="w-[72px] bg-[#0f111a] border-r border-[#262833] flex flex-col items-center py-6 z-30 shrink-0">
             <div className="w-11 h-11 bg-gradient-to-br from-[#7387ff] to-[#4631e6] rounded-xl flex items-center justify-center mb-10 shadow-lg shadow-[#7387ff]/20">
               <Tv className="text-white" size={24} />
             </div>
-            {/* 🌟 신규 추가: 사이드바 토글 햄버거 버튼 */}
             <div className="flex flex-col gap-6 w-full px-3 mb-6">
               <button 
                 onClick={() => setIsSidebarOpen(!isSidebarOpen)} 
@@ -1285,21 +1194,18 @@
               </button>
             </div>
             <div className="flex flex-col gap-6 w-full px-3">
-              {/* 캠페인 매니저 버튼만 심플하게 남김 (클릭 이벤트 제거) */}
               <div className="w-full aspect-square rounded-xl flex items-center justify-center bg-[#262833] text-[#7387ff] shadow-inner cursor-default" title="캠페인 매니저">
                 <LayoutTemplate size={26} />
               </div>
             </div>
             <div className="mt-auto w-full px-3">
-              <button className="w-full aspect-square rounded-xl flex items-center justify-center text-slate-500 hover:text-white hover:bg-[#1a1c26] transition-all">
+              {/* 🌟 수정됨: 설정 버튼 클릭 시 모달창 실행 */}
+              <button onClick={handleSettingsClick} className="w-full aspect-square rounded-xl flex items-center justify-center text-slate-500 hover:text-white hover:bg-[#1a1c26] transition-all" title="Jira ID 설정">
                 <Settings size={24} />
               </button>
             </div>
-            
           </nav>
 
-          {/* 2. 사이드바 (메타 정보 폼) */}
-          {/* 🌟 수정됨: isSidebarOpen이 true일 때만 아래 aside 전체를 렌더링함 */}
           {isSidebarOpen && (
             <aside className="w-[320px] bg-[#12141c] border-r border-[#262833] flex flex-col h-full z-10 animate-in slide-in-from-left-4 shrink-0">
               <div className="p-6 border-b border-[#262833] bg-[#0f111a] flex flex-col gap-1">
@@ -1359,14 +1265,13 @@
                         ↓ 전체 배너에 일정 일괄 적용
                       </button>
                     </div>
-                    <div><label className="block text-[10px] font-bold text-slate-400 mb-1.5">담당자 지정</label><input type="text" name="assignee" value={campaignMeta.assignee} onChange={handleMetaChange} className="w-full bg-[#1a1c26] border border-[#303340] rounded-lg p-2.5 text-sm text-white focus:border-[#7387ff] outline-none transition-all" /></div>
+                    {/* 🌟 수정됨: 담당자 폼 삭제됨 */}
                   </div>
                 </div>
               </div>
             </aside>
           )}
 
-          {/* 3. 메인 콘텐츠 영역 (목록 & 프리뷰) */}
           <main className="flex-1 flex flex-col min-w-0 bg-[#06070a] relative">
             <header className="bg-[#12141c]/90 backdrop-blur z-20 sticky top-0 flex flex-col shadow-sm border-b border-[#262833]">
               <div className="flex justify-between items-end px-6 pt-3">
@@ -1427,7 +1332,6 @@
             </div>
           </main>
 
-          {/* 모달 창들 */}
           {isAddAssetModalOpen && (
             <div className="fixed inset-0 bg-black/90 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in zoom-in-95 duration-200">
               <div className="bg-[#12141c] w-[900px] border border-[#262833] rounded-3xl shadow-2xl flex flex-col overflow-hidden">
@@ -1447,9 +1351,18 @@
               </div>
             </div>
           )}
+
+          {/* 🌟 신규 추가: 로딩 스피너 오버레이 */}
+          {isLoading && (
+            <div className="fixed inset-0 bg-[#0f111a]/80 backdrop-blur-sm z-[9999] flex flex-col items-center justify-center text-white transition-all duration-300">
+              <div className="w-14 h-14 border-[4px] border-[#262833] border-t-[#7387ff] rounded-full animate-spin mb-5"></div>
+              <h3 className="text-[#7387ff] m-0 font-bold text-lg tracking-tight drop-shadow-lg">{loadingMsg}</h3>
+            </div>
+          )}
+
         </div>
       );
-    } // App 컴포넌트 닫기
+    }
 
     const root = createRoot(document.getElementById('root'));
     root.render(<App />);
