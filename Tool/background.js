@@ -40,23 +40,37 @@ function dataURLtoBlob(dataurl) {
   return new Blob([u8arr], { type: mime });
 }
 
+// 띄어쓰기를 언더바로 치환 (Jira 레이블용)
 const formatLabel = (str) => str ? str.replace(/\s+/g, '_') : '미지정';
 
+// 확장 프로그램 아이콘 클릭 시 캠페인 매니저 열기
 chrome.action.onClicked.addListener((tab) => {
   chrome.tabs.create({ url: "https://btvcuration.github.io/campaign/" });
 });
 
+// 메인 메시지 리스너
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  
+  // 1. Jira 일감 생성 트리거
   if (message.action === "OPEN_JIRA_TEST") {
     createJiraHierarchy(message.data, sender.tab.id);
     sendResponse({ status: "processing" });
   } 
+  
+  // 2. 🌟 화면 네이티브 캡처 트리거 (에러 핸들링 보강)
   else if (message.action === "TAKE_SCREENSHOT") {
     chrome.tabs.captureVisibleTab(null, { format: "png" }, (dataUrl) => {
-      sendResponse({ dataUrl: dataUrl });
+      if (chrome.runtime.lastError) {
+        console.error("캡처 에러:", chrome.runtime.lastError.message);
+        sendResponse({ dataUrl: null });
+      } else {
+        sendResponse({ dataUrl: dataUrl });
+      }
     });
     return true; 
   }
+
+  // 3. Gemini 탭에서 받은 AI JSON 데이터를 캠페인 매니저 탭으로 중계
   else if (message.action === "TRANSFER_DATA_TO_CAMPAIGN_TOOL") {
     chrome.tabs.query({ url: "*://btvcuration.github.io/*" }, (tabs) => {
       if (tabs.length > 0) {
@@ -87,12 +101,13 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   }
 });
 
+// Jira API 호출 및 계층구조 생성
 async function createJiraHierarchy(data, sourceTabId) {
   const baseUrl = "https://jira.skbroadband.com";
   const projectKey = "BTVMKT"; 
   const targetUserId = data.parent.assignee;
 
-  // 🌟 [중요] 일감 유형 명칭 원복! (이전에 성공했던 대문자 T 적용)
+  // 🌟 일감 유형 (기존에 성공했던 명칭 유지)
   const PARENT_ISSUE_TYPE = "Task";    
   const CHILD_ISSUE_TYPE = "Sub-Task"; 
 
@@ -102,7 +117,7 @@ async function createJiraHierarchy(data, sourceTabId) {
   try {
     const uniqueLabels = Array.from(new Set(data.children.flatMap(c => c.gnb.map(formatLabel))));
 
-    // 1️⃣ 🌟 상위 일감 생성: null 전송 방지 로직 적용
+    // 1️⃣ 상위 일감 생성
     const parentFields = {
       project: { key: projectKey },
       summary: data.parent.title,
@@ -116,6 +131,7 @@ async function createJiraHierarchy(data, sourceTabId) {
     if (data.parent.startDate) parentFields[START_DATE_FIELD] = data.parent.startDate;
     if (data.parent.dueDate) parentFields[FINISH_DATE_FIELD] = data.parent.dueDate;
 
+    console.log("🚀 부모 일감 생성 요청 중...");
     const parentRes = await fetchWithRetry(`${baseUrl}/rest/api/2/issue`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-Atlassian-Token': 'no-check' },
@@ -125,12 +141,15 @@ async function createJiraHierarchy(data, sourceTabId) {
     
     const parentResult = await parentRes.json();
     const parentKey = parentResult.key; 
+    console.log("✅ 부모 일감 생성 완료:", parentKey);
 
-    // ⚡ 속도 최적화
-    await sleep(500); 
+    await sleep(1000); 
 
-    // 🌟 상위 일감에 종합 표/워크플로우 이미지 첨부 (이전 코드에서 누락됐던 부분)
+    // =========================================================================
+    // 🌟 [복구된 핵심 로직] 부모 일감에 종합 표 및 유저 플로우(Mermaid) 첨부
+    // =========================================================================
     if (data.parent.images && data.parent.images.length > 0) {
+      console.log(`📸 부모 일감(${parentKey}) 이미지 첨부 시작 (${data.parent.images.length}장)`);
       for (const imgObj of data.parent.images) {
         if (imgObj.dataUrl) {
           const imageBlob = dataURLtoBlob(imgObj.dataUrl);
@@ -143,12 +162,15 @@ async function createJiraHierarchy(data, sourceTabId) {
             credentials: 'include',
             body: formData
           });
-          await sleep(200); 
+          console.log(`✅ 부모 첨부 완료: ${imgObj.filename}`);
+          await sleep(500); 
         }
       }
     }
+    // =========================================================================
 
     // 2️⃣ 하위 일감 일괄(Bulk) 생성
+    console.log("🚀 하위 일감 일괄 생성 요청 중...");
     const childUpdates = data.children.map(child => {
       const fieldData = {
         project: { key: projectKey },
@@ -176,8 +198,10 @@ async function createJiraHierarchy(data, sourceTabId) {
 
     const childBulkResult = await childBulkRes.json();
     const createdIssues = childBulkResult.issues;
+    console.log("✅ 하위 일감 생성 완료");
 
-    // 3️⃣ 하위 일감 이미지 첨부
+    // 3️⃣ 캡처된 이미지를 하위 일감에 각각 첨부파일로 업로드
+    console.log("📸 하위 일감 이미지 첨부 시작...");
     for (let i = 0; i < data.children.length; i++) {
       const childData = data.children[i];
       if (!createdIssues || !createdIssues[i]) continue;
@@ -194,12 +218,15 @@ async function createJiraHierarchy(data, sourceTabId) {
           credentials: 'include',
           body: formData
         });
-        
-        await sleep(300); 
+        console.log(`✅ 하위 첨부 완료: ${issueKey}`);
+        await sleep(1000); 
+      } else {
+        console.warn(`⚠️ 하위 일감(${issueKey})에 첨부할 캡처 이미지가 비어 있습니다.`);
       }
     }
 
     // 4️⃣ 완성된 지라 창 열기
+    console.log("🎉 모든 작업 완료! 지라 창을 엽니다.");
     chrome.tabs.create({ url: `${baseUrl}/browse/${parentKey}` });
 
   } catch (error) {
