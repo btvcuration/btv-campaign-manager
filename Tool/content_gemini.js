@@ -20,6 +20,7 @@ const observer = new MutationObserver((mutations) => {
   const codeBlocks = document.querySelectorAll('pre'); 
 
   codeBlocks.forEach(block => {
+    // 이미 처리된 블록은 무시
     if (block.getAttribute('data-btv-processed') === 'true') return;
 
     const text = block.innerText || block.textContent;
@@ -33,11 +34,10 @@ const observer = new MutationObserver((mutations) => {
       }
     }
 
-    // 🎨 기능 B: Mermaid 마크다운 감지 및 시각화 렌더링 (인식 로직 대폭 강화)
+    // 🎨 기능 B: Mermaid 마크다운 감지 및 시각화 렌더링
     const codeElement = block.querySelector('code');
     const codeText = codeElement ? codeElement.innerText.trim() : '';
 
-    // 제미나이가 언어 태그를 빼먹어도, 시작 단어가 graph나 flowchart면 무조건 렌더링
     const isMermaid = (codeElement && (codeElement.className.includes('mermaid') || codeElement.className.includes('language-mermaid'))) ||
                       codeText.startsWith('graph ') ||
                       codeText.startsWith('flowchart ');
@@ -91,7 +91,13 @@ function injectButton(targetBlock, jsonText) {
   `;
   btn.innerHTML = '🚀 B tv 캠페인 툴로 전송 및 시안 생성';
 
+  // 🌟 [수정됨] 중복 전송 방지(Debounce) 로직 추가
+  let isSending = false;
+
   btn.onclick = () => {
+    if (isSending) return; // 이미 전송 중이면 클릭 무시
+    isSending = true;
+
     try {
       const startIndex = jsonText.indexOf('{');
       const endIndex = jsonText.lastIndexOf('}');
@@ -100,19 +106,26 @@ function injectButton(targetBlock, jsonText) {
       const pureJsonText = jsonText.substring(startIndex, endIndex + 1);
       const parsedData = JSON.parse(pureJsonText);
       
+      // Admin으로 데이터 쏘기
       chrome.runtime.sendMessage({ action: "TRANSFER_DATA_TO_CAMPAIGN_TOOL", payload: parsedData });
 
       btn.innerHTML = '✅ 전송 완료! (캠페인 툴 확인)';
       btn.style.background = '#28a745';
+      
+      // 3초 후 버튼 원상복구 및 전송 잠금 해제
       setTimeout(() => {
         btn.innerHTML = '🚀 B tv 캠페인 툴로 전송 및 시안 생성';
         btn.style.background = 'linear-gradient(90deg, #4f3df6, #7387ff)';
+        isSending = false; 
       }, 3000);
+
     } catch (e) {
       alert("🚨 JSON 파싱 에러! F12 콘솔 확인");
       console.error(e);
+      isSending = false; // 에러 시에도 잠금 해제
     }
   };
+  
   targetBlock.parentNode.insertBefore(btn, targetBlock.nextSibling);
 }
 
