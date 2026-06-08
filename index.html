@@ -87,6 +87,88 @@
     const DEFAULT_SYNOPSIS_BANNER = { mainTitle: '2,000명 추첨 증정', subTitle: '~7.20 | 다음날 발급', imageUrl: '', badgeText: '영화 쿠폰\n3,300원', landingValue: 'UI_PATH: /join', gnb: '콘텐츠', note: '', memos: [], startDate: '', dueDate: '' };
     const DEFAULT_PROMO_POPUP = { imageUrl: '', buttonText: '바로가기', closeText: '닫기', landingValue: 'UI_PATH: /join', gnb: '홈', note: '', memos: [], startDate: '', dueDate: '' };
 
+    // 🌟 [추가] 드래그 가능한 메모 컴포넌트
+    const DraggableMemo = ({ memo, updateMemo, removeMemo }) => {
+      const [pos, setPos] = useState({ x: memo.x || 50, y: memo.y || 50 });
+      const isDragging = useRef(false);
+      const dragStart = useRef({ mouseX: 0, mouseY: 0, boxX: 0, boxY: 0 });
+
+      useEffect(() => { setPos({ x: memo.x || 50, y: memo.y || 50 }); }, [memo.x, memo.y]);
+
+      const handleMouseDown = (e) => {
+        if (e.target.tagName === 'TEXTAREA' || e.target.closest('button')) return;
+        
+        e.preventDefault(); e.stopPropagation();
+        isDragging.current = true;
+        dragStart.current = { mouseX: e.clientX, mouseY: e.clientY, boxX: pos.x, boxY: pos.y };
+
+        const handleMouseMove = (ev) => {
+          if (!isDragging.current) return;
+          ev.preventDefault();
+          const dx = ev.clientX - dragStart.current.mouseX;
+          const dy = ev.clientY - dragStart.current.mouseY;
+          setPos({ x: dragStart.current.boxX + dx, y: dragStart.current.boxY + dy });
+        };
+
+        const handleMouseUp = (ev) => {
+          if (!isDragging.current) return;
+          isDragging.current = false;
+          const dx = ev.clientX - dragStart.current.mouseX;
+          const dy = ev.clientY - dragStart.current.mouseY;
+          updateMemo(memo.id, { x: dragStart.current.boxX + dx, y: dragStart.current.boxY + dy });
+          
+          document.removeEventListener('mousemove', handleMouseMove);
+          document.removeEventListener('mouseup', handleMouseUp);
+        };
+
+        document.addEventListener('mousemove', handleMouseMove, { passive: false });
+        document.addEventListener('mouseup', handleMouseUp);
+      };
+
+      return (
+        <div 
+          onMouseDown={handleMouseDown}
+          className="absolute bg-yellow-300/95 backdrop-blur-sm px-4 py-3 rounded-xl shadow-2xl border border-yellow-400 min-w-[200px] max-w-[300px] transition-shadow hover:shadow-[0_0_20px_rgba(250,204,21,0.6)] cursor-move z-50 pointer-events-auto"
+          style={{ transform: `translate3d(${pos.x}px, ${pos.y}px, 0)`, left: 0, top: 0, willChange: 'transform' }}
+        >
+          <div className="flex items-center justify-between gap-4 mb-2 pointer-events-none">
+            <div className="flex items-center gap-1.5 text-yellow-800 font-bold text-[10px]"><MessageSquare size={12}/> 시안 메모</div>
+            <button onMouseDown={(e) => e.stopPropagation()} onClick={() => removeMemo(memo.id)} className="pointer-events-auto text-yellow-700 hover:text-red-600 hover:bg-yellow-400 p-1 rounded-full transition-colors"><X size={12}/></button>
+          </div>
+          <textarea 
+            onMouseDown={(e) => e.stopPropagation()}
+            value={memo.text} 
+            onChange={(e) => updateMemo(memo.id, { text: e.target.value })}
+            className="w-full bg-yellow-100/50 border border-yellow-400/30 rounded p-2 text-xs text-yellow-900 font-bold outline-none resize-none focus:bg-white focus:ring-1 focus:ring-yellow-500 custom-scrollbar h-[60px] cursor-text pointer-events-auto"
+            placeholder="여기에 메모를 입력하세요..."
+          />
+        </div>
+      );
+    };
+
+    const OverlayMemos = ({ block, onUpdate }) => {
+      const memos = block.data?.memos || [];
+      if (memos.length === 0) return null;
+
+      const updateMemo = (id, updates) => {
+        const updatedMemos = memos.map(m => m.id === id ? { ...m, ...updates } : m);
+        onUpdate(block.id, 'memos', updatedMemos);
+      };
+
+      const removeMemo = (id) => {
+        const updatedMemos = memos.filter(m => m.id !== id);
+        onUpdate(block.id, 'memos', updatedMemos);
+      };
+
+      return (
+        <div className="absolute inset-0 pointer-events-none z-50 overflow-visible">
+          {memos.map(memo => (
+            <DraggableMemo key={memo.id} memo={memo} updateMemo={updateMemo} removeMemo={removeMemo} />
+          ))}
+        </div>
+      );
+    };
+
     // 🌟 [개선된 버젼] 미리보기 영역을 별도 컴포넌트로 분리
     const PreviewDisplay = ({ block }) => {
       if (!block) return null;
@@ -125,7 +207,7 @@
               {/* 미니블록 6개 반 노출되도록 크기 및 갭 조정 (flex-nowrap으로 화면 밖으로 넘기기) */}
               <div className="absolute bottom-10 left-[80px] right-0 flex gap-3 overflow-hidden">
                 {[1,2,3,4,5,6,7].map(i => (
-                  <div key={i} className="w-[13.5%] aspect-[16/9] bg-[#1e2029]/80 rounded-md border border-white/10 shadow-lg shrink-0 flex items-center justify-center">
+                  <div key={i} className="w-[15%] aspect-[14/9] bg-[#1e2029]/80 rounded-md border border-white/10 shadow-lg shrink-0 flex items-center justify-center">
                     <ImageIcon size={20} className="text-white/10" />
                   </div>
                 ))}
@@ -450,6 +532,13 @@
       const handleMetaChange = (e) => setCampaignMeta({ ...campaignMeta, [e.target.name]: e.target.value });
       const handleAssetChange = (id, field, value) => {
         setAssets(prevAssets => prevAssets.map(asset => asset.id === id ? { ...asset, data: { ...asset.data, [field]: value } } : asset));
+      };
+      // 🌟 [추가] 새로운 메모 추가 핸들러
+      const handleAddMemo = () => {
+        const currentMemos = activeAsset.data?.memos || [];
+        const offset = currentMemos.length * 20; 
+        const newMemo = { id: `memo-${Date.now()}`, text: '', x: 50 + offset, y: 50 + offset };
+        handleAssetChange(activeAsset.id, 'memos', [...currentMemos, newMemo]);
       };
 
       const addAsset = (type, name) => {
@@ -850,6 +939,10 @@
                  Preview Layout <span className="text-[#4f3df6] font-black text-xl">·</span> <span className="text-slate-400 text-sm font-medium">{activeAsset?.name}</span>
                </h2>
                <div className="flex gap-3">
+                 {/* 🌟 [추가] 메모 추가 버튼 */}
+                 <button onClick={handleAddMemo} className="flex items-center gap-1.5 px-4 py-2 bg-yellow-500/10 text-yellow-500 border border-yellow-500/30 rounded-lg text-xs font-bold hover:bg-yellow-500/20 transition-colors shadow-lg">
+                   <MessageSquare size={14}/> 메모 추가
+                 </button>
                  <button onClick={() => setIsAddAssetModalOpen(true)} className="flex items-center gap-1.5 px-4 py-2 bg-[#1a1c26] text-white rounded-lg text-xs font-bold border border-[#303340] hover:bg-[#262833] transition-colors"><Plus size={14} className="text-[#7387ff]"/> 배너 추가</button>
                  
                  {exportState.isExporting ? (
@@ -873,6 +966,7 @@
                 {/* 캡처 영역 */}
                 <div id="capture-preview-area" className="w-full h-full relative">
                    <PreviewDisplay block={activeAsset} localShowSafeZone={localShowSafeZone} />
+                   <OverlayMemos block={activeAsset} onUpdate={handleAssetChange} />
                 </div>
               </div>
             </div>
