@@ -817,13 +817,13 @@
           {/* 메인 영역 */}
           <main className="flex-1 flex flex-col min-w-0 bg-[#06070a] relative">
             
-            {/* 🌟 [UI 포인트 3] 상단 스마트 전송 버튼 */}
+            {/* 상단 액션바 */}
             <header className="px-8 py-5 flex justify-between items-center z-20 border-b border-[#1a1c26] bg-[#0c0d14]/80 backdrop-blur">
                <h2 className="text-lg font-bold text-white flex items-center gap-2 tracking-tight">
                  Preview Layout <span className="text-[#4f3df6] font-black text-xl">·</span> <span className="text-slate-400 text-sm font-medium">{activeAsset?.name}</span>
                </h2>
                <div className="flex gap-3">
-                 <button onClick={() => setIsAddAssetModalOpen(true)} className="flex items-center gap-1.5 px-4 py-2 bg-[#1a1c26] text-white rounded-lg text-xs font-bold border border-[#303340] hover:bg-[#262833] transition-colors"><Plus size={14} className="text-[#7387ff]"/> 배너 추가</button>
+                 <button onClick={() => setIsAddAssetModalOpen(true)} className="flex items-center gap-1.5 px-4 py-2 bg-[#1a1c26] text-white rounded-lg text-xs font-bold border border-[#303340] hover:bg-[#262833] transition-colors"><Plus size={14} className="text-[#7387ff]"/> Add Variant</button>
                  
                  {exportState.isExporting ? (
                    <div className="w-[200px] h-[34px] bg-[#1a1c26] border border-[#4f3df6] rounded-lg overflow-hidden relative flex items-center shadow-[0_0_15px_rgba(79,61,246,0.3)]">
@@ -837,20 +837,26 @@
                </div>
             </header>
 
-            {/* 메인 시뮬레이터 */}
-            <div className="flex-1 relative overflow-hidden flex flex-col items-center justify-center p-8">
-              {/* TV 가이드라인 토글 (특정 배너만) */}
-              {['TODAY_BTV', 'GENERAL_BANNER'].includes(activeAsset.type) && (
-                <div className="absolute top-4 left-4 z-40 bg-[#12141c] border border-[#262833] rounded-full px-4 py-1.5 shadow-xl flex items-center cursor-pointer hover:bg-[#1a1c26] transition-colors" onClick={() => setLocalShowSafeZone(!localShowSafeZone)}>
-                  <span className="text-[10px] font-bold text-slate-400 flex items-center gap-1.5 mr-2">TV 안전 영역</span>
-                  <div className={`w-7 h-3.5 rounded-full relative transition-colors ${localShowSafeZone ? 'bg-[#4f3df6]' : 'bg-slate-700'}`}>
-                    <div className={`w-2.5 h-2.5 rounded-full bg-white absolute top-[2px] transition-transform ${localShowSafeZone ? 'left-[16px]' : 'left-[2px]'}`}></div>
-                  </div>
-                </div>
-              )}
+            {/* 🌟 수정된 TV 모니터 프레임 렌더링 영역 */}
+            <div className="flex-1 relative overflow-hidden flex flex-col items-center justify-center p-12 bg-[#06070a]">
               
-              <div id="capture-preview-area" className="w-full flex items-center justify-center transform scale-[0.85] xl:scale-90 2xl:scale-100 origin-center transition-transform">
-                <PreviewDisplay block={activeAsset} localShowSafeZone={localShowSafeZone} />
+              {/* TV 프레임 컨테이너 (16:9 강제) */}
+              <div className="w-full max-w-[1000px] aspect-[16/9] bg-[#000000] rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.8)] border-[8px] border-[#1a1c26] relative overflow-hidden flex items-center justify-center">
+                
+                {/* 캡처 영역 */}
+                <div id="capture-preview-area" className="w-full h-full relative">
+                   <PreviewDisplay block={activeAsset} localShowSafeZone={localShowSafeZone} />
+                </div>
+                
+                {/* 오버레이 버튼들 (프레임 내부 고정) */}
+                {['TODAY_BTV', 'GENERAL_BANNER'].includes(activeAsset.type) && (
+                  <div className="absolute top-4 left-4 z-40 bg-[#12141c]/80 backdrop-blur border border-[#262833] rounded-full px-3 py-1 shadow-xl flex items-center cursor-pointer hover:bg-[#1a1c26] transition-colors" onClick={() => setLocalShowSafeZone(!localShowSafeZone)}>
+                    <span className="text-[9px] font-bold text-slate-400 mr-2">TV Safe Zone</span>
+                    <div className={`w-6 h-3 rounded-full relative transition-colors ${localShowSafeZone ? 'bg-[#4f3df6]' : 'bg-slate-700'}`}>
+                      <div className={`w-2 h-2 rounded-full bg-white absolute top-[2px] transition-transform ${localShowSafeZone ? 'left-[14px]' : 'left-[2px]'}`}></div>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -868,7 +874,7 @@
                     onClick={() => setActiveTabId(asset.id)}
                   >
                     {/* 🌟 진짜 썸네일 렌더링 영역 (CSS Scale 매직) */}
-                    <div className="flex-1 bg-[#0a0a0f] relative overflow-hidden pointer-events-none">
+                    <div className="h-[180px] bg-[#0c0d14] border-t border-[#1a1c26] shrink-0 flex flex-col z-20">
                       {/* Scale 비율: w-200px 기준 원본이 1000px 이면 scale 0.2 */}
                       <div className="absolute top-0 left-0 w-[1000px] origin-top-left transform scale-[0.2]">
                         <PreviewDisplay block={asset} localShowSafeZone={false} />
