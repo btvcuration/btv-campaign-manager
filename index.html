@@ -92,56 +92,43 @@
       if (!block) return null;
       const checkIsUrl = (str) => Boolean(str && typeof str === 'string' && str.startsWith('http'));
       const checkHasText = (str) => Boolean(str && !checkIsUrl(str) && str.trim() !== '');
-    
+
       const FallbackText = ({ text, alignClass = 'justify-center items-center text-center px-4' }) => {
         if (!checkHasText(text) || checkIsUrl(text)) return null;
         return (
-          <div className={`absolute inset-0 flex flex-col sm:flex-row gap-2 ${alignClass} text-white font-black select-none z-20`}>
-            <div className="flex items-center text-white/90 shrink-0 bg-black/20 px-2 py-1 rounded-lg backdrop-blur-sm"><ImageIcon size={14} className="mr-1.5 opacity-90" /><span className="text-[10px] font-bold">이미지</span></div>
-            <span className="text-xs truncate leading-tight">{text}</span>
+          <div className={`absolute inset-0 flex flex-col sm:flex-row gap-2 ${alignClass} text-white font-black select-none drop-shadow-[0_4px_4px_rgba(0,0,0,0.9)] z-20`}>
+            <div className="flex items-center text-white/90 shrink-0 bg-black/20 px-2 py-1 rounded-lg backdrop-blur-sm"><ImageIcon size={22} className="mr-1.5 opacity-90" /><span className="text-sm font-bold tracking-tight">요청 이미지</span></div>
+            <span className="text-xl sm:text-2xl truncate leading-tight">{text}</span>
           </div>
         );
       };
-    
+
       if (block.type === 'TODAY_BTV') {
         return (
-          <div className="w-full h-full flex flex-col p-4 bg-black relative">
-            {/* 1. 상단 글로벌 네비게이션 박스 */}
-            <div className="h-[8%] w-[30%] mx-auto bg-[#1a1c26]/60 rounded-full border border-white/5 mb-3 flex items-center justify-center gap-4">
-               <div className="w-4 h-4 bg-slate-700 rounded-full"></div>
-               <div className="flex gap-2">{[1,2,3,4].map(i=><div key={i} className="w-8 h-4 bg-slate-800 rounded"></div>)}</div>
+          <div className="relative w-full aspect-[16/9] bg-[#0a0a0f] rounded-[24px] overflow-hidden shadow-2xl border border-[#303340] shrink-0">
+            <div className="absolute inset-0 bg-[#0a0a0f]"></div>
+            <div className="absolute right-[0%] top-[0%] w-[75%] h-[90%] bg-no-repeat bg-contain bg-right-top transition-all duration-500 z-0" style={{ backgroundImage: checkIsUrl(block.data?.imageUrl) ? `url(${block.data.imageUrl})` : 'none' }}>
+              {!checkIsUrl(block.data?.imageUrl) && !checkHasText(block.data?.imageUrl) && <div className="absolute inset-0 bg-gradient-to-bl from-[#1e1b4b] to-[#0a0a0f] opacity-50"></div>}
+              <FallbackText text={block.data?.imageUrl} alignClass="justify-end items-start pt-10 pr-10" />
             </div>
-    
-            {/* 메인 바디 (좌측 GNB + 메인 배너 + 하단 로우) */}
-            <div className="flex-1 flex gap-4 overflow-hidden">
-              {/* 2. 좌측 수직 네비게이션 박스 */}
-              <div className="w-[8%] h-full bg-[#1a1c26]/40 rounded-xl flex flex-col items-center py-6 gap-5">
-                {[1,2,3,4,5,6].map(i=><div key={i} className="w-6 h-6 bg-slate-800 rounded-md"></div>)}
+            <div className="absolute inset-0 w-[65%] bg-gradient-to-r from-[#0a0a0f] via-[#0a0a0f]/95 to-transparent z-10 pointer-events-none"></div>
+            <div className="absolute inset-0 top-[50%] bg-gradient-to-t from-[#0a0a0f] via-[#0a0a0f]/90 to-transparent z-10 pointer-events-none"></div>
+            <div className="absolute inset-0 z-20 flex flex-col pointer-events-none text-white px-10">
+              <div className="absolute left-[80px] top-[40%] -translate-y-1/4 w-[45%] pl-2">
+                <h3 className="text-[#32d782] text-sm font-bold mb-2 tracking-tight">{block.data?.topText || '상단 카피'}</h3>
+                <h1 className="text-white text-3xl font-black mb-3 leading-[1.15] whitespace-pre-wrap tracking-tighter drop-shadow-lg">{block.data?.mainTitle || '타이틀 입력'}</h1>
+                <p className="text-slate-200 text-sm font-medium leading-[1.6] drop-shadow-md whitespace-pre-wrap">{block.data?.subText || '서브 텍스트'}</p>
+                <div className="mt-5 inline-flex bg-[#4631e6] text-white px-5 py-2 rounded font-bold text-xs shadow-xl">자세히 보기</div>
               </div>
-    
-              <div className="flex-1 flex flex-col gap-4">
-                {/* 3. 메인 Today B tv 배너 영역 */}
-                <div className="flex-[3] bg-[#ffcc00] rounded-2xl relative overflow-hidden flex items-center pl-10">
-                   <div className="z-10 w-1/2">
-                      <h1 className="text-[2.5vw] font-black text-black leading-tight mb-2 whitespace-pre-wrap tracking-tighter">{block.data?.mainTitle || '메인 문구'}</h1>
-                      <p className="text-black/70 text-[1vw] font-bold mb-4">{block.data?.subText || '서브 문구'}</p>
-                      <div className="bg-[#4f3df6] text-white px-6 py-2 rounded-lg font-bold text-[1vw] w-max shadow-lg">{block.data?.buttonText || '자세히 보기'}</div>
-                   </div>
-                   <div className="absolute right-0 top-0 w-1/2 h-full bg-cover bg-center" style={{ backgroundImage: checkIsUrl(block.data?.imageUrl) ? `url(${block.data.imageUrl})` : 'none' }}>
-                      <FallbackText text={block.data?.imageUrl} />
-                   </div>
-                </div>
-    
-                {/* 5. 하단 콘텐츠 로우 (6개 + 일부분) */}
-                <div className="h-[25%] flex gap-3 overflow-hidden">
-                   {[1,2,3,4,5,6,7].map(i => (
-                     <div key={i} className={`h-full aspect-[2/3] bg-[#1a1c26] rounded-lg border border-white/5 flex items-center justify-center shrink-0 ${i === 7 ? 'opacity-50' : ''}`}>
-                        <span className="text-[10px] text-slate-600">Content {i}</span>
-                     </div>
-                   ))}
-                </div>
+              <div className="absolute bottom-8 left-[80px] right-0 flex gap-4 pr-8">
+                {['1','2','3'].map(i => <div key={i} className="w-[185px] h-[104px] bg-[#1e2029]/80 rounded-xl border border-white/10 shadow-lg"></div>)}
               </div>
             </div>
+            {localShowSafeZone && (
+              <div className="absolute inset-0 z-30 pointer-events-none opacity-60">
+                <div className="absolute left-[50%] top-0 bottom-0 w-px border-l-[1.5px] border-dashed border-white/60"></div><div className="absolute top-[45%] left-0 right-0 h-px border-t-[1.5px] border-dashed border-white/60"></div><div className="absolute right-[4%] top-[15%] bottom-[28%] left-[53%] bg-[#00bcd4]/20 border border-[#00bcd4]/60 flex items-center justify-center"><span className="text-white font-black text-xl bg-black/50 px-3 py-1 rounded">이미지 안전 영역</span></div><div className="absolute left-[80px] top-[28%] bottom-[45%] w-[45%] bg-pink-500/10 border border-dashed border-pink-500/50 flex items-start p-2"><span className="text-pink-100 text-[9px] font-bold bg-pink-600/90 px-1.5 py-0.5 rounded">텍스트 최대 2줄</span></div><div className="absolute left-0 right-0 bottom-0 h-[28%] border-t-[1.5px] border-dashed border-orange-500 bg-orange-500/10 flex items-end justify-center pb-4"><span className="font-bold text-[10px] px-3 py-1 rounded bg-orange-600/90 text-white">하단 썸네일 침범 금지</span></div>
+              </div>
+            )}
           </div>
         );
       }
