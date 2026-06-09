@@ -305,13 +305,17 @@
       }
       
       if (block.type === 'BIG_BANNER') {
+        // 가입하기형 여부를 판단하기 위한 변수 선언
+        const isSubscription = block.data?.subType === '가입하기형';
+        
         return (
-          // 🌟 1. 전체 16:9 가상 TV 화면 프레임을 구성하여 하단 블록 공간 확보 (justify-start와 pt-16 적용)
-          <div className="relative w-full aspect-[16/9] bg-[#0a0a0f] overflow-hidden shrink-0 flex flex-col items-center justify-start pt-14 gap-5">
+          // 🌟 [수정 1] 오른쪽 짤림 현상 해결: absolute inset-0 w-full h-full로 변경하여 모니터 프레임에 완벽 일치
+          // 💡 튜닝 팁: 빅배너를 더 아래로 내리고 싶다면 pt-14를 pt-16, pt-20 등으로 늘려주시면 됩니다!
+          <div className="absolute inset-0 w-full h-full bg-[#0a0a0f] overflow-hidden flex flex-col items-center justify-start pt-14 gap-5">
             
-            {/* 🌟 2. 빅배너 카드 본체 (16:9 화면 비율에 맞추기 위해 높이를 h-[210px]로 최적화) */}
-            <div className="w-[90%] h-[220px] bg-[#0f111a] rounded-[16px] relative overflow-hidden shadow-2xl flex items-center shrink-0">
-              {block.data?.subType !== '가입하기형' ? (
+            {/* 🌟 [수정 2] 가입하기형일 때는 rounded-none(직각), 기본형일 때는 rounded-[16px](둥글게) 처리 */}
+            <div className={`w-[90%] h-[220px] bg-[#0f111a] relative overflow-hidden shadow-2xl flex items-center shrink-0 ${isSubscription ? 'rounded-none' : 'rounded-[16px]'}`}>
+              {!isSubscription ? (
                 <>
                   <div className="w-[37%] h-full flex flex-col justify-center items-start pl-12 pr-4 text-left z-10 shrink-0">
                     <h2 className="text-white font-black whitespace-pre-wrap leading-[1.1] text-[2.2rem] tracking-tight drop-shadow-xl">{block.data?.mainTitle || '메인 문구 입력'}</h2>
@@ -334,7 +338,11 @@
                       {!checkIsUrl(block.data?.imageUrl) && !checkHasText(block.data?.imageUrl) && <div className="absolute inset-0 bg-gradient-to-br from-indigo-900/30 to-[#0a0a0f] flex items-center justify-end pr-32"><ImageIcon size={64} className="text-white/10"/></div>}
                       <FallbackText text={block.data?.imageUrl} alignClass="justify-end items-center pr-32" />
                     </div>
+                    {/* 좌측 그라데이션 마스크 */}
                     <div className="absolute inset-0 bg-gradient-to-r from-[#0f111a] from-[35%] via-[#0f111a]/60 via-[50%] to-transparent to-[65%] pointer-events-none"></div>
+                    
+                    {/* 🌟 [수정 3] 가입하기형 이미지 하단 블러(그라데이션 마스크) 처리 레이어 추가 */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-[#0f111a] via-transparent to-transparent h-[35%] top-auto bottom-0 pointer-events-none"></div>
                   </div>
                   <div className="relative z-10 flex flex-col justify-center h-full px-12 max-w-[60%]">
                     {checkIsUrl(block.data?.logoImg) ? <img src={block.data.logoImg} alt="logo" className="h-8 mb-3 object-contain object-left drop-shadow-lg" /> : <div className="text-white/50 text-[10px] mb-3 font-bold border border-white/20 px-2 py-1 rounded inline-block w-max bg-black/30">월정액 로고</div>}
@@ -347,7 +355,7 @@
               )}
             </div>
   
-            {/* 🌟 3. 신설된 하단 콘텐츠 블록 (일반 배너 스타일의 매트한 포스터 7개 배치, 2:3 비율) */}
+            {/* 하단 콘텐츠 블록 (포스터 7개) */}
             <div className="w-[90%] flex gap-3 justify-between items-center h-[185px] overflow-hidden">
               {[1,2,3,4,5,6,7].map(i => (
                 <div key={i} className="h-full aspect-[2/3] bg-[#222530] rounded-md border border-white/5 shadow-xl shrink-0">
@@ -358,6 +366,7 @@
           </div>
         );
       }
+      
       if (block.type === 'STRIP_BANNER') {
         return (
           <div className="w-full max-w-[900px] aspect-[397/65.5] bg-[#1a1c26] rounded-[16px] relative overflow-hidden shadow-2xl flex items-center shrink-0">
