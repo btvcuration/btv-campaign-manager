@@ -405,78 +405,86 @@
 
       if (block.type === 'SYNOPSIS_BANNER') {
         return (
-          // 🌟 1. 16:9 가상 TV 프레임을 구성하여 시놉시스 스킨 전체 화면 시뮬레이션
-          <div className="relative w-full aspect-[16/9] bg-[#0a0a0f] overflow-hidden shrink-0 flex items-center justify-between px-16">
+          // 16:9 가상 TV 프레임 내부 고정
+          <div className="relative w-full aspect-[16/9] bg-[#0a0a0f] overflow-hidden shrink-0">
             
-            {/* 🌟 2. 좌측: 콘텐츠 기본 정보 및 '구매하기', '예고편 보기' 액션 버튼 배치 */}
-            <div className="flex flex-col gap-6 z-10 pointer-events-none">
-              <div className="space-y-2">
-                <div className="text-xs text-[#7387ff] font-bold tracking-wider uppercase">VOD Curation</div>
-                <h1 className="text-white text-3xl font-black tracking-tight">콘텐츠 상세 정보</h1>
-                <p className="text-slate-400 text-xs leading-relaxed max-w-[300px]">
-                  시놉시스 배너는 영화/시리즈 상세 정보 화면에 진입했을 때, 고객의 시선이 가장 많이 머무는 구매 버튼 우측에 노출되는 타겟 마케팅 최적화 매체입니다.
-                </p>
-              </div>
-
-              {/* 실제 B tv 느낌의 핵심 액션 버튼 세트 살리기 */}
-              <div className="flex gap-3 pt-2">
-                <div className="px-6 py-3 bg-[#ff5e3a] text-white rounded-xl font-bold text-sm shadow-xl shadow-[#ff5e3a]/10 flex items-center justify-center">
-                  구매하기
-                </div>
-                <div className="px-6 py-3 bg-[#222530] text-slate-300 border border-white/5 rounded-xl font-bold text-sm flex items-center justify-center">
-                  예고편 보기
-                </div>
-              </div>
-            </div>
-
-            {/* 🌟 3. 우측: 시놉시스 배너 본체 (띠배너와 동일하게 보랏빛 블루 테두리 반영) */}
-            <div className="w-[460px] h-[130px] bg-gradient-to-r from-[#1a1a1a] to-[#2a2a2a] rounded-xl relative overflow-hidden shadow-[0_10px_40px_rgba(0,0,0,0.5)] border-[3px] border-[#7387FF] flex items-center justify-between p-6 shrink-0 z-10">
-              {/* 은은한 배경 오라 백라이트 효과 */}
-              <div className="absolute -bottom-10 -right-10 w-[150px] h-[150px] bg-[#7387FF]/10 blur-3xl rounded-full pointer-events-none"></div>
+            {/* 🌟 [수정] 일반 배너 하단 블록과 완벽하게 똑같은 정렬선(bottom-[12%], h-[185px]) 구성 */}
+            <div className="absolute bottom-[12%] left-[80px] right-0 flex items-end gap-10 z-30 overflow-hidden pr-8 h-[185px]">
               
-              {/* 기획 문구 출력 영역 */}
-              <div className="flex flex-col justify-center z-10 pr-4">
-                <h2 className="text-white font-extrabold text-xl tracking-tight whitespace-pre-wrap leading-tight drop-shadow-md">
-                  {block.data?.mainTitle || '메인 문구 입력'}
-                </h2>
-                {block.data?.subTitle && (
-                  <p className="text-slate-300 font-bold text-[12px] mt-1.5 tracking-tight">
-                    {block.data.subTitle}
-                  </p>
-                )}
-              </div>
-              
-              {/* 우측 뱃지/이미지 스팟 */}
-              <div className="z-10 shrink-0 ml-auto relative">
-                {checkIsUrl(block.data?.imageUrl) ? (
-                  <img src={block.data.imageUrl} alt="badge" className="w-[75px] h-[75px] object-contain drop-shadow-lg" />
-                ) : (
-                  <div className="bg-gradient-to-br from-[#ffffff] to-[#e0e0e0] rounded-lg flex items-center justify-center text-center px-4 py-2.5 shadow-[0_4px_10px_rgba(0,0,0,0.3)] border border-white/50 min-w-[95px] min-h-[65px]">
-                    <span className="text-[#111] font-black text-xs whitespace-pre-wrap leading-snug">
-                      {block.data?.badgeText || '뱃지 텍스트'}
-                    </span>
+              {/* 좌측: 타이틀 / 줄거리 간단 위치 안내 및 액션 버튼 세트 */}
+              <div className="flex flex-col justify-end h-full gap-4 pb-1 shrink-0">
+                <div className="space-y-1.5">
+                  <div className="text-white text-2xl font-black tracking-tight">[콘텐츠 타이틀 위치]</div>
+                  <div className="text-slate-400 text-xs font-medium max-w-[280px] truncate">
+                    [VOD 상세 줄거리 및 콘텐츠 에피소드 요약 영역]
                   </div>
-                )}
-              </div>
-            </div>
+                </div>
 
+                {/* 구매하기 & 예고편 보기 현재 색상 세트 유지 */}
+                <div className="flex gap-2">
+                  <div className="px-5 py-2.5 bg-[#ff5e3a] text-white rounded-xl font-bold text-xs shadow-xl flex items-center justify-center select-none">
+                    구매하기
+                  </div>
+                  <div className="px-5 py-2.5 bg-[#222530] text-slate-300 border border-white/5 rounded-xl font-bold text-xs flex items-center justify-center select-none">
+                    예고편 보기
+                  </div>
+                </div>
+              </div>
+
+              {/* 우측: 시놉시스 배너 본체 (띠배너 규격과 매칭되는 포인트 테두리 border-[3px] 반영) */}
+              <div className="w-[450px] h-full bg-gradient-to-r from-[#1a1a1a] to-[#2a2a2a] rounded-xl relative overflow-hidden shadow-[0_10px_40px_rgba(0,0,0,0.5)] border-[3px] border-[#7387FF] flex items-center justify-between p-5 shrink-0 z-10">
+                <div className="absolute -bottom-10 -right-10 w-[120px] h-[120px] bg-[#7387FF]/10 blur-2xl rounded-full pointer-events-none"></div>
+                
+                {/* 문구 데이터 출력부 */}
+                <div className="flex flex-col justify-center z-10 pr-2">
+                  <h2 className="text-white font-extrabold text-lg tracking-tight whitespace-pre-wrap leading-tight drop-shadow-md">
+                    {block.data?.mainTitle || '메인 문구 입력'}
+                  </h2>
+                  {block.data?.subTitle && (
+                    <p className="text-slate-300 font-bold text-[11px] mt-1.5 tracking-tight">
+                      {block.data.subTitle}
+                    </p>
+                  )}
+                </div>
+                
+                {/* 우측 뱃지 스팟 */}
+                <div className="z-10 shrink-0 ml-auto relative">
+                  {checkIsUrl(block.data?.imageUrl) ? (
+                    <img src={block.data.imageUrl} alt="badge" className="w-[70px] h-[70px] object-contain drop-shadow-lg" />
+                  ) : (
+                    <div className="bg-gradient-to-br from-[#ffffff] to-[#e0e0e0] rounded-lg flex items-center justify-center text-center px-3 py-2 shadow-[0_4px_10px_rgba(0,0,0,0.3)] border border-white/50 min-w-[85px] min-h-[55px]">
+                      <span className="text-[#111] font-black text-[11px] whitespace-pre-wrap leading-snug">
+                        {block.data?.badgeText || '뱃지 텍스트'}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+            </div>
           </div>
         );
       }
 
       if (block.type === 'PROMO_POPUP') {
         return (
-          <div className="bg-[#26272e] p-5 rounded-xl shadow-[0_20px_60px_rgba(0,0,0,0.8)] flex flex-col w-[760px]">
-            <div className="relative w-full aspect-[16/9] bg-[#0c0920] rounded-lg overflow-hidden mb-6 shadow-inner">
-              <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: checkIsUrl(block.data?.imageUrl) ? `url(${block.data.imageUrl})` : 'none' }}>
-                {!checkIsUrl(block.data?.imageUrl) && <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-[#1a1359] to-[#0a0812]"><ImageIcon size={64} className="text-white/10" /></div>}
-                <FallbackText text={block.data?.imageUrl} />
+          // 🌟 1. 16:9 가상 TV 화면 프레임을 바탕에 깔고, 내부 요소를 가로/세로 정중앙 배치 (flex items-center justify-center)
+          <div className="relative w-full aspect-[16/9] bg-[#0a0a0f] overflow-hidden shrink-0 flex items-center justify-center">
+            
+            {/* 팝업 카드 본체 (w-[760px]로 크기가 고정되어 정중앙에 예쁘게 안착함) */}
+            <div className="bg-[#26272e] p-5 rounded-xl shadow-[0_20px_60px_rgba(0,0,0,0.8)] flex flex-col w-[760px] z-10">
+              <div className="relative w-full aspect-[16/9] bg-[#0c0920] rounded-lg overflow-hidden mb-6 shadow-inner">
+                <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: checkIsUrl(block.data?.imageUrl) ? `url(${block.data.imageUrl})` : 'none' }}>
+                  {!checkIsUrl(block.data?.imageUrl) && <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-[#1a1359] to-[#0a0812]"><ImageIcon size={64} className="text-white/10" /></div>}
+                  <FallbackText text={block.data?.imageUrl} />
+                </div>
+              </div>
+              <div className="flex justify-center gap-3 w-full pb-2">
+                <div className="w-[240px] py-3.5 bg-[#401ce8] text-white rounded-lg font-extrabold text-xl flex items-center justify-center shadow-[0_4px_15px_rgba(64,28,232,0.4)] tracking-tight">{block.data?.buttonText || '바로가기'}</div>
+                <div className="w-[240px] py-3.5 bg-[#1f2026] text-slate-200 rounded-lg font-bold text-xl flex items-center justify-center tracking-tight shadow-md">{block.data?.closeText || '닫기'}</div>
               </div>
             </div>
-            <div className="flex justify-center gap-3 w-full pb-2">
-              <div className="w-[240px] py-3.5 bg-[#401ce8] text-white rounded-lg font-extrabold text-xl flex items-center justify-center shadow-[0_4px_15px_rgba(64,28,232,0.4)] tracking-tight">{block.data?.buttonText || '바로가기'}</div>
-              <div className="w-[240px] py-3.5 bg-[#1f2026] text-slate-200 rounded-lg font-bold text-xl flex items-center justify-center tracking-tight shadow-md">{block.data?.closeText || '닫기'}</div>
-            </div>
+
           </div>
         );
       }
