@@ -310,7 +310,7 @@
           <div className="relative w-full aspect-[16/9] bg-[#0a0a0f] overflow-hidden shrink-0 flex flex-col items-center justify-start pt-14 gap-5">
             
             {/* 🌟 2. 빅배너 카드 본체 (16:9 화면 비율에 맞추기 위해 높이를 h-[210px]로 최적화) */}
-            <div className="w-[90%] h-[210px] bg-[#0f111a] rounded-[16px] relative overflow-hidden shadow-2xl flex items-center shrink-0">
+            <div className="w-[90%] h-[220px] bg-[#0f111a] rounded-[16px] relative overflow-hidden shadow-2xl flex items-center shrink-0">
               {block.data?.subType !== '가입하기형' ? (
                 <>
                   <div className="w-[37%] h-full flex flex-col justify-center items-start pl-12 pr-4 text-left z-10 shrink-0">
@@ -348,7 +348,7 @@
             </div>
   
             {/* 🌟 3. 신설된 하단 콘텐츠 블록 (일반 배너 스타일의 매트한 포스터 7개 배치, 2:3 비율) */}
-            <div className="w-[90%] flex gap-3 justify-between items-center h-[170px] overflow-hidden">
+            <div className="w-[90%] flex gap-3 justify-between items-center h-[185px] overflow-hidden">
               {[1,2,3,4,5,6,7].map(i => (
                 <div key={i} className="h-full aspect-[2/3] bg-[#222530] rounded-md border border-white/5 shadow-xl shrink-0">
                 </div>
