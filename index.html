@@ -274,8 +274,8 @@
               </div>
             </div>
             {/* 세로형 콘텐츠 포스터 5개가 노출되도록 우측 영역 개편 */}
-            <div className="absolute bottom-[8%] left-[80px] right-0 flex items-center gap-4 z-30 overflow-hidden pr-8 h-[200px]">
-              <div className={`relative rounded-xl overflow-hidden shadow-[0_10px_30px_rgba(0,0,0,0.8)] border-[3px] border-white ring-[4px] ring-[#4f3df6]/50 flex bg-[#1a1c26] shrink-0 h-full ${block.data?.colType === '1단' ? 'aspect-[62/89] flex-col' : block.data?.colType === '3단' ? 'aspect-[196/89]' : 'aspect-[129/89]'}`}>
+            <div className="absolute bottom-[12%] left-[80px] right-0 flex items-center gap-4 z-30 overflow-hidden pr-8 h-[185px]">
+              <div className={`relative rounded-xl overflow-hidden shadow-[0_10px_30px_rgba(0,0,0,0.8)] border-[3px] border-[#7387FF] flex bg-[#1a1c26] shrink-0 h-full ${block.data?.colType === '1단' ? 'aspect-[62/89] flex-col' : block.data?.colType === '3단' ? 'aspect-[196/89]' : 'aspect-[129/89]'}`}>
                 {block.data?.colType === '1단' ? (
                   <>
                     {block.data?.bannerCopy && <div className="w-full h-[45%] p-5 pb-2 text-left z-20 flex items-start bg-gradient-to-b from-[#1a1c26] to-transparent"><p className="text-white font-extrabold text-xl leading-[1.2] tracking-tighter whitespace-pre-wrap drop-shadow-md">{block.data.bannerCopy}</p></div>}
@@ -296,8 +296,7 @@
               </div>
               {/* 우측 세로형 콘텐츠 포스터 5개 렌더링 (2:3 비율) */}
               {[1,2,3,4,5].map(i => (
-                <div key={i} className="h-full aspect-[2/3] bg-[#1e2029]/80 rounded-md border border-white/10 shrink-0 shadow-lg flex items-center justify-center">
-                  <ImageIcon size={20} className="text-white/10" />
+                <div key={i} className="h-full aspect-[2/3] bg-[#222530] rounded-md border border-white/5 shadow-lg shrink-0">
                 </div>
               ))}
             </div>
