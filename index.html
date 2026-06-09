@@ -305,17 +305,15 @@
       }
       
       if (block.type === 'BIG_BANNER') {
-        // 가입하기형 여부를 판단하기 위한 변수 선언
         const isSubscription = block.data?.subType === '가입하기형';
         
         return (
-          // 🌟 [수정 1] 오른쪽 짤림 현상 해결: absolute inset-0 w-full h-full로 변경하여 모니터 프레임에 완벽 일치
-          // 💡 튜닝 팁: 빅배너를 더 아래로 내리고 싶다면 pt-14를 pt-16, pt-20 등으로 늘려주시면 됩니다!
-          <div className="absolute inset-0 w-full h-full bg-[#0a0a0f] overflow-hidden flex flex-col items-center justify-start pt-14 gap-5">
+          // 테두리 관련 스타일 최소화 및 16:9 TV 프레임 기준 꽉 차는 레이아웃
+          <div className="relative w-full aspect-[16/9] bg-[#0a0a0f] overflow-hidden shrink-0">
             
-            {/* 🌟 [수정 2] 가입하기형일 때는 rounded-none(직각), 기본형일 때는 rounded-[16px](둥글게) 처리 */}
-            <div className={`w-[90%] h-[220px] bg-[#0f111a] relative overflow-hidden shadow-2xl flex items-center shrink-0 ${isSubscription ? 'rounded-none' : 'rounded-[16px]'}`}>
-              {!isSubscription ? (
+            {/* 🌟 빅배너 카드 본체 (전체적으로 아래로 내리기 위해 top-[12%]~[15%] 절대 위치 적용) */}
+            <div className={`absolute left-[80px] top-[14%] w-[88%] h-[220px] bg-[#0f111a] overflow-hidden shadow-2xl border border-[#303340] flex items-center z-10 ${isSubscription ? 'rounded-none' : 'rounded-[16px]'}`}>
+              {block.data?.subType !== '가입하기형' ? (
                 <>
                   <div className="w-[37%] h-full flex flex-col justify-center items-start pl-12 pr-4 text-left z-10 shrink-0">
                     <h2 className="text-white font-black whitespace-pre-wrap leading-[1.1] text-[2.2rem] tracking-tight drop-shadow-xl">{block.data?.mainTitle || '메인 문구 입력'}</h2>
@@ -324,7 +322,7 @@
                   </div>
                   <div className="flex-1 h-full py-4 pr-5 flex items-center justify-end relative z-0">
                     <div className="w-full max-w-[600px] aspect-[24.5/8.3] rounded-xl overflow-hidden bg-[#1a1c26] relative shadow-inner">
-                      <div className="absolute inset-0 bg-no-repeat bg-cover bg-center" style={{ backgroundImage: checkIsUrl(block.data?.imageUrl) ? `url(${block.data.imageUrl})` : 'none' }}>
+                      <div className="absolute inset-0 bg-no-repeat bg-cover bg-center transition-all" style={{ backgroundImage: checkIsUrl(block.data?.imageUrl) ? `url(${block.data.imageUrl})` : 'none' }}>
                         {!checkIsUrl(block.data?.imageUrl) && !checkHasText(block.data?.imageUrl) && <div className="absolute inset-0 flex items-center justify-center"><ImageIcon size={64} className="text-white/10"/></div>}
                         <FallbackText text={block.data?.imageUrl} />
                       </div>
@@ -334,14 +332,12 @@
               ) : (
                 <>
                   <div className="absolute inset-0 z-0">
-                    <div className="absolute right-0 top-0 w-[70%] h-full bg-no-repeat bg-cover bg-right-top" style={{ backgroundImage: checkIsUrl(block.data?.imageUrl) ? `url(${block.data.imageUrl})` : 'none' }}>
+                    <div className="absolute right-0 top-0 w-[70%] h-full bg-no-repeat bg-cover bg-right-top transition-all duration-500" style={{ backgroundImage: checkIsUrl(block.data?.imageUrl) ? `url(${block.data.imageUrl})` : 'none' }}>
                       {!checkIsUrl(block.data?.imageUrl) && !checkHasText(block.data?.imageUrl) && <div className="absolute inset-0 bg-gradient-to-br from-indigo-900/30 to-[#0a0a0f] flex items-center justify-end pr-32"><ImageIcon size={64} className="text-white/10"/></div>}
                       <FallbackText text={block.data?.imageUrl} alignClass="justify-end items-center pr-32" />
                     </div>
-                    {/* 좌측 그라데이션 마스크 */}
                     <div className="absolute inset-0 bg-gradient-to-r from-[#0f111a] from-[35%] via-[#0f111a]/60 via-[50%] to-transparent to-[65%] pointer-events-none"></div>
-                    
-                    {/* 🌟 [수정 3] 가입하기형 이미지 하단 블러(그라데이션 마스크) 처리 레이어 추가 */}
+                    {/* 가입하기형 이미지 하단 블러 처리 로직 */}
                     <div className="absolute inset-0 bg-gradient-to-t from-[#0f111a] via-transparent to-transparent h-[35%] top-auto bottom-0 pointer-events-none"></div>
                   </div>
                   <div className="relative z-10 flex flex-col justify-center h-full px-12 max-w-[60%]">
@@ -355,14 +351,13 @@
               )}
             </div>
   
-            {/* 하단 콘텐츠 블록 (포스터 7개) */}
-            <div className="w-[90%] flex gap-3 justify-between items-center h-[185px] overflow-hidden">
+            {/* 🌟 신설된 하단 콘텐츠 블록 영역 (일반배너와 동일한 높이/위치, 포스터 7개 오버플로우 컷) */}
+            <div className="absolute bottom-[12%] left-[80px] right-0 flex items-center gap-4 z-30 overflow-hidden pr-8 h-[185px]">
               {[1,2,3,4,5,6,7].map(i => (
-                <div key={i} className="h-full aspect-[2/3] bg-[#222530] rounded-md border border-white/5 shadow-xl shrink-0">
+                <div key={i} className="h-full aspect-[2/3] bg-[#222530] rounded-md border border-white/5 shadow-lg shrink-0">
                 </div>
               ))}
             </div>
-  
           </div>
         );
       }
