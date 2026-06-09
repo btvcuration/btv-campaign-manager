@@ -306,46 +306,58 @@
       
       if (block.type === 'BIG_BANNER') {
         return (
-          // 테두리 관련 스타일 최소화
-          <div className="w-full max-w-[1000px] h-[250px] bg-[#0f111a] rounded-[16px] relative overflow-hidden shadow-2xl flex items-center shrink-0">
-            {block.data?.subType !== '가입하기형' ? (
-              <>
-                <div className="w-[37%] h-full flex flex-col justify-center items-start pl-12 pr-4 text-left z-10 shrink-0">
-                  <h2 className="text-white font-black whitespace-pre-wrap leading-[1.1] text-[2.2rem] tracking-tight drop-shadow-xl">{block.data?.mainTitle || '메인 문구 입력'}</h2>
-                  <div className="mt-2.5 flex flex-col gap-1.5"><p className="text-[#ff5e3a] font-bold text-base tracking-tight">{block.data?.subTitle || '서브 타이틀 입력'}</p><p className="text-slate-300 font-medium text-[13px] tracking-tight whitespace-pre-wrap">{block.data?.desc || '상세 설명글을 입력해주세요.'}</p></div>
-                  <div className="inline-flex items-center justify-center bg-[#4f3df6] text-white px-5 py-1.5 rounded-full font-bold text-xs shadow-lg mt-5">바로가기</div>
-                </div>
-                <div className="flex-1 h-full py-4 pr-5 flex items-center justify-end relative z-0">
-                  <div className="w-full max-w-[600px] aspect-[24.5/8.3] rounded-xl overflow-hidden bg-[#1a1c26] relative shadow-inner">
-                    <div className="absolute inset-0 bg-no-repeat bg-cover bg-center" style={{ backgroundImage: checkIsUrl(block.data?.imageUrl) ? `url(${block.data.imageUrl})` : 'none' }}>
-                      {!checkIsUrl(block.data?.imageUrl) && !checkHasText(block.data?.imageUrl) && <div className="absolute inset-0 flex items-center justify-center"><ImageIcon size={64} className="text-white/10"/></div>}
-                      <FallbackText text={block.data?.imageUrl} />
+          // 🌟 1. 전체 16:9 가상 TV 화면 프레임을 구성하여 하단 블록 공간 확보 (justify-start와 pt-16 적용)
+          <div className="relative w-full aspect-[16/9] bg-[#0a0a0f] overflow-hidden shrink-0 flex flex-col items-center justify-start pt-14 gap-5">
+            
+            {/* 🌟 2. 빅배너 카드 본체 (16:9 화면 비율에 맞추기 위해 높이를 h-[210px]로 최적화) */}
+            <div className="w-[90%] h-[210px] bg-[#0f111a] rounded-[16px] relative overflow-hidden shadow-2xl flex items-center shrink-0">
+              {block.data?.subType !== '가입하기형' ? (
+                <>
+                  <div className="w-[37%] h-full flex flex-col justify-center items-start pl-12 pr-4 text-left z-10 shrink-0">
+                    <h2 className="text-white font-black whitespace-pre-wrap leading-[1.1] text-[2.2rem] tracking-tight drop-shadow-xl">{block.data?.mainTitle || '메인 문구 입력'}</h2>
+                    <div className="mt-2.5 flex flex-col gap-1.5"><p className="text-[#ff5e3a] font-bold text-base tracking-tight">{block.data?.subTitle || '서브 타이틀 입력'}</p><p className="text-slate-300 font-medium text-[13px] tracking-tight whitespace-pre-wrap">{block.data?.desc || '상세 설명글을 입력해주세요.'}</p></div>
+                    <div className="inline-flex items-center justify-center bg-[#4f3df6] text-white px-5 py-1.5 rounded-full font-bold text-xs shadow-lg mt-5">바로가기</div>
+                  </div>
+                  <div className="flex-1 h-full py-4 pr-5 flex items-center justify-end relative z-0">
+                    <div className="w-full max-w-[600px] aspect-[24.5/8.3] rounded-xl overflow-hidden bg-[#1a1c26] relative shadow-inner">
+                      <div className="absolute inset-0 bg-no-repeat bg-cover bg-center" style={{ backgroundImage: checkIsUrl(block.data?.imageUrl) ? `url(${block.data.imageUrl})` : 'none' }}>
+                        {!checkIsUrl(block.data?.imageUrl) && !checkHasText(block.data?.imageUrl) && <div className="absolute inset-0 flex items-center justify-center"><ImageIcon size={64} className="text-white/10"/></div>}
+                        <FallbackText text={block.data?.imageUrl} />
+                      </div>
                     </div>
                   </div>
-                </div>
-              </>
-            ) : (
-              <>
-                <div className="absolute inset-0 z-0">
-                  <div className="absolute right-0 top-0 w-[70%] h-full bg-no-repeat bg-cover bg-right-top" style={{ backgroundImage: checkIsUrl(block.data?.imageUrl) ? `url(${block.data.imageUrl})` : 'none' }}>
-                    {!checkIsUrl(block.data?.imageUrl) && !checkHasText(block.data?.imageUrl) && <div className="absolute inset-0 bg-gradient-to-br from-indigo-900/30 to-[#0a0a0f] flex items-center justify-end pr-32"><ImageIcon size={64} className="text-white/10"/></div>}
-                    <FallbackText text={block.data?.imageUrl} alignClass="justify-end items-center pr-32" />
+                </>
+              ) : (
+                <>
+                  <div className="absolute inset-0 z-0">
+                    <div className="absolute right-0 top-0 w-[70%] h-full bg-no-repeat bg-cover bg-right-top" style={{ backgroundImage: checkIsUrl(block.data?.imageUrl) ? `url(${block.data.imageUrl})` : 'none' }}>
+                      {!checkIsUrl(block.data?.imageUrl) && !checkHasText(block.data?.imageUrl) && <div className="absolute inset-0 bg-gradient-to-br from-indigo-900/30 to-[#0a0a0f] flex items-center justify-end pr-32"><ImageIcon size={64} className="text-white/10"/></div>}
+                      <FallbackText text={block.data?.imageUrl} alignClass="justify-end items-center pr-32" />
+                    </div>
+                    <div className="absolute inset-0 bg-gradient-to-r from-[#0f111a] from-[35%] via-[#0f111a]/60 via-[50%] to-transparent to-[65%] pointer-events-none"></div>
                   </div>
-                  <div className="absolute inset-0 bg-gradient-to-r from-[#0f111a] from-[35%] via-[#0f111a]/60 via-[50%] to-transparent to-[65%] pointer-events-none"></div>
+                  <div className="relative z-10 flex flex-col justify-center h-full px-12 max-w-[60%]">
+                    {checkIsUrl(block.data?.logoImg) ? <img src={block.data.logoImg} alt="logo" className="h-8 mb-3 object-contain object-left drop-shadow-lg" /> : <div className="text-white/50 text-[10px] mb-3 font-bold border border-white/20 px-2 py-1 rounded inline-block w-max bg-black/30">월정액 로고</div>}
+                    <h2 className="text-white text-[2.1rem] font-black mb-1.5 drop-shadow-md tracking-tight leading-tight">{block.data?.mainTitle || '메인 타이틀을 입력하세요'}</h2>
+                    {block.data?.subTitle && <p className="text-red-500 font-bold text-base mb-1 drop-shadow-sm">{block.data.subTitle}</p>}
+                    <p className="text-slate-300 text-[14px] font-medium leading-snug whitespace-pre-wrap mb-6 drop-shadow-md">{block.data?.desc || '상세 설명글을 입력해주세요.'}</p>
+                    <div className="bg-[#4f3df6] text-white px-6 py-2 rounded-full font-bold text-sm shadow-lg shadow-[#4f3df6]/20 w-max flex items-center justify-center">10,000원/월 가입하기</div>
+                  </div>
+                </>
+              )}
+            </div>
+  
+            {/* 🌟 3. 신설된 하단 콘텐츠 블록 (일반 배너 스타일의 매트한 포스터 7개 배치, 2:3 비율) */}
+            <div className="w-[90%] flex gap-3 justify-between items-center h-[170px] overflow-hidden">
+              {[1,2,3,4,5,6,7].map(i => (
+                <div key={i} className="h-full aspect-[2/3] bg-[#222530] rounded-md border border-white/5 shadow-xl shrink-0">
                 </div>
-                <div className="relative z-10 flex flex-col justify-center h-full px-12 max-w-[60%]">
-                  {checkIsUrl(block.data?.logoImg) ? <img src={block.data.logoImg} alt="logo" className="h-8 mb-3 object-contain object-left drop-shadow-lg" /> : <div className="text-white/50 text-[10px] mb-3 font-bold border border-white/20 px-2 py-1 rounded inline-block w-max bg-black/30">월정액 로고</div>}
-                  <h2 className="text-white text-[2.1rem] font-black mb-1.5 drop-shadow-md tracking-tight leading-tight">{block.data?.mainTitle || '메인 타이틀을 입력하세요'}</h2>
-                  {block.data?.subTitle && <p className="text-red-500 font-bold text-base mb-1 drop-shadow-sm">{block.data.subTitle}</p>}
-                  <p className="text-slate-300 text-[14px] font-medium leading-snug whitespace-pre-wrap mb-6 drop-shadow-md">{block.data?.desc || '상세 설명글을 입력해주세요.'}</p>
-                  <div className="bg-[#4f3df6] text-white px-6 py-2 rounded-full font-bold text-sm shadow-lg shadow-[#4f3df6]/20 w-max flex items-center justify-center">10,000원/월 가입하기</div>
-                </div>
-              </>
-            )}
+              ))}
+            </div>
+  
           </div>
         );
       }
-
       if (block.type === 'STRIP_BANNER') {
         return (
           <div className="w-full max-w-[900px] aspect-[397/65.5] bg-[#1a1c26] rounded-[16px] relative overflow-hidden shadow-2xl flex items-center shrink-0">
