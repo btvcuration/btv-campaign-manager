@@ -370,7 +370,7 @@
             {/* 🌟 2. 띠배너 카드 본체: 빅배너와 동일한 규격 포맷 (left-[30px], top-[14%], w-[94%]) + 일반 배너 테두리 컬러 지정 */}
             <div className="absolute left-[80px] top-[18%] w-[85%] h-[140px] bg-[#1a1c26] rounded-[16px] overflow-hidden shadow-2xl border-[3px] border-[#7387FF] flex items-center z-10">
               {/* 우측 이미지 영역 */}
-              <div className="absolute right-0 top-0 bottom-0 w-[60%] bg-cover bg-right bg-no-repeat z-0" style={{ backgroundImage: checkIsUrl(block.data?.imageUrl) ? `url(${block.data.imageUrl})` : 'none' }}>
+              <div className="absolute right-0 top-0 bottom-0 w-[40%] bg-cover bg-right bg-no-repeat z-0" style={{ backgroundImage: checkIsUrl(block.data?.imageUrl) ? `url(${block.data.imageUrl})` : 'none' }}>
                 {!checkIsUrl(block.data?.imageUrl) && !checkHasText(block.data?.imageUrl) && (
                   <div className="absolute inset-0 flex items-center justify-end pr-10 bg-[#12141c]">
                     <ImageIcon size={32} className="text-white/10"/>
