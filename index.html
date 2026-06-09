@@ -364,12 +364,11 @@
       
       if (block.type === 'STRIP_BANNER') {
         return (
-          // 🌟 1. 빅배너와 동일한 Flex 구조 적용 (상단 띠배너 + 하단 블록)
-          // 💡 튜닝: 전체적으로 위에서부터 얼마나 띄울지 pt-14 수치를 조절하세요.
-          <div className="relative w-full aspect-[16/9] bg-[#0a0a0f] overflow-hidden shrink-0 flex flex-col items-center justify-start pt-14 gap-5">
+          // 🌟 1. 전체 가상 TV 화면 프레임을 relative로 잡아서 내부 요소를 각각 독립적으로 배치
+          <div className="relative w-full aspect-[16/9] bg-[#0a0a0f] overflow-hidden shrink-0">
             
-            {/* 🌟 2. 띠배너 카드 본체 */}
-            <div className="w-[90%] h-[120px] bg-[#1a1c26] rounded-[16px] relative overflow-hidden shadow-2xl border-[3px] border-[#7387FF] flex items-center shrink-0 z-10">
+            {/* 🌟 2. 띠배너 카드 본체: 빅배너와 동일한 규격 포맷 (left-[30px], top-[14%], w-[94%]) + 일반 배너 테두리 컬러 지정 */}
+            <div className="absolute left-[30px] top-[14%] w-[94%] h-[120px] bg-[#1a1c26] rounded-[16px] overflow-hidden shadow-2xl border-[3px] border-[#7387FF] flex items-center z-10">
               {/* 우측 이미지 영역 */}
               <div className="absolute right-0 top-0 bottom-0 w-[60%] bg-contain bg-right bg-no-repeat z-0" style={{ backgroundImage: checkIsUrl(block.data?.imageUrl) ? `url(${block.data.imageUrl})` : 'none' }}>
                 {!checkIsUrl(block.data?.imageUrl) && !checkHasText(block.data?.imageUrl) && (
@@ -392,13 +391,14 @@
               </div>
             </div>
 
-            {/* 🌟 3. 하단 콘텐츠 블록 (일반 배너와 동일한 높이/스타일의 포스터 7개) */}
-            <div className="w-[90%] flex gap-3 justify-between items-center h-[185px] overflow-hidden">
+            {/* 🌟 3. 하단 콘텐츠 블록: 일반 배너 코드를 그대로 이식하여 위치 고정 및 7번째 포스터 우측 화면 잘림 현상 완벽 재현 */}
+            <div className="absolute bottom-[12%] left-[80px] right-0 flex items-center gap-4 z-30 overflow-hidden pr-8 h-[185px]">
               {[1,2,3,4,5,6,7].map(i => (
-                <div key={i} className="h-full aspect-[2/3] bg-[#222530] rounded-md border border-white/5 shadow-xl shrink-0">
+                <div key={i} className="h-full aspect-[2/3] bg-[#222530] rounded-md border border-white/5 shadow-lg shrink-0">
                 </div>
               ))}
             </div>
+
           </div>
         );
       }
