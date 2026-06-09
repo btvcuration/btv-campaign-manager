@@ -192,17 +192,17 @@
             <div className="absolute inset-0 bg-[#0a0a0f]"></div>
             
             {/* 🌟 1. 우측 이미지 크기 유지 & 우측 상단 정렬(bg-right-top) 복구 */}
-            <div className="absolute right-[0%] top-[0%] w-[53.75%] h-[65.9%] bg-no-repeat bg-cover bg-right-top z-0" style={{ backgroundImage: checkIsUrl(block.data?.imageUrl) ? `url(${block.data.imageUrl})` : 'none' }}>
+            <div className="absolute right-[0%] top-[0%] w-[70%] h-[70%] bg-no-repeat bg-cover bg-right-top z-0" style={{ backgroundImage: checkIsUrl(block.data?.imageUrl) ? `url(${block.data.imageUrl})` : 'none' }}>
               {!checkIsUrl(block.data?.imageUrl) && !checkHasText(block.data?.imageUrl) && <div className="absolute inset-0 bg-gradient-to-bl from-[#1e1b4b] to-[#0a0a0f] opacity-50"></div>}
               <FallbackText text={block.data?.imageUrl} alignClass="justify-end items-start pt-10 pr-10" />
               
               {/* 🌟 2. 이미지가 배경에 부드럽게 녹아들도록 경계선 블러(그라데이션) 마스크 추가 */}
-              <div className="absolute inset-0 bg-gradient-to-r from-[#0a0a0f] via-transparent to-transparent w-[30%]"></div>
-              <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0f] via-transparent to-transparent h-[40%] top-auto bottom-0"></div>
+              <div className="absolute inset-0 bg-gradient-to-r from-[#0a0a0f] via-transparent to-transparent w-[35%]"></div>
+              <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0f] via-transparent to-transparent h-[35%] top-auto bottom-0"></div>
             </div>
             
             {/* 기존의 전역 블러 처리 로직도 유지하여 자연스러움 극대화 */}
-            <div className="absolute inset-0 w-[65%] bg-gradient-to-r from-[#0a0a0f] via-[#0a0a0f]/95 to-transparent z-10 pointer-events-none"></div>
+            <div className="absolute inset-0 w-[50%] bg-gradient-to-r from-[#0a0a0f] via-[#0a0a0f]/95 to-transparent z-10 pointer-events-none"></div>
             <div className="absolute inset-0 top-[40%] bg-gradient-to-t from-[#0a0a0f] via-[#0a0a0f]/90 to-transparent z-10 pointer-events-none"></div>
             
             <div className="absolute inset-0 z-20 flex flex-col pointer-events-none text-white px-10">
