@@ -364,28 +364,40 @@
       
       if (block.type === 'STRIP_BANNER') {
         return (
-          // 🌟 빅배너 상단에 위치하도록 absolute 설정 및 띠배너용 테두리 적용
-          <div className="absolute left-[30px] top-[4%] w-[94%] aspect-[397/65.5] bg-[#1a1c26] rounded-[16px] relative overflow-hidden shadow-2xl border-[3px] border-[#7387FF] flex items-center z-20 shrink-0">
+          // 🌟 1. 빅배너와 동일한 Flex 구조 적용 (상단 띠배너 + 하단 블록)
+          // 💡 튜닝: 전체적으로 위에서부터 얼마나 띄울지 pt-14 수치를 조절하세요.
+          <div className="relative w-full aspect-[16/9] bg-[#0a0a0f] overflow-hidden shrink-0 flex flex-col items-center justify-start pt-14 gap-5">
             
-            {/* 우측 이미지 영역 */}
-            <div className="absolute right-0 top-0 bottom-0 w-[60%] bg-contain bg-right bg-no-repeat z-0" style={{ backgroundImage: checkIsUrl(block.data?.imageUrl) ? `url(${block.data.imageUrl})` : 'none' }}>
-              {!checkIsUrl(block.data?.imageUrl) && !checkHasText(block.data?.imageUrl) && (
-                <div className="absolute inset-0 flex items-center justify-end pr-10 bg-[#12141c]">
-                  <ImageIcon size={32} className="text-white/10"/>
-                </div>
-              )}
-              <FallbackText text={block.data?.imageUrl} alignClass="justify-end items-center pr-10" />
-              <div className="absolute inset-0 bg-gradient-to-r from-[#1a1c26] via-[#1a1c26]/85 to-transparent"></div>
+            {/* 🌟 2. 띠배너 카드 본체 */}
+            <div className="w-[90%] h-[120px] bg-[#1a1c26] rounded-[16px] relative overflow-hidden shadow-2xl border-[3px] border-[#7387FF] flex items-center shrink-0 z-10">
+              {/* 우측 이미지 영역 */}
+              <div className="absolute right-0 top-0 bottom-0 w-[60%] bg-contain bg-right bg-no-repeat z-0" style={{ backgroundImage: checkIsUrl(block.data?.imageUrl) ? `url(${block.data.imageUrl})` : 'none' }}>
+                {!checkIsUrl(block.data?.imageUrl) && !checkHasText(block.data?.imageUrl) && (
+                  <div className="absolute inset-0 flex items-center justify-end pr-10 bg-[#12141c]">
+                    <ImageIcon size={32} className="text-white/10"/>
+                  </div>
+                )}
+                <FallbackText text={block.data?.imageUrl} alignClass="justify-end items-center pr-10" />
+                <div className="absolute inset-0 bg-gradient-to-r from-[#1a1c26] via-[#1a1c26]/85 to-transparent"></div>
+              </div>
+
+              {/* 좌측 텍스트 영역 */}
+              <div className="w-[60%] flex flex-col justify-center pl-10 pr-4 z-10 relative">
+                <h2 className="text-white font-extrabold text-[1.6rem] tracking-tight mb-1 truncate drop-shadow-md">
+                  {block.data?.mainTitle || '메인 문구 입력'}
+                </h2>
+                <p className="text-slate-400 font-medium text-sm truncate whitespace-nowrap overflow-hidden text-ellipsis">
+                  {block.data?.subTitle || '서브 문구 입력'}
+                </p>
+              </div>
             </div>
 
-            {/* 좌측 텍스트 영역 */}
-            <div className="w-[60%] flex flex-col justify-center pl-10 pr-4 z-10 relative">
-              <h2 className="text-white font-extrabold text-[1.6rem] tracking-tight mb-1 truncate drop-shadow-md">
-                {block.data?.mainTitle || '메인 문구 입력'}
-              </h2>
-              <p className="text-slate-400 font-medium text-sm truncate whitespace-nowrap overflow-hidden text-ellipsis">
-                {block.data?.subTitle || '서브 문구 입력'}
-              </p>
+            {/* 🌟 3. 하단 콘텐츠 블록 (일반 배너와 동일한 높이/스타일의 포스터 7개) */}
+            <div className="w-[90%] flex gap-3 justify-between items-center h-[185px] overflow-hidden">
+              {[1,2,3,4,5,6,7].map(i => (
+                <div key={i} className="h-full aspect-[2/3] bg-[#222530] rounded-md border border-white/5 shadow-xl shrink-0">
+                </div>
+              ))}
             </div>
           </div>
         );
