@@ -266,7 +266,7 @@
                 {!checkIsUrl(block.data?.previewImg) && !checkHasText(block.data?.previewImg) && <div className="absolute inset-0 bg-gradient-to-bl from-indigo-900/30 to-[#0a0a0f]"></div>}
                 <FallbackText text={block.data?.previewImg} alignClass="justify-end items-start pt-10 pr-10" />
               </div>
-              <div className="absolute inset-0 bg-gradient-to-r from-[#0a0a0f] from-[35%] via-[#0a0a0f]/95 via-[50%] to-transparent to-[75%] z-10 pointer-events-none"></div>
+              <div className="absolute inset-0 bg-gradient-to-r from-[#0a0a0f] from-[20%] via-[#0a0a0f]/95 via-[40%] to-transparent to-[60%] z-10 pointer-events-none"></div>
               <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0f] from-[35%] via-[#0a0a0f]/95 via-[50%] to-transparent to-[75%] z-10 pointer-events-none"></div>
               <div className="absolute left-[80px] top-[12%] w-[35%] z-20 flex flex-col gap-2">
                 <h1 className="text-white text-[2.2rem] font-black leading-[1.15] whitespace-nowrap overflow-hidden text-ellipsis tracking-tighter drop-shadow-xl">{block.data?.previewTitle || '프리뷰 좌상단 텍스트 (1줄)'}</h1>
@@ -274,7 +274,7 @@
               </div>
             </div>
             {/* 세로형 콘텐츠 포스터 5개가 노출되도록 우측 영역 개편 */}
-            <div className="absolute bottom-[8%] left-[80px] right-0 flex items-center gap-4 z-30 overflow-hidden pr-8 h-[220px]">
+            <div className="absolute bottom-[8%] left-[80px] right-0 flex items-center gap-4 z-30 overflow-hidden pr-8 h-[200px]">
               <div className={`relative rounded-xl overflow-hidden shadow-[0_10px_30px_rgba(0,0,0,0.8)] border-[3px] border-white ring-[4px] ring-[#4f3df6]/50 flex bg-[#1a1c26] shrink-0 h-full ${block.data?.colType === '1단' ? 'aspect-[62/89] flex-col' : block.data?.colType === '3단' ? 'aspect-[196/89]' : 'aspect-[129/89]'}`}>
                 {block.data?.colType === '1단' ? (
                   <>
