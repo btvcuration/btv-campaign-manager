@@ -408,11 +408,11 @@
           // 16:9 가상 TV 프레임 내부 고정
           <div className="relative w-full aspect-[16/9] bg-[#0a0a0f] overflow-hidden shrink-0">
             
-            {/* 🌟 [수정 1] 전체 정렬 및 위치 통합 컨테이너 */}
-            {/* 💡 가로 위치(left-[50px]) 및 그룹 전체 위치(bottom-[12%])를 여기서 조절하세요. */}
-            <div className="absolute bottom-[12%] left-[50px] flex flex-col items-start gap-5 z-20">
+            {/* 🌟 [수정 1] 전체 그룹 위치를 좀 더 화면 가운데(위/오른쪽)로 이동 */}
+            {/* 기존 bottom-[12%] left-[50px] -> bottom-[20%] left-[100px] 로 수정하여 중앙으로 띄움 */}
+            <div className="absolute bottom-[20%] left-[100px] flex flex-col items-start gap-5 z-20">
               
-              {/* 🌟 [수정 2] 타이틀 및 줄거리 영역: 버튼 그룹 바로 위쪽에 좌측 정렬로 배치 */}
+              {/* 타이틀 및 줄거리 영역 */}
               <div className="space-y-1.5 flex flex-col items-start">
                 <div className="text-white text-[2.2rem] font-black tracking-tight leading-tight truncate">
                   콘텐츠 타이틀
@@ -422,46 +422,43 @@
                 </div>
               </div>
 
-              {/* 🌟 [수정 3] 하단 버튼 및 배너 묶음 영역: h-[80px] 유지 */}
+              {/* 하단 버튼 및 배너 묶음 영역: h-[80px] 유지 */}
               <div className="flex flex-row items-center gap-3 h-[80px]">
                 
-                {/* 구매하기 버튼 (h-full 적용) */}
+                {/* 구매하기 버튼 */}
                 <div className="h-full px-10 bg-[#222530] text-white rounded-xl font-bold text-lg shadow-xl flex items-center justify-center select-none shrink-0">
                   구매하기
                 </div>
                 
-                {/* 예고편 보기 버튼 (h-full 적용) */}
+                {/* 예고편 보기 버튼 */}
                 <div className="h-full px-10 bg-[#222530] text-slate-300 border border-white/5 rounded-xl font-bold text-lg flex items-center justify-center select-none shrink-0">
                   예고편 보기
                 </div>
 
-                {/* 시놉시스 배너 본체 (w-[350px]로 너비 축소) */}
-                {/* 💡 [배너 크기 조정 가이드]: 여기서 배너 자체의 크기를 조절합니다. */}
-                {/* - 너비 조정: w-[350px] (기본 460px에서 축소) */}
-                {/* - 높이 조정: 이 부모 div의 h-full에 따라 h-[80px]로 고정됩니다. */}
-                <div className="h-full w-[350px] bg-gradient-to-r from-[#1a1a1a] to-[#2a2a2a] rounded-xl relative overflow-hidden shadow-[0_10px_40px_rgba(0,0,0,0.5)] border-[3px] border-[#7387FF] flex items-center justify-between px-6 shrink-0 z-10">
-                  <div className="absolute -bottom-10 -right-10 w-[120px] h-[120px] bg-[#7387FF]/10 blur-2xl rounded-full pointer-events-none"></div>
+                {/* 🌟 [수정 2] 시놉시스 배너 너비 대폭 축소 (w-[350px] -> w-[280px]) */}
+                <div className="h-full w-[280px] bg-gradient-to-r from-[#1a1a1a] to-[#2a2a2a] rounded-xl relative overflow-hidden shadow-[0_10px_40px_rgba(0,0,0,0.5)] border-[3px] border-[#7387FF] flex items-center justify-between px-5 shrink-0 z-10">
+                  <div className="absolute -bottom-10 -right-10 w-[100px] h-[100px] bg-[#7387FF]/10 blur-2xl rounded-full pointer-events-none"></div>
                   
                   {/* 문구 데이터 출력부 */}
                   <div className="flex flex-col justify-center z-10 pr-2">
-                    <h2 className="text-white font-extrabold text-xl tracking-tight whitespace-pre-wrap leading-tight drop-shadow-md">
+                    <h2 className="text-white font-extrabold text-lg tracking-tight whitespace-pre-wrap leading-tight drop-shadow-md">
                       {block.data?.mainTitle || '메인 문구 입력'}
                     </h2>
                     {block.data?.subTitle && (
-                      <p className="text-slate-300 font-bold text-xs mt-1.5 tracking-tight">
+                      <p className="text-slate-300 font-bold text-[11px] mt-1 tracking-tight">
                         {block.data.subTitle}
                       </p>
                     )}
                   </div>
                   
-                  {/* 우측 뱃지 스팟 */}
+                  {/* 우측 뱃지 스팟 (너비 축소에 맞춰 크기 살짝 조정) */}
                   <div className="z-10 shrink-0 ml-auto relative">
                     {checkIsUrl(block.data?.imageUrl) ? (
-                      <img src={block.data.imageUrl} alt="badge" className="w-[60px] h-[60px] object-contain drop-shadow-lg" />
+                      <img src={block.data.imageUrl} alt="badge" className="w-[50px] h-[50px] object-contain drop-shadow-lg" />
                     ) : (
-                      <div className="bg-gradient-to-br from-[#ffffff] to-[#e0e0e0] rounded-lg flex items-center justify-center text-center px-3 py-2 shadow-[0_4px_10px_rgba(0,0,0,0.3)] border border-white/50 min-w-[75px] min-h-[50px]">
-                        <span className="text-[#111] font-black text-[11px] whitespace-pre-wrap leading-snug">
-                          {block.data?.badgeText || '뱃지 텍스트'}
+                      <div className="bg-gradient-to-br from-[#ffffff] to-[#e0e0e0] rounded-lg flex items-center justify-center text-center px-2 py-1.5 shadow-[0_4px_10px_rgba(0,0,0,0.3)] border border-white/50 min-w-[60px] min-h-[40px]">
+                        <span className="text-[#111] font-black text-[10px] whitespace-pre-wrap leading-snug">
+                          {block.data?.badgeText || '뱃지'}
                         </span>
                       </div>
                     )}
