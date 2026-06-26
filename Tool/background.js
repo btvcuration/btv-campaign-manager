@@ -57,7 +57,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     sendResponse({ status: "processing" });
   } 
   
-  // 2. 🌟 화면 네이티브 캡처 트리거 (에러 핸들링 보강)
+  // 2. 화면 네이티브 캡처 트리거
   else if (message.action === "TAKE_SCREENSHOT") {
     chrome.tabs.captureVisibleTab(null, { format: "png" }, (dataUrl) => {
       if (chrome.runtime.lastError) {
@@ -72,7 +72,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
   // 3. Gemini 탭에서 받은 AI JSON 데이터를 캠페인 매니저 탭으로 중계
   else if (message.action === "TRANSFER_DATA_TO_CAMPAIGN_TOOL") {
-    chrome.tabs.query({ url: "*://btvcuration.github.io/*" }, (tabs) => {
+    // 🌟 [수정] 캠페인 페이지(/campaign/)만 명확히 찾도록 URL 필터 구체화
+    chrome.tabs.query({ url: "*://btvcuration.github.io/campaign/*" }, (tabs) => {
       if (tabs.length > 0) {
         const targetTabId = tabs[0].id;
         chrome.tabs.update(targetTabId, { active: true });
@@ -107,7 +108,6 @@ async function createJiraHierarchy(data, sourceTabId) {
   const projectKey = "BTVMKT"; 
   const targetUserId = data.parent.assignee;
 
-  // 🌟 일감 유형 (기존에 성공했던 명칭 유지)
   const PARENT_ISSUE_TYPE = "Task";    
   const CHILD_ISSUE_TYPE = "Sub-Task"; 
 
@@ -145,9 +145,7 @@ async function createJiraHierarchy(data, sourceTabId) {
 
     await sleep(1000); 
 
-    // =========================================================================
-    // 🌟 [복구된 핵심 로직] 부모 일감에 종합 표 및 유저 플로우(Mermaid) 첨부
-    // =========================================================================
+    // 부모 일감에 종합 표 및 유저 플로우(Mermaid) 첨부
     if (data.parent.images && data.parent.images.length > 0) {
       console.log(`📸 부모 일감(${parentKey}) 이미지 첨부 시작 (${data.parent.images.length}장)`);
       for (const imgObj of data.parent.images) {
@@ -167,7 +165,6 @@ async function createJiraHierarchy(data, sourceTabId) {
         }
       }
     }
-    // =========================================================================
 
     // 2️⃣ 하위 일감 일괄(Bulk) 생성
     console.log("🚀 하위 일감 일괄 생성 요청 중...");
