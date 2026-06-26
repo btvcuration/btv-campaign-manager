@@ -42,7 +42,7 @@
       Tv, LayoutTemplate, Send, ChevronRight, ChevronDown, ChevronUp, Copy, CheckCircle, 
       Search, Mic, Menu, Home, Grid, Settings, Calendar, GitMerge, Plus, PlusCircle, Trash2, 
       Image as ImageIcon, ListTodo, Smartphone, LayoutPanelLeft, MonitorPlay, Sparkles, Bot, 
-      X, User, ExternalLink, Monitor, Layout, Type, RectangleHorizontal, FileText, CalendarDays, MessageSquare, Loader2, Lock, Users
+      X, User, ExternalLink, Monitor, Layout, Type, RectangleHorizontal, FileText, CalendarDays, MessageSquare, Loader2, Lock, Users, Download
     } from 'lucide-react';
 
     const GNB_OPTIONS = ['홈', 'Btv+', '영화시리즈', 'TV 방송', '무료', '애니메이션', '해피시니어', '키즈', 'OTT홈', '실시간 채널', '광고 홈', '콘텐츠', '기타'];
@@ -87,7 +87,6 @@
     const DEFAULT_SYNOPSIS_BANNER = { mainTitle: '2,000명 추첨 증정', subTitle: '~7.20 | 다음날 발급', imageUrl: '', badgeText: '영화 쿠폰\n3,300원', landingValue: 'UI_PATH: /join', gnb: '콘텐츠', note: '', memos: [], startDate: '', dueDate: '' };
     const DEFAULT_PROMO_POPUP = { imageUrl: '', buttonText: '바로가기', closeText: '닫기', landingValue: 'UI_PATH: /join', gnb: '홈', note: '', memos: [], startDate: '', dueDate: '' };
 
-    // 🌟 [추가] 드래그 가능한 메모 컴포넌트
     const DraggableMemo = ({ memo, updateMemo, removeMemo }) => {
       const [pos, setPos] = useState({ x: memo.x || 50, y: memo.y || 50 });
       const isDragging = useRef(false);
@@ -169,7 +168,6 @@
       );
     };
 
-    // 🌟 [개선된 버젼] 미리보기 영역을 별도 컴포넌트로 분리
     const PreviewDisplay = ({ block }) => {
       if (!block) return null;
       const checkIsUrl = (str) => Boolean(str && typeof str === 'string' && str.startsWith('http'));
@@ -187,27 +185,22 @@
 
       if (block.type === 'TODAY_BTV') {
         return (
-          // 테두리 및 라운드 제거 (공통 수정)
           <div className="relative w-full aspect-[16/9] bg-[#0a0a0f] overflow-hidden shrink-0">
             <div className="absolute inset-0 bg-[#0a0a0f]"></div>
             
-            {/* 🌟 1. 우측 이미지 크기 유지 & 우측 상단 정렬(bg-right-top) 복구 */}
             <div className="absolute right-[0%] top-[0%] w-[70%] h-[70%] bg-no-repeat bg-cover bg-right-top z-0" style={{ backgroundImage: checkIsUrl(block.data?.imageUrl) ? `url(${block.data.imageUrl})` : 'none' }}>
               {!checkIsUrl(block.data?.imageUrl) && !checkHasText(block.data?.imageUrl) && <div className="absolute inset-0 bg-gradient-to-bl from-[#1e1b4b] to-[#0a0a0f] opacity-50"></div>}
               <FallbackText text={block.data?.imageUrl} alignClass="justify-end items-start pt-10 pr-10" />
               
-              {/* 🌟 2. 이미지가 배경에 부드럽게 녹아들도록 경계선 블러(그라데이션) 마스크 추가 */}
               <div className="absolute inset-0 bg-gradient-to-r from-[#0a0a0f] via-transparent to-transparent w-[35%]"></div>
               <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0f] via-transparent to-transparent h-[35%] top-auto bottom-0"></div>
             </div>
             
-            {/* 기존의 전역 블러 처리 로직도 유지하여 자연스러움 극대화 */}
             <div className="absolute inset-0 w-[50%] bg-gradient-to-r from-[#0a0a0f] via-[#0a0a0f]/95 to-transparent z-10 pointer-events-none"></div>
             <div className="absolute inset-0 top-[40%] bg-gradient-to-t from-[#0a0a0f] via-[#0a0a0f]/90 to-transparent z-10 pointer-events-none"></div>
             
             <div className="absolute inset-0 z-20 flex flex-col pointer-events-none text-white px-10">
               
-              {/* 🌟 3. 상단 문구부터 버튼까지의 영역을 전체적으로 아래로 이동 (top-[48%] 적용) */}
               <div className="absolute left-[80px] top-[48%] -translate-y-1/2 w-[45%] pl-2">
                 <h3 className="text-[#32d782] text-sm font-bold mb-2 tracking-tight">{block.data?.topText || '상단 카피'}</h3>
                 <h1 className="text-white text-4xl font-black mb-3 leading-[1.15] whitespace-pre-wrap tracking-tighter drop-shadow-lg">{block.data?.mainTitle || '타이틀 입력'}</h1>
@@ -215,9 +208,7 @@
                 <div className="mt-5 inline-flex bg-[#4631e6] text-white px-6 py-2.5 rounded font-bold text-sm shadow-xl">자세히 보기</div>
               </div>
               
-              {/* 미니블록 6개 반 노출되도록 크기 및 갭 조정 (flex-nowrap으로 화면 밖으로 넘기기) */}
               <div className="absolute bottom-10 left-[80px] right-0 flex gap-3 overflow-hidden">
-                {/* JSX 내부에서의 올바른 주석 처리 */}
                 {[1,2,3,4,5,6,7].map(i => (
                   <div key={i} className="w-[14%] aspect-[14/9] bg-[#222530] rounded-md border border-white/5 shadow-lg shrink-0">
                   </div>
@@ -230,7 +221,6 @@
       
       if (block.type === 'FULL_PROMO_BANNER') {
         return (
-          // 테두리 및 라운드 제거 (공통 수정)
           <div className="relative w-full aspect-[16/9] bg-[#0a0a0f] overflow-hidden shrink-0">
             <div className="absolute inset-0 bg-cover bg-center bg-no-repeat z-0" style={{backgroundImage: checkIsUrl(block.data?.bgImg) ? `url(${block.data.bgImg})` : 'none'}}>
               {!checkIsUrl(block.data?.bgImg) && !checkHasText(block.data?.bgImg) && <div className="absolute inset-0 bg-gradient-to-br from-[#1e1b4b] to-[#0a0a0f]"></div>}
@@ -259,7 +249,6 @@
 
       if (block.type === 'GENERAL_BANNER') {
         return (
-          // 테두리 및 라운드 제거 (공통 수정)
           <div className="relative w-full aspect-[16/9] bg-[#0a0a0f] overflow-hidden shrink-0">
             <div className="absolute inset-0 h-full bg-[#0a0a0f] z-0 px-10">
               <div className="absolute right-0 top-0 w-[65%] h-[60%] bg-no-repeat bg-contain bg-right-top z-0" style={{backgroundImage: checkIsUrl(block.data?.previewImg) ? `url(${block.data.previewImg})` : 'none'}}>
@@ -273,7 +262,6 @@
                 <p className="text-slate-300 text-[16px] font-medium leading-[1.2] whitespace-pre-wrap mt-2">{block.data?.previewSub || '서브 설명글 영역\n2줄에서 3줄 정도 작성 요망'}</p>
               </div>
             </div>
-            {/* 세로형 콘텐츠 포스터 5개가 노출되도록 우측 영역 개편 */}
             <div className="absolute bottom-[12%] left-[80px] right-0 flex items-center gap-4 z-30 overflow-hidden pr-8 h-[185px]">
               <div className={`relative rounded-xl overflow-hidden shadow-[0_10px_30px_rgba(0,0,0,0.8)] border-[3px] border-[#7387FF] flex bg-[#1a1c26] shrink-0 h-full ${block.data?.colType === '1단' ? 'aspect-[62/89] flex-col' : block.data?.colType === '3단' ? 'aspect-[196/89]' : 'aspect-[129/89]'}`}>
                 {block.data?.colType === '1단' ? (
@@ -294,7 +282,6 @@
                   </>
                 )}
               </div>
-              {/* 우측 세로형 콘텐츠 포스터 5개 렌더링 (2:3 비율) */}
               {[1,2,3,4,5].map(i => (
                 <div key={i} className="h-full aspect-[2/3] bg-[#222530] rounded-md border border-white/5 shadow-lg shrink-0">
                 </div>
@@ -308,10 +295,8 @@
         const isSubscription = block.data?.subType === '가입하기형';
         
         return (
-          // 테두리 관련 스타일 최소화 및 16:9 TV 프레임 기준 꽉 차는 레이아웃
           <div className="relative w-full aspect-[16/9] bg-[#0a0a0f] overflow-hidden shrink-0">
             
-            {/* 🌟 빅배너 카드 본체 (전체적으로 아래로 내리기 위해 top-[12%]~[15%] 절대 위치 적용) */}
             <div className={`absolute left-[40px] top-[10%] w-[94%] h-[220px] bg-transparent overflow-hidden shadow-2xl flex items-center z-10 ${isSubscription ? 'rounded-none' : 'rounded-[16px]'}`}>
               {block.data?.subType !== '가입하기형' ? (
                 <>
@@ -337,7 +322,6 @@
                       <FallbackText text={block.data?.imageUrl} alignClass="justify-end items-center pr-32" />
                     </div>
                     <div className="absolute inset-0 bg-gradient-to-r from-[#0f111a] from-[35%] via-[#0f111a]/60 via-[50%] to-transparent to-[65%] pointer-events-none"></div>
-                    {/* 가입하기형 이미지 하단 블러 처리 로직 */}
                     <div className="absolute inset-0 bg-gradient-to-t from-[#0f111a] via-transparent to-transparent h-[35%] top-auto bottom-0 pointer-events-none"></div>
                   </div>
                   <div className="relative z-10 flex flex-col justify-center h-full px-12 max-w-[60%]">
@@ -351,7 +335,6 @@
               )}
             </div>
   
-            {/* 🌟 신설된 하단 콘텐츠 블록 영역 (일반배너와 동일한 높이/위치, 포스터 7개 오버플로우 컷) */}
             <div className="absolute bottom-[12%] left-[80px] right-0 flex items-center gap-4 z-30 overflow-hidden pr-8 h-[185px]">
               {[1,2,3,4,5,6,7].map(i => (
                 <div key={i} className="h-full aspect-[2/3] bg-[#222530] rounded-md border border-white/5 shadow-lg shrink-0">
@@ -364,12 +347,9 @@
       
       if (block.type === 'STRIP_BANNER') {
         return (
-          // 🌟 1. 전체 가상 TV 화면 프레임을 relative로 잡아서 내부 요소를 각각 독립적으로 배치
           <div className="relative w-full aspect-[16/9] bg-[#0a0a0f] overflow-hidden shrink-0">
             
-            {/* 🌟 2. 띠배너 카드 본체: 빅배너와 동일한 규격 포맷 (left-[30px], top-[14%], w-[94%]) + 일반 배너 테두리 컬러 지정 */}
             <div className="absolute left-[80px] top-[18%] w-[85%] h-[140px] bg-[#1a1c26] rounded-[16px] overflow-hidden shadow-2xl border-[3px] border-[#7387FF] flex items-center z-10">
-              {/* 우측 이미지 영역 */}
               <div className="absolute right-0 top-0 bottom-0 w-[40%] bg-cover bg-right bg-no-repeat z-0" style={{ backgroundImage: checkIsUrl(block.data?.imageUrl) ? `url(${block.data.imageUrl})` : 'none' }}>
                 {!checkIsUrl(block.data?.imageUrl) && !checkHasText(block.data?.imageUrl) && (
                   <div className="absolute inset-0 flex items-center justify-end pr-10 bg-[#12141c]">
@@ -380,7 +360,6 @@
                 <div className="absolute inset-0 bg-gradient-to-r from-[#1a1c26] via-[#1a1c26]/85 via-[30%] to-transparent"></div>
               </div>
 
-              {/* 좌측 텍스트 영역 */}
               <div className="w-[60%] flex flex-col justify-center pl-10 pr-4 z-10 relative">
                 <h2 className="text-white font-extrabold text-[1.6rem] tracking-tight mb-1 truncate drop-shadow-md">
                   {block.data?.mainTitle || '메인 문구 입력'}
@@ -391,7 +370,6 @@
               </div>
             </div>
 
-            {/* 🌟 3. 하단 콘텐츠 블록: 일반 배너 코드를 그대로 이식하여 위치 고정 및 7번째 포스터 우측 화면 잘림 현상 완벽 재현 */}
             <div className="absolute bottom-[12%] left-[80px] right-0 flex items-center gap-4 z-30 overflow-hidden pr-8 h-[185px]">
               {[1,2,3,4,5,6,7].map(i => (
                 <div key={i} className="h-full aspect-[2/3] bg-[#222530] rounded-md border border-white/5 shadow-lg shrink-0">
@@ -405,14 +383,10 @@
 
       if (block.type === 'SYNOPSIS_BANNER') {
         return (
-          // 16:9 가상 TV 프레임 내부 고정
           <div className="relative w-full aspect-[16/9] bg-[#0a0a0f] overflow-hidden shrink-0">
             
-            {/* 🌟 [수정 1] 전체 그룹 위치를 좀 더 화면 가운데(위/오른쪽)로 이동 */}
-            {/* 기존 bottom-[12%] left-[50px] -> bottom-[20%] left-[100px] 로 수정하여 중앙으로 띄움 */}
             <div className="absolute bottom-[20%] left-[100px] flex flex-col items-start gap-5 z-20">
               
-              {/* 타이틀 및 줄거리 영역 */}
               <div className="space-y-1.5 flex flex-col items-start">
                 <div className="text-white text-[2.2rem] font-black tracking-tight leading-tight truncate">
                   콘텐츠 타이틀
@@ -422,24 +396,19 @@
                 </div>
               </div>
 
-              {/* 하단 버튼 및 배너 묶음 영역: h-[80px] 유지 */}
               <div className="flex flex-row items-center gap-3 h-[80px]">
                 
-                {/* 구매하기 버튼 */}
                 <div className="h-full px-10 bg-[#222530] text-white rounded-xl font-bold text-lg shadow-xl flex items-center justify-center select-none shrink-0">
                   구매하기
                 </div>
                 
-                {/* 예고편 보기 버튼 */}
                 <div className="h-full px-10 bg-[#222530] text-slate-300 border border-white/5 rounded-xl font-bold text-lg flex items-center justify-center select-none shrink-0">
                   예고편 보기
                 </div>
 
-                {/* 🌟 [수정 2] 시놉시스 배너 너비 대폭 축소 (w-[350px] -> w-[280px]) */}
                 <div className="h-full w-[280px] bg-gradient-to-r from-[#1a1a1a] to-[#2a2a2a] rounded-xl relative overflow-hidden shadow-[0_10px_40px_rgba(0,0,0,0.5)] border-[3px] border-[#7387FF] flex items-center justify-between px-5 shrink-0 z-10">
                   <div className="absolute -bottom-10 -right-10 w-[100px] h-[100px] bg-[#7387FF]/10 blur-2xl rounded-full pointer-events-none"></div>
                   
-                  {/* 문구 데이터 출력부 */}
                   <div className="flex flex-col justify-center z-10 pr-2">
                     <h2 className="text-white font-extrabold text-lg tracking-tight whitespace-pre-wrap leading-tight drop-shadow-md">
                       {block.data?.mainTitle || '메인 문구 입력'}
@@ -451,7 +420,6 @@
                     )}
                   </div>
                   
-                  {/* 우측 뱃지 스팟 (너비 축소에 맞춰 크기 살짝 조정) */}
                   <div className="z-10 shrink-0 ml-auto relative">
                     {checkIsUrl(block.data?.imageUrl) ? (
                       <img src={block.data.imageUrl} alt="badge" className="w-[50px] h-[50px] object-contain drop-shadow-lg" />
@@ -473,10 +441,8 @@
 
       if (block.type === 'PROMO_POPUP') {
         return (
-          // 🌟 1. 16:9 가상 TV 화면 프레임을 바탕에 깔고, 내부 요소를 가로/세로 정중앙 배치 (flex items-center justify-center)
           <div className="relative w-full aspect-[16/9] bg-[#0a0a0f] overflow-hidden shrink-0 flex items-center justify-center">
             
-            {/* 팝업 카드 본체 (w-[760px]로 크기가 고정되어 정중앙에 예쁘게 안착함) */}
             <div className="bg-[#26272e] p-5 rounded-xl shadow-[0_20px_60px_rgba(0,0,0,0.8)] flex flex-col w-[680px] z-10">
               <div className="relative w-full aspect-[16/9] bg-[#0c0920] rounded-lg overflow-hidden mb-6 shadow-inner">
                 <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: checkIsUrl(block.data?.imageUrl) ? `url(${block.data.imageUrl})` : 'none' }}>
@@ -496,14 +462,11 @@
 
       if (block.type === 'MINI_EPG_BANNER') {
         return (
-          // 테두리 및 모서리 굴곡 축소 (rounded-lg)
           <div className="relative w-full aspect-[16/9] max-w-[1000px] bg-[#0c0d14] rounded-lg overflow-hidden shadow-2xl shrink-0 mt-4">
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0"><span className="text-white/[0.03] font-black text-[180px] tracking-[0.2em] select-none">LIVE</span></div>
             
-            {/* 🌟 [수정 1] EPG 영역 전체: 배경 투명화 및 테두리 제거 (h-[140px] 유지) */}
             <div className="absolute bottom-[8%] left-[5%] right-[5%] h-[140px] bg-transparent rounded-lg shadow-2xl flex items-center p-4 backdrop-blur-md z-10 gap-6">
               
-              {/* 🌟 [수정 2] 실제 배너 영역 (썸네일): 하얀색 테두리 제거 및 포인트 테두리(border-[2px] border-[#7387FF]) 적용 */}
               <div className="h-full aspect-[1.48/1] bg-[#0a0a0f] rounded-md relative overflow-hidden border-[2px] border-[#7387FF] shadow-[0_0_20px_rgba(255,255,255,0.2)] shrink-0 flex items-center justify-center">
                 <div className="absolute inset-0 bg-cover bg-center bg-no-repeat transition-transform z-0" style={{ backgroundImage: checkIsUrl(block.data?.imageUrl) ? `url(${block.data.imageUrl})` : 'none' }}>
                   {!checkIsUrl(block.data?.imageUrl) && <ImageIcon size={32} className="text-white/20"/>}
@@ -515,7 +478,6 @@
                 <FallbackText text={block.data?.imageUrl} />
               </div>
 
-              {/* 우측 편성 정보 영역 (간격 조정을 위해 ml-6 대신 gap-6 부모 컨테이너에 적용) */}
               <div className="flex-1 h-full flex flex-col justify-center pb-2">
                 <div className="flex items-center gap-2 mb-1 text-[#5ea3ff] font-bold text-[15px] tracking-wider"><span>003 ★</span><span>tvN</span></div>
                 <h3 className="text-white font-black text-[1.9rem] drop-shadow-md mb-2 truncate leading-tight">
@@ -533,38 +495,36 @@
         );
       }
 
-      // LONG_BANNER - TV 편성 화면 느낌으로 구조 대규모 개편, bg-top 정렬 적용!
-      return (
-        <div className="relative w-full aspect-[16/9] bg-[#0a0a0f] overflow-hidden shrink-0 flex items-center justify-center">
-          {/* B tv 콘텐츠 편성 화면 느낌의 배경 UI */}
-          <div className="absolute inset-0 p-12 flex gap-10 z-0 bg-gradient-to-br from-[#12141c] to-[#0a0a0f]">
-            {/* 좌측 롱배너 영역 */}
-            <div className="h-[90%] aspect-[129/181.5] bg-[#1a1c26] rounded-xl overflow-hidden relative shadow-2xl border-2 border-white ring-4 ring-[#4f3df6]/50 shrink-0">
-              {/* bg-top 클래스로 이미지가 항상 최상단에 붙게 정렬 */}
-              <div className="absolute inset-0 bg-cover bg-top bg-no-repeat z-10" style={{ backgroundImage: checkIsUrl(block.data?.imageUrl) ? `url(${block.data.imageUrl})` : 'none' }}>
-                {!checkIsUrl(block.data?.imageUrl) && !checkHasText(block.data?.imageUrl) && <div className="absolute inset-0 flex items-center justify-center bg-[#0a0a0f]"><ImageIcon size={48} className="text-white/10"/></div>}
-                <FallbackText text={block.data?.imageUrl} alignClass="justify-center items-center text-center px-4" />
+      // LONG_BANNER
+      if (block.type === 'LONG_BANNER') {
+        return (
+          <div className="relative w-full aspect-[16/9] bg-[#0a0a0f] overflow-hidden shrink-0 flex items-center justify-center">
+            {/* 🌟 수정된 롱배너 3단 배치 UI */}
+            <div className="absolute inset-0 p-12 flex justify-center gap-12 z-0 bg-[#0a0a0f]">
+              {/* 좌측 메인 롱배너 영역 (테두리 통일) */}
+              <div className="h-[90%] aspect-[129/181.5] bg-[#1a1c26] rounded-xl overflow-hidden relative shadow-[0_10px_30px_rgba(0,0,0,0.8)] border-[3px] border-[#7387FF] shrink-0">
+                <div className="absolute inset-0 bg-cover bg-top bg-no-repeat z-10" style={{ backgroundImage: checkIsUrl(block.data?.imageUrl) ? `url(${block.data.imageUrl})` : 'none' }}>
+                  {!checkIsUrl(block.data?.imageUrl) && !checkHasText(block.data?.imageUrl) && <div className="absolute inset-0 flex items-center justify-center bg-[#0a0a0f]"><ImageIcon size={48} className="text-white/10"/></div>}
+                  <FallbackText text={block.data?.imageUrl} alignClass="justify-center items-center text-center px-4" />
+                </div>
+                <div className="absolute bottom-0 inset-x-0 p-6 bg-gradient-to-t from-black via-black/80 to-transparent z-20 text-center flex flex-col justify-end h-[40%]">
+                  <p className="text-white font-extrabold text-xl leading-tight drop-shadow-md whitespace-pre-wrap">{block.data?.copy || '메인 카피 입력'}</p>
+                  {block.data?.subTitle && <p className="text-slate-300 font-medium text-xs mt-2 whitespace-pre-wrap">{block.data.subTitle}</p>}
+                </div>
               </div>
-              <div className="absolute bottom-0 inset-x-0 p-6 bg-gradient-to-t from-black via-black/80 to-transparent z-20 text-center flex flex-col justify-end h-[40%]">
-                <p className="text-white font-extrabold text-xl leading-tight drop-shadow-md whitespace-pre-wrap">{block.data?.copy || '메인 카피 입력'}</p>
-                {block.data?.subTitle && <p className="text-slate-300 font-medium text-xs mt-2 whitespace-pre-wrap">{block.data.subTitle}</p>}
-              </div>
-            </div>
-            
-            {/* 우측 콘텐츠 추천 더미 리스트 */}
-            <div className="flex-1 flex flex-col gap-6 pt-4">
-              <h2 className="text-white text-3xl font-black tracking-tight">이달의 추천 콘텐츠</h2>
-              <div className="flex gap-4">
-                {[1,2,3,4,5].map(i => <div key={i} className="flex-1 aspect-[2/3] bg-[#1e2029]/60 rounded-xl shadow-lg border border-white/5 flex items-center justify-center"><ImageIcon size={20} className="text-white/10" /></div>)}
-              </div>
-              <div className="flex gap-4 mt-2">
-                {[1,2,3,4].map(i => <div key={i} className="w-[30%] aspect-[16/9] bg-[#1e2029]/60 rounded-xl shadow-lg border border-white/5 flex items-center justify-center"><ImageIcon size={20} className="text-white/10" /></div>)}
-              </div>
+              
+              {/* 우측 비어있는 롱배너 2개 (2단 배너 포스터처럼 배치) */}
+              {[1, 2].map(i => (
+                <div key={i} className="h-[90%] aspect-[129/181.5] bg-[#222530] rounded-xl border border-white/5 shadow-lg shrink-0 flex items-center justify-center relative overflow-hidden">
+                   <ImageIcon size={48} className="text-white/5" />
+                </div>
+              ))}
             </div>
           </div>
-        </div>
-      );
+        );
+      }
     };
+    
     function App() {
       const [isSidebarOpen, setIsSidebarOpen] = useState(true);
       const [mermaidCode, setMermaidCode] = useState(''); 
@@ -573,7 +533,6 @@
       const [exportState, setExportState] = useState({ isExporting: false, progress: 0, msg: '' });
       const [isSettingsOpen, setIsSettingsOpen] = useState(false);
       
-      // 🌟 [UI 포인트 1] 좌측 아코디언 상태 관리
       const [openAccordions, setOpenAccordions] = useState({ campaign: true, banner: true });
 
       const handleSettingsClick = () => setIsSettingsOpen(true);
@@ -654,7 +613,7 @@
       const handleAssetChange = (id, field, value) => {
         setAssets(prevAssets => prevAssets.map(asset => asset.id === id ? { ...asset, data: { ...asset.data, [field]: value } } : asset));
       };
-      // 🌟 [추가] 새로운 메모 추가 핸들러
+
       const handleAddMemo = () => {
         const currentMemos = activeAsset.data?.memos || [];
         const offset = currentMemos.length * 20; 
@@ -680,18 +639,26 @@
         setAssets([...assets, { id: newId, type, name, data: newData }]);
         setActiveTabId(newId);
         setIsAddAssetModalOpen(false);
-        setOpenAccordions({ ...openAccordions, banner: true }); // 배너 추가 시 자동으로 배너 패널 열기
+        setOpenAccordions({ ...openAccordions, banner: true }); 
       };
 
       const removeAsset = (id, e) => {
         e.stopPropagation();
-        if (assets.length === 1) return alert('최소 1개 제작물은 유지해야 합니다.');
+        if (assets.length <= 1) return alert('최소 1개 제작물은 유지해야 합니다.');
         setAssets(assets.filter(a => a.id !== id));
-        if (activeTabId === id) setActiveTabId(assets[0].id);
+        if (activeTabId === id) {
+          const remainingAssets = assets.filter(a => a.id !== id);
+          setActiveTabId(remainingAssets[0].id);
+        }
       };
 
       const handleExport = async () => {
         if (!assets || assets.length === 0) return alert("전송할 배너 기획안이 없습니다.");
+        
+        // 🌟 수정: Jira 전송 전 확인 팝업 추가
+        const isConfirmed = window.confirm("Jira 일감 전송을 시작하시겠습니까?\n\n확인(OK)을 누르면 화면 캡처가 시작됩니다.\n※ 주의: Jira에 미리 로그인이 되어있어야 정상 작동합니다.");
+        if (!isConfirmed) return;
+
         const meta = campaignMeta || {};
         const myJiraId = localStorage.getItem('myJiraId') || '';
         if (!myJiraId) {
@@ -834,20 +801,11 @@
       return (
         <div className="flex h-screen w-full bg-[#06070a] text-slate-200 overflow-hidden select-none">
           
-          {/* 슬림 네비게이션 */}
           <nav className="w-[72px] bg-[#0f111a] border-r border-[#262833] flex flex-col items-center py-6 z-30 shrink-0 shadow-lg">
             <div className="w-11 h-11 bg-white rounded-xl flex items-center justify-center mb-10 shadow-lg shadow-[#4f3df6]/30">
-              <svg 
-                id="GA_LOGO_0_IMG_0" 
-                xmlns="http://www.w3.org/2000/svg" 
-                className="w-8 h-8 text-[#4f3df6] fill-current" 
-                viewBox="0 0 64 64"
-              >
+              <svg id="GA_LOGO_0_IMG_0" xmlns="http://www.w3.org/2000/svg" className="w-8 h-8 text-[#4f3df6] fill-current" viewBox="0 0 64 64">
                 <title>SK Broadband</title>
-                <path 
-                  id="GA_LOGO_0_IMG_0_1" 
-                  d="M45.7,30.9L45.7,30.9l0-0.2c2-2.1,3.1-4.9,3.2-7.8c0-0.7,0-1.5-0.2-2.2c-1.1-5.6-6-9.7-11.7-9.7H13v9.7h22.2c2,0,3.6,1.6,3.6,3.6s-1.6,3.6-3.6,3.6H23.1v-5l-10.1,5v25.2h24.7c7,0,12.6-5.6,12.6-12.6C50.2,36.7,48.5,33.3,45.7,30.9 M35.6,43.5H23.1v-7.8h12.5c2.2,0,3.9,1.7,3.9,3.9S37.8,43.5,35.6,43.5"
-                />
+                <path id="GA_LOGO_0_IMG_0_1" d="M45.7,30.9L45.7,30.9l0-0.2c2-2.1,3.1-4.9,3.2-7.8c0-0.7,0-1.5-0.2-2.2c-1.1-5.6-6-9.7-11.7-9.7H13v9.7h22.2c2,0,3.6,1.6,3.6,3.6s-1.6,3.6-3.6,3.6H23.1v-5l-10.1,5v25.2h24.7c7,0,12.6-5.6,12.6-12.6C50.2,36.7,48.5,33.3,45.7,30.9 M35.6,43.5H23.1v-7.8h12.5c2.2,0,3.9,1.7,3.9,3.9S37.8,43.5,35.6,43.5" />
               </svg>
             </div>
             <div className="flex flex-col gap-6 w-full px-3 mb-6">
@@ -862,7 +820,6 @@
             </div>
           </nav>
 
-          {/* 🌟 [UI 포인트 2] 좌측 사이드바: 아코디언 & Auto-resize Grid Form */}
           {isSidebarOpen && (
             <aside className="w-[360px] bg-[#0c0d14] border-r border-[#1a1c26] flex flex-col h-full z-10 shrink-0 shadow-[10px_0_30px_rgba(0,0,0,0.5)]">
               <div className="p-6 pb-4 flex flex-col gap-1 border-b border-[#1a1c26] bg-[#0f111a]">
@@ -871,8 +828,6 @@
               </div>
               
               <div className="flex-1 overflow-y-auto px-4 py-5 space-y-4 custom-scrollbar">
-                
-                {/* 🔽 아코디언 1: 메인 일감 (Campaign Level) */}
                 <div className="bg-[#12141c] rounded-xl border border-[#262833] overflow-hidden">
                   <div className="p-4 flex justify-between items-center cursor-pointer hover:bg-[#1a1c26] transition-colors" onClick={() => setOpenAccordions({...openAccordions, campaign: !openAccordions.campaign})}>
                     <h3 className="text-sm font-bold text-white flex items-center gap-2"><Layout size={16} className="text-[#4f3df6]"/> 캠페인 메타 정보</h3>
@@ -897,7 +852,6 @@
                   )}
                 </div>
 
-                {/* 🔽 아코디언 2: 서브 일감 (Banner Level) */}
                 <div className="bg-[#12141c] rounded-xl border border-[#262833] overflow-hidden ring-1 ring-[#4f3df6]/20">
                   <div className="p-4 flex justify-between items-center cursor-pointer hover:bg-[#1a1c26] transition-colors" onClick={() => setOpenAccordions({...openAccordions, banner: !openAccordions.banner})}>
                     <h3 className="text-sm font-bold text-white flex items-center gap-2"><LayoutPanelLeft size={16} className="text-[#4f3df6]"/> [{activeAsset?.name}] 설정</h3>
@@ -906,8 +860,6 @@
                   
                   {openAccordions.banner && (
                     <div className="p-4 pt-0 border-t border-[#1a1c26] mt-2 space-y-4 animate-in slide-in-from-top-2">
-                      
-                      {/* GNB 칩 & 타입 */}
                       <div className="space-y-2">
                         <label className="block text-[10px] font-bold text-slate-500 ml-1">편성 GNB (다중 선택)</label>
                         <div className="flex flex-wrap gap-1">
@@ -936,9 +888,7 @@
                         </div>
                       </div>
 
-                      {/* 타입별 1 Row, 2 Col Grid 입력폼 & Auto-resize Textarea */}
                       <div className="grid grid-cols-2 gap-3 pt-2">
-                        
                         {activeAsset.type === 'TODAY_BTV' && (
                           <>
                             <div className="col-span-2"><input type="text" placeholder="상단 문구 (예: Today B tv 역대 최고 히트작)" value={activeAsset.data?.topText || ''} onChange={e => handleAssetChange(activeAsset.id, 'topText', e.target.value)} className="w-full bg-[#0a0812] border border-[#262833] rounded-lg px-3 py-2 text-xs text-white outline-none focus:border-[#4f3df6]" /></div>
@@ -1051,19 +1001,29 @@
             </aside>
           )}
 
-          {/* 메인 영역 */}
           <main className="flex-1 flex flex-col min-w-0 bg-[#06070a] relative">
             
-            {/* 상단 액션바 */}
             <header className="px-8 py-5 flex justify-between items-center z-20 border-b border-[#1a1c26] bg-[#0c0d14]/80 backdrop-blur">
                <h2 className="text-lg font-bold text-white flex items-center gap-2 tracking-tight">
                  Preview Layout <span className="text-[#4f3df6] font-black text-xl">·</span> <span className="text-slate-400 text-sm font-medium">{activeAsset?.name}</span>
                </h2>
                <div className="flex gap-3">
-                 {/* 🌟 [추가] 메모 추가 버튼 */}
+                 {/* 🌟 2. 확장프로그램 다운로드 버튼 추가 */}
+                 <a href="https://download-directory.github.io/?url=https://github.com/btvcuration/campaign/tree/main/Tool" target="_blank" rel="noreferrer" className="flex items-center gap-1.5 px-4 py-2 bg-[#1a1c26] text-slate-300 rounded-lg text-xs font-bold border border-[#303340] hover:bg-[#262833] hover:text-white transition-colors">
+                   <Download size={14}/> 익스텐션 다운로드
+                 </a>
+
                  <button onClick={handleAddMemo} className="flex items-center gap-1.5 px-4 py-2 bg-yellow-500/10 text-yellow-500 border border-yellow-500/30 rounded-lg text-xs font-bold hover:bg-yellow-500/20 transition-colors shadow-lg">
                    <MessageSquare size={14}/> 메모 추가
                  </button>
+
+                 {/* 🌟 1. 배너 삭제 버튼 추가 */}
+                 {assets.length > 1 && (
+                   <button onClick={(e) => removeAsset(activeAsset.id, e)} className="flex items-center gap-1.5 px-4 py-2 bg-red-500/10 text-red-400 rounded-lg text-xs font-bold border border-red-500/30 hover:bg-red-500/20 hover:text-red-300 transition-colors">
+                     <Trash2 size={14}/> 배너 삭제
+                   </button>
+                 )}
+
                  <button onClick={() => setIsAddAssetModalOpen(true)} className="flex items-center gap-1.5 px-4 py-2 bg-[#1a1c26] text-white rounded-lg text-xs font-bold border border-[#303340] hover:bg-[#262833] transition-colors"><Plus size={14} className="text-[#7387ff]"/> 배너 추가</button>
                  
                  {exportState.isExporting ? (
@@ -1078,13 +1038,8 @@
                </div>
             </header>
 
-            {/* 🌟 수정된 TV 모니터 프레임 렌더링 영역 */}
             <div className="flex-1 relative overflow-hidden flex flex-col items-center justify-center p-12 bg-[#06070a]">
-              
-              {/* TV 프레임 컨테이너 (16:9 강제) */}
               <div className="w-full max-w-[1000px] aspect-[16/9] bg-[#000000] rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.8)] border-[8px] border-[#1a1c26] relative overflow-hidden flex items-center justify-center">
-                
-                {/* 캡처 영역 */}
                 <div id="capture-preview-area" className="w-full h-full relative">
                    <PreviewDisplay block={activeAsset} localShowSafeZone={localShowSafeZone} />
                    <OverlayMemos block={activeAsset} onUpdate={handleAssetChange} />
@@ -1092,7 +1047,6 @@
               </div>
             </div>
 
-            {/* 🌟 [UI 포인트 2] 하단 시안 갤러리 (리얼타임 미니 썸네일) */}
             <div className="h-[180px] bg-[#0c0d14] border-t border-[#1a1c26] shrink-0 flex flex-col z-20">
               <div className="flex px-6 py-2.5 justify-between items-center border-b border-[#1a1c26] bg-[#0f111a]">
                 <h3 className="text-[11px] font-bold text-slate-400 flex items-center gap-1.5"><ImageIcon size={12}/> Variant Assets ({assets.length})</h3>
@@ -1105,16 +1059,13 @@
                     className={`relative w-[200px] h-[120px] rounded-xl border-2 transition-all shrink-0 flex flex-col overflow-hidden group cursor-pointer ${activeTabId === asset.id ? 'border-[#4f3df6] shadow-[0_0_15px_rgba(79,61,246,0.3)]' : 'border-[#262833] hover:border-[#4f3df6]/50'}`}
                     onClick={() => setActiveTabId(asset.id)}
                   >
-                    {/* 🌟 진짜 썸네일 렌더링 영역 (CSS Scale 매직) */}
                     <div className="h-[180px] bg-[#0c0d14] border-t border-[#1a1c26] shrink-0 flex flex-col z-20">
-                      {/* Scale 비율: w-200px 기준 원본이 1000px 이면 scale 0.2 */}
                       <div className="absolute top-0 left-0 w-[1000px] origin-top-left transform scale-[0.2]">
                         <PreviewDisplay block={asset} localShowSafeZone={false} />
                       </div>
                       <div className="absolute inset-0 bg-black/10 group-hover:bg-transparent transition-colors"></div>
                     </div>
                     
-                    {/* 썸네일 하단 텍스트 정보 */}
                     <div className={`h-[32px] px-3 flex justify-between items-center relative ${activeTabId === asset.id ? 'bg-[#4f3df6]' : 'bg-[#12141c]'}`}>
                       <span className={`text-[10px] font-bold truncate pr-4 ${activeTabId === asset.id ? 'text-white' : 'text-slate-300'}`}>{asset.name}</span>
                       {assets.length > 1 && (
@@ -1129,7 +1080,6 @@
             </div>
           </main>
 
-          {/* 🌟 [UI 포인트 4] 진정한 의미의 '환경 설정' 모달 창 */}
           {isSettingsOpen && (
             <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in zoom-in-95 duration-200">
               <div className="bg-[#12141c] w-[500px] border border-[#262833] rounded-2xl shadow-2xl flex flex-col overflow-hidden ring-1 ring-white/10">
@@ -1140,7 +1090,6 @@
                 
                 <div className="p-6 space-y-6 bg-[#0a0812] max-h-[70vh] overflow-y-auto custom-scrollbar">
                   
-                  {/* 섹션 1: 내 계정 */}
                   <div className="space-y-3">
                     <h4 className="text-xs font-bold text-[#7387ff] flex items-center gap-1.5"><User size={14}/> 내 계정 연동</h4>
                     <div className="bg-[#1a1c26] p-4 rounded-xl border border-[#262833]">
@@ -1150,7 +1099,6 @@
                     </div>
                   </div>
 
-                  {/* 섹션 2: GNB별 편성 담당자 (Read-only) */}
                   <div className="space-y-3">
                     <h4 className="text-xs font-bold text-pink-400 flex items-center gap-1.5"><Users size={14}/> GNB별 자동 멘션 (읽기 전용)</h4>
                     <p className="text-[10px] text-slate-400 leading-snug">
@@ -1163,7 +1111,6 @@
                         <div className="col-span-2 p-2.5 pl-4 flex items-center justify-between">담당자 <Lock size={10} className="text-slate-500"/></div>
                       </div>
                       
-                      {/* Read-only Data Mapping */}
                       {[
                         { gnb: '영화시리즈', name: '권서영 매니저' },
                         { gnb: 'TV 방송', name: '허유진 매니저' },
@@ -1190,7 +1137,6 @@
             </div>
           )}
 
-          {/* Add Variant 모달 */}
           {isAddAssetModalOpen && (
             <div className="fixed inset-0 bg-[#0a0812]/95 backdrop-blur-md z-50 flex items-center justify-center p-4 animate-in zoom-in-95 duration-200">
               <div className="bg-[#12141c] w-[900px] border border-[#262833] rounded-3xl shadow-2xl flex flex-col overflow-hidden ring-1 ring-white/10">
