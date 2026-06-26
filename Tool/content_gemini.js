@@ -21,21 +21,34 @@ const observer = new MutationObserver((mutations) => {
   const codeBlocks = document.querySelectorAll('pre'); 
 
   codeBlocks.forEach(block => {
-    // 🚨 텍스트 추출 시 innerText 대신 textContent를 사용하여 줄바꿈 유실 방지
-    const codeElement = block.querySelector('code');
-    const text = block.textContent || "";
-    const codeText = codeElement ? codeElement.textContent.trim() : '';
+    if (block.getAttribute('data-btv-processed') === 'true') return;
 
-    // 🎯 기능 A: 캠페인 JSON 데이터 전송 버튼 주입
-    // (클래스명 검사 폐지: CREATE_CAMPAIGN_ASSETS 키워드만 있으면 무조건 감지)
-    if (text.includes('CREATE_CAMPAIGN_ASSETS')) {
-      // Gemini의 React 렌더링으로 인해 버튼이 삭제되었는지 실시간 확인
-      const prevSibling = block.previousElementSibling;
-      const hasButton = prevSibling && prevSibling.classList.contains('btv-inject-btn');
+    // 1. 블록 내 텍스트 전체 가져오기
+    const text = block.textContent.trim();
 
-      if (!hasButton) {
-        console.log("🎯 [B tv Extension] 타겟 JSON 발견! 버튼 주입");
-        injectButton(block); // 텍스트를 넘기지 않고 블록 참조만 넘김 (클릭 시 최신 텍스트를 읽기 위함)
+    // 2. [핵심 로직] JSON인지 확인하고 "CREATE_CAMPAIGN_ASSETS" 액션이 있는지 검사
+    let isTargetJson = false;
+    try {
+      // { 로 시작하고 } 로 끝나는 JSON 형태인지 먼저 체크
+      if (text.startsWith('{') && text.endsWith('}')) {
+        const parsed = JSON.parse(text);
+        if (parsed && parsed.action === "CREATE_CAMPAIGN_ASSETS") {
+          isTargetJson = true;
+        }
+      }
+    } catch (e) {
+      // 파싱 실패 시, text.includes를 통해 안전하게 한번 더 확인 (스트리밍 중인 경우)
+      if (text.includes('"action": "CREATE_CAMPAIGN_ASSETS"') || text.includes('"action":"CREATE_CAMPAIGN_ASSETS"')) {
+        isTargetJson = true;
+      }
+    }
+
+    // 🎯 JSON 검증을 통과한 경우에만 버튼 주입
+    if (isTargetJson) {
+      if (!block.parentNode.querySelector('.btv-inject-btn')) {
+        console.log("🎯 [B tv Extension] 정확한 JSON 타겟 발견!");
+        injectButton(block);
+        block.setAttribute('data-btv-processed', 'true');
       }
     }
 
