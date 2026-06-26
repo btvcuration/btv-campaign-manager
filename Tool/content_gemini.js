@@ -24,9 +24,14 @@ const observer = new MutationObserver((mutations) => {
     if (block.getAttribute('data-btv-processed') === 'true') return;
 
     const text = block.innerText || block.textContent;
+    const codeElement = block.querySelector('code');
+    const codeText = codeElement ? codeElement.innerText.trim() : '';
 
-    // 🎯 기능 A: 캠페인 JSON 데이터 전송 버튼 주입
-    if (text && text.includes('"CREATE_CAMPAIGN_ASSETS"')) {
+    // 🌟 [수정] JSON 코드 블록인지 확인하는 조건 추가
+    const isJson = codeElement && (codeElement.className.includes('json') || codeElement.className.includes('language-json'));
+
+    // 🎯 기능 A: 캠페인 JSON 데이터 전송 버튼 주입 (JSON이면서 특정 키워드가 있을 때만)
+    if (isJson && text && text.includes('"CREATE_CAMPAIGN_ASSETS"')) {
       if (!block.parentNode.querySelector('.btv-inject-btn')) {
         console.log("🎯 [B tv Extension] 타겟 JSON 발견!");
         injectButton(block, text);
@@ -35,9 +40,6 @@ const observer = new MutationObserver((mutations) => {
     }
 
     // 🎨 기능 B: Mermaid 마크다운 감지 및 시각화 렌더링
-    const codeElement = block.querySelector('code');
-    const codeText = codeElement ? codeElement.innerText.trim() : '';
-
     const isMermaid = (codeElement && (codeElement.className.includes('mermaid') || codeElement.className.includes('language-mermaid'))) ||
                       codeText.startsWith('graph ') ||
                       codeText.startsWith('flowchart ');
@@ -84,14 +86,13 @@ function injectButton(targetBlock, jsonText) {
   btn.className = 'btv-inject-btn';
   btn.style.cssText = `
     display: flex; align-items: center; justify-content: center; gap: 8px;
-    margin-top: 12px; margin-bottom: 12px; padding: 10px 20px;
+    margin-bottom: 12px; padding: 10px 20px; /* margin-top 제거 및 하단 마진 유지 */
     background: linear-gradient(90deg, #4f3df6, #7387ff); color: white;
     border: none; border-radius: 8px; font-weight: bold; font-size: 14px;
     cursor: pointer; width: 100%; box-shadow: 0 4px 10px rgba(115, 135, 255, 0.3); z-index: 9999;
   `;
   btn.innerHTML = '🚀 B tv 캠페인 툴로 전송 및 시안 생성';
 
-  // 🌟 [수정됨] 중복 전송 방지(Debounce) 로직 추가
   let isSending = false;
 
   btn.onclick = () => {
@@ -126,7 +127,8 @@ function injectButton(targetBlock, jsonText) {
     }
   };
   
-  targetBlock.parentNode.insertBefore(btn, targetBlock.nextSibling);
+  // 🌟 [수정] 버튼을 targetBlock 바로 위(상단)에 삽입
+  targetBlock.parentNode.insertBefore(btn, targetBlock);
 }
 
 observer.observe(document.body, { childList: true, subtree: true });
