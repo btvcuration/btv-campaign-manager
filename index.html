@@ -9,6 +9,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <script src="https://unpkg.com/@babel/standalone@7.23.0/babel.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/mermaid@10.6.1/dist/mermaid.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   
   <script type="importmap">
     {
@@ -652,6 +653,65 @@
         }
       };
 
+      // 🌟 확장프로그램 다이렉트 ZIP 다운로드 함수
+      const handleDownloadExtension = async () => {
+        setExportState({ isExporting: true, progress: 10, msg: "최신 확장프로그램 패킹 준비 중..." });
+        
+        try {
+          const zip = new window.JSZip();
+          
+          // Tool 폴더 내에 있는 실제 파일 목록
+          const filesToFetch = [
+            "manifest.json",
+            "background.js",
+            "content.js",
+            "content_gemini.js",
+            "mermaid.min.js"
+          ];
+
+          // 깃허브 원본 파일(Raw) 경로
+          const baseUrl = "https://raw.githubusercontent.com/btvcuration/campaign/main/Tool";
+
+          for (let i = 0; i < filesToFetch.length; i++) {
+            const fileName = filesToFetch[i];
+            const currentProgress = 10 + Math.floor((i / filesToFetch.length) * 60);
+            setExportState({ isExporting: true, progress: currentProgress, msg: `${fileName} 가져오는 중...` });
+            
+            const response = await fetch(`${baseUrl}/${fileName}?t=${new Date().getTime()}`);
+            if (!response.ok) throw new Error(`${fileName} 파일을 찾을 수 없습니다.`);
+            
+            const fileContent = await response.text();
+            zip.file(fileName, fileContent);
+          }
+
+          setExportState({ isExporting: true, progress: 85, msg: "압축 파일 생성 중..." });
+          
+          const blob = await zip.generateAsync({ type: "blob" });
+          const downloadUrl = URL.createObjectURL(blob);
+          
+          const link = document.createElement("a");
+          link.href = downloadUrl;
+          link.download = `btv-campaign-extension-${new Date().toISOString().slice(0,10)}.zip`;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          URL.revokeObjectURL(downloadUrl);
+          
+          setExportState({ isExporting: true, progress: 100, msg: "✅ 최신 버전 다운로드 완료!" });
+          
+          setTimeout(() => {
+            setExportState({ isExporting: false, progress: 0, msg: '' });
+            alert("확장 프로그램 다운로드가 완료되었습니다.\n기존 버전 삭제 후 새로 등록하시고 키보드 F5를 눌러 새로고침 해주세요!");
+          }, 1500);
+
+        } catch (e) {
+          console.error("Extension Download Error:", e);
+          setExportState({ isExporting: true, progress: 100, msg: "⚠️ 다운로드 실패" });
+          setTimeout(() => setExportState({ isExporting: false, progress: 0, msg: '' }), 3000);
+          alert("다운로드 중 오류가 발생했습니다: " + e.message);
+        }
+      };
+      
       const handleExport = async () => {
         if (!assets || assets.length === 0) return alert("전송할 배너 기획안이 없습니다.");
         
@@ -1008,10 +1068,10 @@
                  Preview Layout <span className="text-[#4f3df6] font-black text-xl">·</span> <span className="text-slate-400 text-sm font-medium">{activeAsset?.name}</span>
                </h2>
                <div className="flex gap-3">
-                 {/* 🌟 2. 확장프로그램 다운로드 버튼 추가 */}
-                 <a href="https://download-directory.github.io/?url=https://github.com/btvcuration/campaign/tree/main/Tool" target="_blank" rel="noreferrer" className="flex items-center gap-1.5 px-4 py-2 bg-[#1a1c26] text-slate-300 rounded-lg text-xs font-bold border border-[#303340] hover:bg-[#262833] hover:text-white transition-colors">
+                 {/* 🌟 수정: <a> 태그 대신 <button>으로 변경하고 onClick 연결 */}
+                 <button onClick={handleDownloadExtension} className="flex items-center gap-1.5 px-4 py-2 bg-[#1a1c26] text-slate-300 rounded-lg text-xs font-bold border border-[#303340] hover:bg-[#262833] hover:text-white transition-colors">
                    <Download size={14}/> 익스텐션 다운로드
-                 </a>
+                 </button>
 
                  <button onClick={handleAddMemo} className="flex items-center gap-1.5 px-4 py-2 bg-yellow-500/10 text-yellow-500 border border-yellow-500/30 rounded-lg text-xs font-bold hover:bg-yellow-500/20 transition-colors shadow-lg">
                    <MessageSquare size={14}/> 메모 추가
