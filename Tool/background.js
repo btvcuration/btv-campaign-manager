@@ -14,6 +14,7 @@ async function fetchWithRetry(url, options, maxRetries = 5) {
       continue;
     }
     
+    // 기존 401, 403 처리
     if (response.status === 401 || response.status === 403) {
       throw new Error(`인증 실패(${response.status}). 사내 Jira 페이지에 로그인되어 있는지 확인해 주세요.`);
     }
@@ -25,6 +26,19 @@ async function fetchWithRetry(url, options, maxRetries = 5) {
 
     if (!response.ok) {
       const errorText = await response.text();
+      
+      // 🌟 추가된 400 에러 맞춤형 안내 로직
+      if (response.status === 400) {
+        throw new Error(
+          `Jira 요청 실패 (상태코드: 400)\n\n` +
+          `주로 다음 두 가지 원인으로 발생합니다:\n` +
+          `1. 사내 Jira 로그인이 풀려있는 경우 (새 탭에서 Jira 로그인 확인)\n` +
+          `2. 설정 화면에 입력한 '기본 담당자 Jira ID'가 올바르지 않은 경우\n\n` +
+          `[상세 원인]: ${errorText}`
+        );
+      }
+
+      // 기타 에러 처리
       throw new Error(`상태코드: ${response.status}\n상세이유: ${errorText}`);
     }
     
