@@ -859,19 +859,19 @@
           // URL-encoded 폼 데이터 생성
           const formData = new URLSearchParams();
           
-          // 💡 주의: 아래 entry.숫자들을 Step 2에서 추출한 실제 ID로 교체하세요!
-          formData.append('entry.1927772445', /* 캠페인명 */);
-          formData.append('entry.1707878045', /* 타겟유형 */);
-          formData.append('entry.1703991097', /* 타겟모수 */);
-          formData.append('entry.120655574', /* 시작일 */);
-          formData.append('entry.1770697492', /* 종료일 */);
-          formData.append('entry.1429650624', /* 담당자 */);
-          formData.append('entry.121546834', /* 배너명 */);
-          formData.append('entry.1094856122', /* 배너유형 */);
-          formData.append('entry.1046747307', /* 편성 GNB */);
-          formData.append('entry.2107075545', /* 주요 카피 */);
-          formData.append('entry.1498002583', /* 랜딩 URL */);
-          formData.append('entry.1301888928', /* 디자인 시안 링크 */);           
+          // 💡 수정 완료: 주석 대신 실제 매핑되는 프론트엔드 변수들을 2번째 인자로 채워 넣었습니다.
+          formData.append('entry.1927772445', meta.campaignName || ''); 
+          formData.append('entry.1707878045', meta.target || '');       
+          formData.append('entry.1703991097', meta.targetSize || '');   
+          formData.append('entry.120655574', data.startDate || '');     
+          formData.append('entry.1770697492', data.dueDate || '');      
+          formData.append('entry.1429650624', cleanAssignee || '');     
+          formData.append('entry.121546834', asset.name || '');         
+          formData.append('entry.1094856122', asset.type || '');        
+          formData.append('entry.1046747307', gnbStr);                  
+          formData.append('entry.2107075545', mainCopy);                
+          formData.append('entry.1498002583', data.landingValue || ''); 
+          formData.append('entry.1301888928', imgUrl);
 
           fetch(GOOGLE_FORM_URL, {
             method: 'POST',
