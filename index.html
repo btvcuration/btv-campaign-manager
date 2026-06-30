@@ -844,45 +844,21 @@
           parent: {
             title: `[캠페인] ${meta.campaignName || "신규 캠페인"}`, 
             desc: `h3. 📌 캠페인 공통 정보\n* *캠페인명*: ${meta.campaignName || "신규 캠페인"}\n* *총 요청 건수*: ${assets.length}건\n\nh3. 🗺️ 고객 이동 경로 (Userflow)\n!workflow_summary.png|width=800!\n\nh3. 📊 배너 편성 종합표\n${parentTable}\n\n----\n하위 작업(Sub-task)으로 개별 배너 상세 기획안이 첨부되어 있습니다.`,
-            assignee: cleanAssignee, startDate: meta.startDate, dueDate: meta.dueDate, images: parentImagesToUpload 
+            assignee: cleanAssignee, 
+            startDate: meta.startDate, 
+            dueDate: meta.dueDate, 
+            images: parentImagesToUpload 
           },
-          children: childIssues 
+          children: childIssues,
+          // 🌟 [추가됨] 확장 프로그램(background.js)에서 구글 폼으로 전송할 원본 데이터
+          rawGasData: {
+            meta: meta,
+            assignee: cleanAssignee,
+            assets: assets
+          }
         };
-        const GOOGLE_FORM_URL = 'https://docs.google.com/forms/d/1FAIpQLSfCrr_sPlHbBuysq4UsIGVA4uV6Er2EstA_a06JZsy3VurIwA/formResponse';
-        // 각 배너(asset)별로 개별 폼 제출 (시트에 1줄씩 기록됨)
-        assets.forEach(asset => {
-          const data = asset.data || {};
-          const gnbStr = Array.isArray(data.gnb) ? data.gnb.join(', ') : (data.gnb || '미지정');
-          const mainCopy = data.mainTitle || data.copy || data.bannerCopy || data.previewTitle || data.topLogo || '카피 없음';
-          const imgUrl = data.imageUrl || data.bgImg || data.bannerImg || data.previewImg || '';
-
-          // URL-encoded 폼 데이터 생성
-          const formData = new URLSearchParams();
-          
-          // 💡 수정 완료: 주석 대신 실제 매핑되는 프론트엔드 변수들을 2번째 인자로 채워 넣었습니다.
-          formData.append('entry.1927772445', meta.campaignName || ''); 
-          formData.append('entry.1707878045', meta.target || '');       
-          formData.append('entry.1703991097', meta.targetSize || '');   
-          formData.append('entry.120655574', data.startDate || '');     
-          formData.append('entry.1770697492', data.dueDate || '');      
-          formData.append('entry.1429650624', cleanAssignee || '');     
-          formData.append('entry.121546834', asset.name || '');         
-          formData.append('entry.1094856122', asset.type || '');        
-          formData.append('entry.1046747307', gnbStr);                  
-          formData.append('entry.2107075545', mainCopy);                
-          formData.append('entry.1498002583', data.landingValue || ''); 
-          formData.append('entry.1301888928', imgUrl);
-
-          fetch(GOOGLE_FORM_URL, {
-            method: 'POST',
-            mode: 'no-cors', // 사내망 CORS 에러 우회를 위한 필수 설정
-            headers: {
-              'Content-Type': 'application/x-www-form-urlencoded'
-            },
-            body: formData.toString()
-          }).catch(err => console.error("구글 폼 전송 에러:", err));
-        });
         
+        // 확장 프로그램으로 데이터 전송 이벤트 발생
         const event = new CustomEvent('TEST_JIRA_SEND', { detail: finalData });
         window.dispatchEvent(event);
         
