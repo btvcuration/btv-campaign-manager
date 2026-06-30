@@ -211,6 +211,92 @@ async function createJiraHierarchy(data, sourceTabId) {
     const createdIssues = childBulkResult.issues;
     console.log("✅ 하위 일감 생성 완료");
 
+    if (data.rawGasData) {
+      console.log("🚀 구글 폼 스케줄 DB 기록 시작...");
+      const { meta, assignee, assets } = data.rawGasData;
+      const GOOGLE_FORM_URL = 'https://docs.google.com/forms/d/e/1FAIpQLSfCrr_sPlHbBuysq4UsIGVA4uV6Er2EstA_a06JZsy3VurIwA/formResponse';
+      
+      // 1. 개별 배너 데이터 전송 (타겟 모수는 비워둠)
+      for (let i = 0; i < assets.length; i++) {
+        const asset = assets[i];
+        const assetData = asset.data || {};
+        const gnbStr = Array.isArray(assetData.gnb) ? assetData.gnb.join(', ') : (assetData.gnb || '미지정');
+        const mainCopy = assetData.mainTitle || assetData.copy || assetData.bannerCopy || assetData.previewTitle || assetData.topLogo || '카피 없음';
+        const imgUrl = assetData.imageUrl || assetData.bgImg || assetData.bannerImg || assetData.previewImg || '';
+
+        // 💡 해당 배너와 1:1 매칭되는 하위 Jira 티켓 링크 조립
+        const childJiraUrl = createdIssues && createdIssues[i] ? `${baseUrl}/browse/${createdIssues[i].key}` : '';
+
+        const formData = new URLSearchParams();
+        formData.append('entry.277120784', meta.campaignName || ''); 
+        formData.append('entry.722384889', meta.target || '');       
+        
+        // 타겟 모수 중복 집계 방지를 위해 일반 배너 행에는 모수를 비워둡니다.
+        formData.append('entry.87044441', '');   
+
+        formData.append('entry.948742228', assetData.startDate || '');     
+        formData.append('entry.1792129849', assetData.dueDate || '');      
+        formData.append('entry.906901914', assignee || '');     
+        formData.append('entry.1782408630', childJiraUrl); // 부모 대신 하위 Jira 링크 삽입
+        formData.append('entry.2039552472', asset.type || '');        
+        formData.append('entry.1981730910', gnbStr);                  
+        formData.append('entry.900075056', mainCopy);                
+        formData.append('entry.986244523', assetData.landingValue || ''); 
+        formData.append('entry.28621578', imgUrl);
+
+        try {
+          await fetch(GOOGLE_FORM_URL, {
+            method: 'POST',
+            mode: 'no-cors',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: formData.toString()
+          });
+        } catch (err) {
+          console.error(`❌ 배너 폼 전송 에러 (Asset ${i}):`, err);
+        }
+      }
+
+      // 2. 타겟팅 캠페인일 경우, 타겟팅 운영 요청용 별도 행(Row) 1개 추가 전송
+      if (meta.target === 'TARGET') {
+        const bannerTypes = assets.map(a => a.name).join(', '); 
+        
+        // 💡 타겟팅 티켓은 Admin에서 배열의 맨 마지막에 추가되었으므로 assets.length 인덱스에 위치합니다.
+        const targetChildJiraUrl = createdIssues && createdIssues[assets.length] ? `${baseUrl}/browse/${createdIssues[assets.length].key}` : '';
+
+        const formData = new URLSearchParams();
+        
+        formData.append('entry.277120784', meta.campaignName || ''); 
+        formData.append('entry.722384889', meta.target || '');       
+        
+        // 오직 이 '타겟팅 운영요청' 행에만 타겟 모수를 기록하여 AI가 1번만 합산하게 만듭니다.
+        formData.append('entry.87044441', meta.targetSize || '');   
+
+        formData.append('entry.948742228', meta.startDate || '');     
+        formData.append('entry.1792129849', meta.dueDate || '');      
+        formData.append('entry.906901914', assignee || '');     
+        formData.append('entry.1782408630', targetChildJiraUrl); // 타겟팅 전용 하위 Jira 링크 삽입
+        
+        formData.append('entry.2039552472', 'TARGET_OPERATION'); 
+        formData.append('entry.1981730910', '기타'); 
+        formData.append('entry.900075056', `타겟팅 세팅 요청 (포함 배너: ${bannerTypes})`); 
+        formData.append('entry.986244523', ''); 
+        formData.append('entry.28621578', '');
+
+        try {
+          await fetch(GOOGLE_FORM_URL, {
+            method: 'POST',
+            mode: 'no-cors',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: formData.toString()
+          });
+        } catch (err) {
+          console.error(`❌ 타겟팅 별도 행 전송 에러:`, err);
+        }
+      }
+
+      console.log("✅ 구글 폼 스케줄 DB 기록 완료");
+    }
+
     // 3️⃣ 캡처된 이미지를 하위 일감에 각각 첨부파일로 업로드
     console.log("📸 하위 일감 이미지 첨부 시작...");
     for (let i = 0; i < data.children.length; i++) {
