@@ -23,8 +23,9 @@ const observer = new MutationObserver((mutations) => {
   codeBlocks.forEach(block => {
     if (block.getAttribute('data-btv-processed') === 'true') return;
 
-    // 1. 블록 내 텍스트 전체 가져오기
+    // 1. 블록 내 텍스트 및 HTML 요소 가져오기 (💡 누락되었던 변수 선언 추가!)
     const text = block.textContent.trim();
+    const codeElement = block.querySelector('code');
 
     // 2. [핵심 로직] JSON인지 확인하고 "CREATE_CAMPAIGN_ASSETS" 액션이 있는지 검사
     let isTargetJson = false;
@@ -53,10 +54,10 @@ const observer = new MutationObserver((mutations) => {
     }
 
     // 🎨 기능 B: Mermaid 마크다운 감지 및 시각화 렌더링
-    // Mermaid는 렌더링 후 DOM을 완전히 바꾸므로 data 속성으로 중복 실행 방지
+    // 💡 정의되지 않았던 codeText 대신 올바르게 text 변수 사용
     const isMermaid = (codeElement && (codeElement.className.includes('mermaid') || codeElement.className.includes('language-mermaid'))) ||
-                      codeText.startsWith('graph ') ||
-                      codeText.startsWith('flowchart ');
+                      text.startsWith('graph ') ||
+                      text.startsWith('flowchart ');
 
     if (isMermaid && block.getAttribute('data-mermaid-processed') !== 'true') {
       block.setAttribute('data-mermaid-processed', 'true');
@@ -74,11 +75,11 @@ const observer = new MutationObserver((mutations) => {
       block.style.display = 'none'; 
       block.parentNode.insertBefore(graphContainer, block.nextSibling);
 
-      // Mermaid 렌더링 전 문법 사전 검증 (Syntax Error 이미지 덮어쓰기 방지)
+      // Mermaid 렌더링 전 문법 사전 검증
       try {
-        mermaid.parse(codeText).then((isValid) => {
+        mermaid.parse(text).then((isValid) => {
             if(isValid) {
-                mermaid.render(uniqueId + '-svg', codeText).then((result) => {
+                mermaid.render(uniqueId + '-svg', text).then((result) => {
                   graphContainer.innerHTML = `
                     <div style="display:flex; align-items:center; gap:8px; margin-bottom:15px;">
                       <span style="background:#4f3df6; color:white; padding:4px 8px; border-radius:6px; font-size:12px; font-weight:bold;">UX</span>
