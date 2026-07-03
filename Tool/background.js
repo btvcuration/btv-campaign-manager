@@ -61,6 +61,28 @@ chrome.action.onClicked.addListener((tab) => {
   chrome.tabs.create({ url: "https://btvcuration.github.io/campaign/" });
 });
 
+
+// 🌟 [NEW] Content Script의 요청을 받아 Capa CSV 데이터를 Fetch 해오는 리스너
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  if (request.action === 'fetchCapaCsv') {
+    // 매니저님이 구축해두신 Cloudflare 프록시 URL
+    const CSV_URL = 'https://btv-proxy.alcheminos.workers.dev/?action=getCapaCsv';
+    
+    fetch(CSV_URL)
+      .then(response => response.text())
+      .then(csvText => {
+        sendResponse({ success: true, data: csvText });
+      })
+      .catch(error => {
+        console.error("Capa Fetch 에러:", error);
+        sendResponse({ success: false, error: error.message });
+      });
+      
+    // 비동기 응답(fetch 후 sendResponse)을 위해 반드시 true 반환
+    return true; 
+  }
+});
+
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.action === "OPEN_JIRA_TEST") {
     createJiraHierarchy(message.data, sender.tab.id);
