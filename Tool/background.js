@@ -245,70 +245,98 @@ async function createJiraHierarchy(data, sourceTabId) {
         }
       };
 
-      // 4-1. 개별 배너/Task 데이터 전송 (타겟 모수는 0으로 처리하여 중복 방지)
-      for (let i = 0; i < assets.length; i++) {
-        const asset = assets[i];
-        const assetData = asset.data || {};
-        const gnbStr = Array.isArray(assetData.gnb) ? assetData.gnb.join(', ') : (assetData.gnb || '미지정');
-        const mainCopy = assetData.mainTitle || assetData.copy || assetData.bannerCopy || assetData.previewTitle || assetData.topLogo || '카피 없음';
-        const imgUrl = assetData.imageUrl || assetData.bgImg || assetData.bannerImg || assetData.previewImg || '';
-        
-        const childJiraUrl = createdIssues && createdIssues[i] ? `${baseUrl}/browse/${createdIssues[i].key}` : '';
-
-        const payload = {
-          parentJira: `${baseUrl}/browse/${parentKey}`,
-          childJira: childJiraUrl,
-          campaignName: meta.campaignName || '',
-          product: meta.product || '',
-          targetType: meta.target || 'MASS',
-          channel: gnbStr,
-          hasBanner: asset.type && asset.type.includes("BANNER") ? "Y" : "N",
-          taskType: asset.type || '기타',
-          startDate: assetData.startDate || meta.startDate || '',
-          endDate: assetData.dueDate || meta.dueDate || '',
-          assignee: assignee || '',
-          targetSize: 0, // 일반 서브태스크는 모수 합산을 방지하기 위해 0으로 처리
-          targetCondition: meta.targetCondition || '',
-          notiChannel: '',
-          mainCopy: mainCopy,
-          landingUrl: assetData.landingValue || '',
-          designLink: imgUrl,
-          hasCoupon: assetData.hasCoupon || meta.hasCoupon || 'N'
-        };
-
-        await sendToGAS(payload);
+      // 💡 [신규] Target 모수가 80만을 초과하면 자동으로 청크(Chunk) 분할
+      const MAX_TARGET_SIZE = 800000;
+      const totalSize = parseInt(meta.targetSize) || 0;
+      const isTarget = meta.target === 'TARGET';
+      
+      let chunks = [];
+      if (isTarget && totalSize > MAX_TARGET_SIZE) {
+        let remaining = totalSize;
+        while (remaining > 0) {
+          chunks.push(Math.min(remaining, MAX_TARGET_SIZE));
+          remaining -= MAX_TARGET_SIZE;
+        }
+      } else {
+        chunks.push(totalSize); // 80만 이하면 1개로 처리
       }
 
-      // 4-2. 타겟팅 캠페인일 경우, 모수를 포함하는 '타겟팅 운영 요청' 행 1개 추가 전송
-      if (meta.target === 'TARGET') {
-        const bannerTypes = assets.map(a => a.name).join(', '); 
-        const targetChildJiraUrl = createdIssues && createdIssues[assets.length] ? `${baseUrl}/browse/${createdIssues[assets.length].key}` : '';
+      // 💡 분할된 청크(Chunks) 단위로 루프를 돌며 구글 시트에 다중 전송
+      for (let c = 0; c < chunks.length; c++) {
+        const chunkSize = chunks[c];
+        // 2개 이상으로 쪼개졌을 경우에만 _1, _2 꼬리표 붙임
+        const suffix = chunks.length > 1 ? `_${c + 1}` : '';
+        const currentCampaignName = (meta.campaignName || '') + suffix;
 
-        const targetPayload = {
-          parentJira: `${baseUrl}/browse/${parentKey}`,
-          childJira: targetChildJiraUrl,
-          campaignName: meta.campaignName || '',
-          product: meta.product || '',
-          targetType: meta.target || 'TARGET',
-          channel: '기타',
-          hasBanner: 'N',
-          taskType: 'TARGET_OPERATION',
-          startDate: meta.startDate || '',
-          endDate: meta.dueDate || '',
-          assignee: assignee || '',
-          targetSize: meta.targetSize || 0, // 오직 이 행에서만 타겟 모수를 전달함
-          targetCondition: meta.targetCondition || '',
-          notiChannel: '',
-          mainCopy: `타겟팅 세팅 요청 (포함 배너: ${bannerTypes})`,
-          landingUrl: '',
-          designLink: '',
-          hasCoupon: meta.hasCoupon || 'N'
-        };
+        // 4-1. 개별 배너/Task 데이터 전송
+        for (let i = 0; i < assets.length; i++) {
+          const asset = assets[i];
+          const assetData = asset.data || {};
+          const gnbStr = Array.isArray(assetData.gnb) ? assetData.gnb.join(', ') : (assetData.gnb || '미지정');
+          const mainCopy = assetData.mainTitle || assetData.copy || assetData.bannerCopy || assetData.previewTitle || assetData.topLogo || '카피 없음';
+          const imgUrl = assetData.imageUrl || assetData.bgImg || assetData.bannerImg || assetData.previewImg || '';
+          
+          const childJiraUrl = createdIssues && createdIssues[i] ? `${baseUrl}/browse/${createdIssues[i].key}` : '';
+          const isBannerAsset = asset.type && asset.type.includes("BANNER") ? "Y" : "N";
 
-        await sendToGAS(targetPayload);
+          const payload = {
+            parentJira: `${baseUrl}/browse/${parentKey}`,
+            childJira: childJiraUrl, // 여러 시트 행이 하나의 동일한 Jira 서브태스크를 바라봄!
+            campaignName: currentCampaignName, // 💡 분할된 캠페인명 (예: 여름이벤트_1)
+            product: meta.product || '',
+            targetType: meta.target || 'MASS',
+            channel: gnbStr,
+            hasBanner: isBannerAsset,
+            taskType: asset.type || '기타',
+            startDate: assetData.startDate || meta.startDate || '',
+            endDate: assetData.dueDate || meta.dueDate || '',
+            assignee: assignee || '',
+            // 💡 기존 0 대신 실제 분할된 모수 적용 (이를 통해 GAS에서 배너 Capa가 정상적으로 차감됨)
+            targetSize: isTarget ? chunkSize : 0, 
+            targetCondition: meta.targetCondition || '',
+            notiChannel: '',
+            mainCopy: mainCopy,
+            landingUrl: assetData.landingValue || '',
+            designLink: imgUrl,
+            // 💡 배너 행에서는 쿠폰 Capa 중복 계산 방지를 위해 무조건 'N'
+            hasCoupon: 'N' 
+          };
+
+          await sendToGAS(payload);
+        }
+
+        // 4-2. 타겟팅 캠페인일 경우, 모수를 포함하는 '타겟팅 운영 요청' 마스터 행 추가
+        if (isTarget) {
+          const bannerTypes = assets.map(a => a.name).join(', '); 
+          const targetChildJiraUrl = createdIssues && createdIssues[assets.length] ? `${baseUrl}/browse/${createdIssues[assets.length].key}` : '';
+
+          const targetPayload = {
+            parentJira: `${baseUrl}/browse/${parentKey}`,
+            childJira: targetChildJiraUrl,
+            campaignName: currentCampaignName, // 💡 분할된 캠페인명
+            product: meta.product || '',
+            targetType: meta.target || 'TARGET',
+            channel: '기타',
+            hasBanner: 'N',
+            taskType: 'TARGET_OPERATION',
+            startDate: meta.startDate || '',
+            endDate: meta.dueDate || '',
+            assignee: assignee || '',
+            targetSize: chunkSize, // 💡 분할된 모수
+            targetCondition: meta.targetCondition || '',
+            notiChannel: '',
+            mainCopy: `타겟팅 세팅 요청 (포함 배너: ${bannerTypes})`,
+            landingUrl: '',
+            designLink: '',
+            // 💡 쿠폰 Capa 차감은 오직 이 타겟팅 마스터 행에서만 1회 일어나도록 처리!
+            hasCoupon: meta.hasCoupon || 'N' 
+          };
+
+          await sendToGAS(targetPayload);
+        }
       }
 
-      console.log("✅ 구글 시트(CF Proxy) DB 기록 완료");
+      console.log("✅ 구글 시트(CF Proxy) DB 기록 완료 (분할 처리 적용)");
     }
 
     console.log("🎉 모든 작업 완료! 지라 창을 엽니다.");
