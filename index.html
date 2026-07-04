@@ -537,6 +537,16 @@
       const [openAccordions, setOpenAccordions] = useState({ campaign: true, banner: true });
 
       const handleSettingsClick = () => setIsSettingsOpen(true);
+      // 🌟 [추가] 담당자 정보 직접 수정 핸들러
+      const handleConfigChange = (gnbName, field, value) => {
+        setConfigMap(prev => ({
+          ...prev,
+          [gnbName]: {
+            ...prev[gnbName],
+            [field]: value
+          }
+        }));
+      };
 
       const lastPayloadStr = useRef("");
 
@@ -550,31 +560,34 @@
           lastPayloadStr.current = currentPayloadStr;
           setTimeout(() => { lastPayloadStr.current = ""; }, 1500); 
 
+          // 🌟 [수정] 데이터 경로를 rawGasData 내부로 정확히 매핑!
+          const aiMeta = payload.rawGasData?.meta || payload.campaignMeta;
+          const aiAssets = payload.rawGasData?.assets || payload.assets;
+
           if (payload.mermaidCode) setMermaidCode(payload.mermaidCode);
 
-          if (payload.campaignMeta) {
+          if (aiMeta) {
             setCampaignMeta(prev => ({ 
               ...prev, 
-              campaignName: payload.campaignMeta.campaignName || prev.campaignName,
-              target: payload.campaignMeta.target || prev.target,
-              targetSize: payload.campaignMeta.targetSize || prev.targetSize,
-              startDate: payload.campaignMeta.startDate || prev.startDate,
-              dueDate: payload.campaignMeta.dueDate || prev.dueDate
+              campaignName: aiMeta.campaignName || prev.campaignName,
+              target: aiMeta.target || prev.target,
+              targetSize: aiMeta.targetSize || prev.targetSize,
+              startDate: aiMeta.startDate || prev.startDate,
+              dueDate: aiMeta.dueDate || prev.dueDate
             }));
           }
 
-          if (payload.assets && Array.isArray(payload.assets)) {
-            // 🌟 [추가] 배열이 비어있을 경우 (타겟 전용 캠페인) 방어
-            if (payload.assets.length === 0) {
+          if (aiAssets && Array.isArray(aiAssets)) {
+            if (aiAssets.length === 0) {
               setAssets([]);
               setActiveTabId(null);
               setExportState({ isExporting: true, progress: 100, msg: `🎉 타겟팅 기획안 적용 완료! (배너 없음)`});
               setTimeout(() => setExportState({ isExporting: false, progress: 0, msg: '' }), 3000);
-              return; // 배열 순회 건너뛰기
+              return; 
             }
           
             const timestamp = Date.now();
-            const newAssets = payload.assets.map((aiAsset, index) => {
+            const newAssets = aiAssets.map((aiAsset, index) => {
               let baseData = {};
               if (aiAsset.type === 'TODAY_BTV') baseData = { ...DEFAULT_TODAY_BTV };
               else if (aiAsset.type === 'GENERAL_BANNER') baseData = { ...DEFAULT_GENERAL_BANNER };
@@ -599,7 +612,7 @@
                 id: `ai-asset-${index}-${timestamp}`,
                 type: aiAsset.type,
                 name: aiAsset.name || `${aiAsset.type.replace('_', ' ')} (AI)`, 
-                data: { ...baseData, ...aiAsset.data, gnb: cleanedGnb, startDate: payload.campaignMeta?.startDate || baseData.startDate, dueDate: payload.campaignMeta?.dueDate || baseData.dueDate } 
+                data: { ...baseData, ...aiAsset.data, gnb: cleanedGnb, startDate: aiMeta?.startDate || baseData.startDate, dueDate: aiMeta?.dueDate || baseData.dueDate } 
               };
             });
 
@@ -1229,29 +1242,40 @@
                   </div>
 
                   <div className="space-y-3">
-                    <h4 className="text-xs font-bold text-pink-400 flex items-center gap-1.5"><Users size={14}/> GNB별 자동 멘션 (읽기 전용)</h4>
+                    <h4 className="text-xs font-bold text-pink-400 flex items-center gap-1.5"><Users size={14}/> GNB별 자동 멘션 (편집 가능)</h4>
                     <p className="text-[10px] text-slate-400 leading-snug">
-                      현재 팀 내 담당자 매핑 정보입니다. 하위 일감(Sub-task) 생성 시, 선택된 GNB에 따라 해당 담당자에게 Jira 일감이 자동 할당됩니다. (수정 권한은 시스템 관리자에게 있습니다.)
+                      현재 Config 시트에서 불러온 담당자 매핑 정보입니다. 내용을 수정하면 이번 세션의 하위 일감(Sub-task) 담당자 할당에 즉시 반영됩니다.
                     </p>
                     
                     <div className="bg-[#1a1c26] rounded-xl border border-[#262833] overflow-hidden">
                       <div className="grid grid-cols-3 gap-0 text-[10px] bg-[#262833] text-slate-300 font-bold">
                         <div className="p-2.5 text-center border-r border-[#1a1c26]">GNB 명칭</div>
-                        <div className="col-span-2 p-2.5 pl-4 flex items-center justify-between">담당자 <Lock size={10} className="text-slate-500"/></div>
+                        <div className="col-span-2 grid grid-cols-2 gap-2 p-2.5 text-center">
+                          <div>담당자 이름</div>
+                          <div>Jira ID</div>
+                        </div>
                       </div>
                       
-                      {/* 🌟 configMap 데이터를 화면에 동적으로 뿌려줌 */}
+                      {/* 🌟 [수정] disabled를 풀고, 두 개의 독립된 input으로 나누어 수정 가능하게 처리 */}
                       {Object.entries(configMap).map(([gnbName, info], i) => (
-                        <div key={i} className="grid grid-cols-3 gap-0 text-xs border-t border-[#262833]">
-                          <div className="p-2.5 text-center border-r border-[#262833] text-slate-400 flex items-center justify-center">
+                        <div key={i} className="grid grid-cols-3 gap-0 text-xs border-t border-[#262833] items-center">
+                          <div className="p-2.5 text-center border-r border-[#262833] text-slate-400 font-bold">
                             {gnbName}
                           </div>
-                          <div className="col-span-2 p-2.5 pl-4">
+                          <div className="col-span-2 grid grid-cols-2 gap-2 p-2">
                             <input 
                               type="text" 
-                              value={`${info.name} (${info.jiraId})`} 
-                              disabled 
-                              className="w-full bg-transparent text-white opacity-60 cursor-not-allowed outline-none font-bold" 
+                              placeholder="이름"
+                              value={info.name || ''} 
+                              onChange={(e) => handleConfigChange(gnbName, 'name', e.target.value)}
+                              className="w-full bg-[#0a0812] border border-[#303340] rounded-md px-2 py-1.5 text-white outline-none focus:border-[#4f3df6] transition-colors" 
+                            />
+                            <input 
+                              type="text" 
+                              placeholder="Jira ID"
+                              value={info.jiraId || ''} 
+                              onChange={(e) => handleConfigChange(gnbName, 'jiraId', e.target.value)}
+                              className="w-full bg-[#0a0812] border border-[#303340] rounded-md px-2 py-1.5 text-white outline-none focus:border-[#4f3df6] transition-colors" 
                             />
                           </div>
                         </div>
