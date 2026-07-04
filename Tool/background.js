@@ -193,6 +193,22 @@ async function createJiraHierarchy(data, sourceTabId) {
         }
       }
     }
+    // 🌟 [NEW] 부모 일감 생성 직후, 담당자 멘션(Mention) 댓글 달기
+    if (data.parent.comment) {
+      console.log("💬 상위 일감 담당자 멘션 댓글 작성 시작...");
+      try {
+        await fetchWithRetry(`${baseUrl}/rest/api/2/issue/${parentKey}/comment`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-Atlassian-Token': 'no-check' },
+          credentials: 'include',
+          body: JSON.stringify({ body: data.parent.comment })
+        });
+        console.log(`✅ 부모 댓글 작성 완료: ${parentKey}`);
+        await sleep(500); 
+      } catch (e) {
+        console.error(`❌ 부모 댓글 에러: ${parentKey}`, e);
+      }
+    }
 
     // 2️⃣ 하위 일감 일괄(Bulk) 생성
     console.log("🚀 하위 일감 일괄 생성 요청 중...");
