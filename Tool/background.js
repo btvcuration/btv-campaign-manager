@@ -246,6 +246,25 @@ async function createJiraHierarchy(data, sourceTabId) {
         console.log(`✅ 하위 첨부 완료: ${issueKey}`);
         await sleep(1000); 
       }
+
+      // 🌟 [추가] 이미지 첨부 후 담당자 멘션(Mention) 댓글 자동 작성
+      if (childData.assignee) {
+        const commentBody = {
+          body: `담당자 [~${childData.assignee}]님, 신규 캠페인 세팅 및 편성 확인 부탁드립니다.`
+        };
+        try {
+          await fetchWithRetry(`${baseUrl}/rest/api/2/issue/${issueKey}/comment`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-Atlassian-Token': 'no-check' },
+            credentials: 'include',
+            body: JSON.stringify(commentBody)
+          });
+          console.log(`✅ 멘션 댓글 작성 완료: ${issueKey}`);
+          await sleep(500); // 딜레이 보장
+        } catch (e) {
+          console.error(`❌ 댓글 에러: ${issueKey}`, e);
+        }
+      }
     }
 
     // 🌟 4️⃣ [NEW] Cloudflare Worker를 거쳐 Google Sheets에 데이터 적재
