@@ -564,6 +564,15 @@
           }
 
           if (payload.assets && Array.isArray(payload.assets)) {
+            // 🌟 [추가] 배열이 비어있을 경우 (타겟 전용 캠페인) 방어
+            if (payload.assets.length === 0) {
+              setAssets([]);
+              setActiveTabId(null);
+              setExportState({ isExporting: true, progress: 100, msg: `🎉 타겟팅 기획안 적용 완료! (배너 없음)`});
+              setTimeout(() => setExportState({ isExporting: false, progress: 0, msg: '' }), 3000);
+              return; // 배열 순회 건너뛰기
+            }
+          
             const timestamp = Date.now();
             const newAssets = payload.assets.map((aiAsset, index) => {
               let baseData = {};
@@ -609,6 +618,41 @@
       const [activeTabId, setActiveTabId] = useState('asset-1');
       const [isAddAssetModalOpen, setIsAddAssetModalOpen] = useState(false);
       const [localShowSafeZone, setLocalShowSafeZone] = useState(false);
+      // 🌟 [추가] GNB별 담당자 매핑 Config 상태 및 Proxy API 호출
+      const [configMap, setConfigMap] = useState({});
+      
+      useEffect(() => {
+        const fetchConfig = async () => {
+          try {
+            // 💡 구축해두신 CF Worker Proxy 주소 활용 (action 파라미터는 GAS 스펙에 맞게 조정)
+            const proxyUrl = "https://btv-proxy.alcheminos.workers.dev?action=getConfig";
+            
+            const response = await fetch(proxyUrl, {
+              method: 'GET', // GAS 구현 방식에 따라 POST로 변경 가능
+              headers: {
+                'Content-Type': 'application/json'
+              }
+            });
+            
+            if (!response.ok) throw new Error("네트워크 응답이 올바르지 않습니다.");
+            
+            const configData = await response.json();
+            
+            // 불러온 JSON 데이터를 상태에 저장 (예: { "영화시리즈": { "name": "권서영", "jiraId": "kwon123" } })
+            setConfigMap(configData);
+      
+          } catch (error) {
+            console.error("Config 로드 실패:", error);
+            // 🚨 API 실패 시 화면이 터지지 않도록 최소한의 Fallback(기본값) 데이터 세팅
+            setConfigMap({
+              "영화시리즈": { "name": "담당자 미지정", "jiraId": "system_auto" },
+              "TV 방송": { "name": "담당자 미지정", "jiraId": "system_auto" }
+            });
+          }
+        };
+        
+        fetchConfig();
+      }, []);
 
       const handleMetaChange = (e) => setCampaignMeta({ ...campaignMeta, [e.target.name]: e.target.value });
       const handleAssetChange = (id, field, value) => {
@@ -713,7 +757,9 @@
       };
       
       const handleExport = async () => {
-        if (!assets || assets.length === 0) return alert("전송할 배너 기획안이 없습니다.");
+        if (!assets || assets.length === 0) {
+          if (campaignMeta.target !== 'TARGET') return alert("전송할 배너 기획안이 없고, 타겟팅 캠페인도 아닙니다.");
+        }
         
         // 🌟 수정: Jira 전송 전 확인 팝업 추가
         const isConfirmed = window.confirm("Jira 일감 전송을 시작하시겠습니까?\n\n확인(OK)을 누르면 화면 캡처가 시작됩니다.\n※ 주의: Jira에 미리 로그인이 되어있어야 정상 작동합니다.");
@@ -813,6 +859,11 @@
           let targetGnbs = Array.isArray(data.gnb) ? data.gnb : [data.gnb || '미지정'];
           if (asset?.type === 'TODAY_BTV') targetGnbs = ['홈'];
           if (asset?.type === 'SYNOPSIS_BANNER') targetGnbs = ['콘텐츠'];
+          
+          // 🌟 [추가 코드] configMap을 참조하여 GNB에 맞는 담당자 추출
+          const targetGnbForAssign = targetGnbs[0]; // 다중 선택 시 첫 번째 GNB 기준
+          const assigneeInfo = configMap[targetGnbForAssign];
+          const mappedAssigneeJiraId = assigneeInfo ? assigneeInfo.jiraId : cleanAssignee; // 매핑 실패 시 내 계정으로 Fallback
         
           const dateInfo = data.startDate ? `${data.startDate} ~ ${data.dueDate || ''}` : '미지정';
           let copyText = data.mainTitle || data.copy || data.bannerCopy || data.previewTitle || '미지정';
@@ -824,19 +875,27 @@
           return {
             title: `[디자인] ${meta.campaignName || "신규 캠페인"} _ ${asset?.name || '미지정'}`, 
             desc: `h3. 🖼️ 상세 기획\n* *편성 GNB*: ${targetGnbs.join(', ')}\n* *담당자 호출*: [~${cleanAssignee}]\n* *편성 일정*: ${dateInfo}\n* *주요 카피*: ${copyText}\n* *랜딩 URL*: ${data.landingValue || '미지정'}\n* *비고*: ${data.note || '없음'}\n\nh3. 🎨 시뮬레이터 캡처 시안\n!preview.png!`, 
-            assignee: "", imageData: capturedImages[asset.id], startDate: data.startDate, dueDate: data.dueDate, gnb: targetGnbs 
+            // 🌟 [수정 코드] assignee 하드코딩(빈칸) 제거하고 동적 변수 삽입
+            assignee: mappedAssigneeJiraId, 
+            imageData: capturedImages[asset.id], 
+            startDate: data.startDate, 
+            dueDate: data.dueDate, 
+            gnb: targetGnbs 
           };
         });
 
         parentTable += `</tbody></table>`;
 
         if (meta.target === 'TARGET') {
-          const bannerTypes = assets.map(a => a.name).join(', '); 
+          // 🌟 [수정 코드] 배너가 없을 때 "배너 없음"으로 텍스트 처리
+          const bannerTypes = assets && assets.length > 0 ? assets.map(a => a.name).join(', ') : '배너 없음 (타겟/푸시 전용)'; 
           const targetDate = meta.startDate ? `${meta.startDate} ~ ${meta.dueDate || ''}` : '미지정';
+          
           childIssues.push({
             title: `[운영] ${meta.campaignName || "신규 캠페인"} 타겟팅 세팅 요청`,
-            desc: `h3. 🎯 타겟팅 캠페인 운영 요청\n* *노출 배너 유형*: ${bannerTypes}\n* *담당자 호출*: [~${cleanAssignee}]\n* *편성 일정*: ${targetDate}\n* *예상 타겟 모수*: ${meta.targetSize || '기획자와 모수 확인 필요'}\n\n위 내용으로 타겟팅 배너 세팅을 요청드립니다.`,
-            assignee: '', gnb: ['기타'] 
+            desc: `... (노출 배너 유형: ${bannerTypes}) ...`,
+            assignee: '', 
+            gnb: ['기타'] 
           });
         }
 
@@ -1181,17 +1240,19 @@
                         <div className="col-span-2 p-2.5 pl-4 flex items-center justify-between">담당자 <Lock size={10} className="text-slate-500"/></div>
                       </div>
                       
-                      {[
-                        { gnb: '영화시리즈', name: '권서영 매니저' },
-                        { gnb: 'TV 방송', name: '허유진 매니저' },
-                        { gnb: '애니메이션 / 키즈', name: '임예은 매니저' },
-                        { gnb: '해피시니어', name: '구정화 매니저' },
-                        { gnb: '전체 총괄', name: '구인모 팀장' },
-                      ].map((item, i) => (
+                      {/* 🌟 configMap 데이터를 화면에 동적으로 뿌려줌 */}
+                      {Object.entries(configMap).map(([gnbName, info], i) => (
                         <div key={i} className="grid grid-cols-3 gap-0 text-xs border-t border-[#262833]">
-                          <div className="p-2.5 text-center border-r border-[#262833] text-slate-400 flex items-center justify-center">{item.gnb}</div>
+                          <div className="p-2.5 text-center border-r border-[#262833] text-slate-400 flex items-center justify-center">
+                            {gnbName}
+                          </div>
                           <div className="col-span-2 p-2.5 pl-4">
-                            <input type="text" value={item.name} disabled className="w-full bg-transparent text-white opacity-60 cursor-not-allowed outline-none font-bold" />
+                            <input 
+                              type="text" 
+                              value={`${info.name} (${info.jiraId})`} 
+                              disabled 
+                              className="w-full bg-transparent text-white opacity-60 cursor-not-allowed outline-none font-bold" 
+                            />
                           </div>
                         </div>
                       ))}
