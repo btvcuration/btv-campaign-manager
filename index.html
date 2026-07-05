@@ -605,7 +605,10 @@
               target: aiMeta.target || prev.target,
               targetSize: aiMeta.targetSize || prev.targetSize,
               startDate: aiMeta.startDate || prev.startDate,
-              dueDate: aiMeta.dueDate || prev.dueDate
+              dueDate: aiMeta.dueDate || prev.dueDate,
+              // 💡 [추가] AI가 넘겨준 쿠폰 정보를 잃어버리지 않도록 State에 명시적 저장!
+              hasCoupon: aiMeta.hasCoupon || prev.hasCoupon,
+              couponBenefit: aiMeta.couponBenefit || prev.couponBenefit
             }));
           }
 
