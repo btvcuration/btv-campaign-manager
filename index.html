@@ -596,7 +596,10 @@
           const aiMeta = payload.rawGasData?.meta || payload.campaignMeta;
           const aiAssets = payload.rawGasData?.assets || payload.assets;
 
-          if (payload.mermaidCode) setMermaidCode(payload.mermaidCode);
+          const aiMermaid = payload.mermaidCode || payload.rawGasData?.mermaidCode;
+          if (aiMermaid) {
+            setMermaidCode(aiMermaid);
+          }
 
           if (aiMeta) {
             setCampaignMeta(prev => ({ 
@@ -896,7 +899,7 @@
         setExportState({ isExporting: true, progress: 85, msg: "Jira API 데이터 전송 중..." });
 
         // 🌟 1. HTML 기반 부모 일감 표 생성
-        let parentTable = `<table border="1" style="border-collapse: collapse; width: 100%; text-align: center; font-size: 13px;"><tbody><tr style="background-color: #f4f5f7; color: #333;"><td style="padding: 10px; font-weight: bold; width: 5%;">순번</td><td style="padding: 10px; font-weight: bold; width: 25%;">배너명</td><td style="padding: 10px; font-weight: bold; width: 15%;">편성 GNB</td><td style="padding: 10px; font-weight: bold; width: 25%;">랜딩 URL</td><td style="padding: 10px; font-weight: bold; width: 30%;">첨부파일 확인</td></tr>`;
+        let parentTable = `<table border="1" style="border-collapse: collapse; width: 100%; text-align: center; font-size: 13px;"><tbody><tr style="background-color: #f4f5f7; color: #333;"><td style="padding: 10px; font-weight: bold; width: 5%;">순번</td><td style="padding: 10px; font-weight: bold; width: 25%;">배너명</td><td style="padding: 10px; font-weight: bold; width: 15%;">편성 GNB</td><td style="padding: 10px; font-weight: bold; width: 25%;">랜딩 URL</td><td style="padding: 10px; font-weight: bold; width: 30%;">시안 미리보기</td></tr>`;
         let parentImagesToUpload = [];
 
         if (workflowDataUrl) {
@@ -916,18 +919,21 @@
           const assigneeInfo = configMap[targetGnbForAssign];
           const mappedAssigneeJiraId = assigneeInfo ? assigneeInfo.jiraId : cleanAssignee; 
           
-          // 담당자 ID 수집
           uniqueAssignees.add(mappedAssigneeJiraId);
           
           const dateInfo = data.startDate ? `${data.startDate} ~ ${data.dueDate || ''}` : '미지정';
           let copyText = data.mainTitle || data.copy || data.bannerCopy || data.previewTitle || '미지정';
           const imgName = `banner_preview_${idx + 1}.png`;
+          const imgDataUrl = capturedImages[asset.id] || '';
           
-          // 부모 표에 행 추가 (이미지는 첨부파일 이름 텍스트로 안내)
-          parentTable += `<tr><td style="padding: 10px;">${idx + 1}</td><td style="padding: 10px; font-weight: bold;">${asset?.name || '미지정'}</td><td style="padding: 10px;">${targetGnbs.join(', ')}</td><td style="padding: 10px; word-break: break-all;">${data.landingValue || '미지정'}</td><td style="padding: 10px; color: #4f3df6;"><b>${imgName}</b></td></tr>`;
-          if (capturedImages[asset.id]) { parentImagesToUpload.push({ filename: imgName, dataUrl: capturedImages[asset.id] }); }
+          // 💡 [개선] 부모 표(Table)에 배너 썸네일(Base64) 이미지를 직접 노출!
+          parentTable += `<tr><td style="padding: 10px;">${idx + 1}</td><td style="padding: 10px; font-weight: bold;">${asset?.name || '미지정'}</td><td style="padding: 10px;">${targetGnbs.join(', ')}</td><td style="padding: 10px; word-break: break-all;">${data.landingValue || '미지정'}</td><td style="padding: 10px; color: #4f3df6; text-align: center;">` + 
+            (imgDataUrl ? `<img src="${imgDataUrl}" style="max-width: 150px; border: 1px solid #ccc; border-radius: 4px; margin-bottom: 5px;" /><br>` : '') + 
+            `<b>${imgName}</b></td></tr>`;
+            
+          if (imgDataUrl) { parentImagesToUpload.push({ filename: imgName, dataUrl: imgDataUrl }); }
 
-          // 🌟 2. 하위 일감 본문: 텍스트 깨짐 방지용 HTML 테이블 적용
+          // 🌟 2. 하위 일감 본문: Base64 이미지 태그 직접 삽입
           const childDesc = 
             "<h3>🖼️ 상세 기획</h3>" +
             "<table border='1' style='border-collapse: collapse; width: 100%; text-align: left; font-size: 13px;'>" +
@@ -938,13 +944,14 @@
             "<tr><th style='padding: 8px; background-color: #f4f5f7;'>비고</th><td style='padding: 8px;'>" + (data.note || '없음').replace(/\n/g, '<br>') + "</td></tr>" +
             "</table>" +
             "<br><h3>🎨 시뮬레이터 캡처 시안</h3>" +
-            "<p>본문 하단 첨부파일에서 <b>" + imgName + "</b> 이미지를 확인해 주세요.</p>";
+            (imgDataUrl ? `<img src="${imgDataUrl}" style="max-width: 100%; border: 1px solid #e2e8f0; border-radius: 8px; margin: 10px 0;" />` : '') +
+            "<p>※ 고화질 원본은 본문 하단 첨부파일(<b>" + imgName + "</b>)을 확인해 주세요.</p>";
 
           return {
             title: `[디자인] ${meta.campaignName || "신규 캠페인"} _ ${asset?.name || '미지정'}`, 
             desc: childDesc, 
             assignee: mappedAssigneeJiraId, 
-            imageData: capturedImages[asset.id], 
+            imageData: imgDataUrl, 
             startDate: data.startDate, 
             dueDate: data.dueDate, 
             gnb: targetGnbs 
@@ -959,7 +966,6 @@
           const targetDate = meta.startDate ? `${meta.startDate} ~ ${meta.dueDate || ''}` : '미지정';
           uniqueAssignees.add(cleanAssignee);
           
-          // 🌟 [추가] 쿠폰 발급 여부가 'Y'일 경우 타겟팅 요청 본문에 혜택 금액 정보 추가
           const couponTextForTarget = meta.hasCoupon === 'Y' 
             ? `<li><b>지급 혜택:</b> ${meta.couponBenefit || '미지정'}</li>` 
             : '';
@@ -972,8 +978,8 @@
           });
         }
 
-        // 🌟 3. 부모 일감 본문: HTML 리스트(ul, li)로 프로모션 정보 상세 나열
-        const safeHasCoupon = (meta.hasCoupon || '').trim().toUpperCase() === 'Y' ? 'Y' : 'N'; // 💡 안전한 파싱
+        // 🌟 3. 부모 일감 본문: Userflow(플로우차트) 이미지 태그 직접 삽입
+        const safeHasCoupon = (meta.hasCoupon || '').trim().toUpperCase() === 'Y' ? 'Y' : 'N';
         
         const parentDescText = 
           "<h3>📌 캠페인 공통 정보</h3>" +
@@ -984,12 +990,11 @@
           "<li><b>예상 모수:</b> " + (meta.targetSize ? meta.targetSize + "명" : "미지정") + "</li>" +
           "<li><b>타겟 조건:</b> " + (meta.targetCondition || "미지정") + "</li>" +
           "<li><b>편성 일정:</b> " + (meta.startDate || "미지정") + " ~ " + (meta.dueDate || "미지정") + "</li>" +
-          // 💡 [수정] 띄어쓰기 방어 로직 적용 및 할인 금액(couponBenefit) 노출 추가
           "<li><b>쿠폰 발급:</b> " + (safeHasCoupon === 'Y' ? "포함 (" + (meta.couponBenefit || "혜택 미상") + ")" : "미포함") + "</li>" +
           "<li><b>총 요청 건수:</b> " + assets.length + "건</li>" +
           "</ul><br>" +
           "<h3>🗺️ 고객 이동 경로 (Userflow)</h3>" +
-          "<p>" + (workflowDataUrl ? "본문 하단 첨부파일에서 <b>workflow_summary.png</b> 이미지를 확인해 주세요." : "배너 없는 프로모션") + "</p><br>" +
+          (workflowDataUrl ? `<img src="${workflowDataUrl}" style="max-width: 100%; border: 1px solid #e2e8f0; border-radius: 8px; margin: 10px 0;" /><p>※ 고화질 원본은 본문 하단 첨부파일(<b>workflow_summary.png</b>)을 확인해 주세요.</p>` : "<p>배너 없는 프로모션</p>") + "<br><br>" +
           "<h3>📊 배너 편성 종합표</h3>" +
           parentTable + "<br><hr><br>" +
           "<p>하위 작업(Sub-task)으로 개별 상세 기획안이 첨부되어 있습니다.</p>";
