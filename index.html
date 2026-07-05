@@ -955,15 +955,21 @@
           const targetDate = meta.startDate ? `${meta.startDate} ~ ${meta.dueDate || ''}` : '미지정';
           uniqueAssignees.add(cleanAssignee);
           
+          // 🌟 [추가] 쿠폰 발급 여부가 'Y'일 경우 타겟팅 요청 본문에 혜택 금액 정보 추가
+          const couponTextForTarget = meta.hasCoupon === 'Y' 
+            ? `<li><b>지급 혜택:</b> ${meta.couponBenefit || '미지정'}</li>` 
+            : '';
+
           childIssues.push({
             title: `[운영] ${meta.campaignName || "신규 캠페인"} 타겟팅 세팅 요청`,
-            desc: `<h3>🎯 타겟팅 캠페인 운영 요청</h3><ul><li><b>노출 배너 유형:</b> ${bannerTypes}</li><li><b>편성 일정:</b> ${targetDate}</li><li><b>예상 타겟 모수:</b> ${meta.targetSize || '미지정'}</li></ul><br><p>위 내용으로 타겟팅 배너 세팅을 요청드립니다.</p>`,
+            desc: `<h3>🎯 타겟팅 캠페인 운영 요청</h3><ul><li><b>노출 배너 유형:</b> ${bannerTypes}</li><li><b>편성 일정:</b> ${targetDate}</li><li><b>예상 타겟 모수:</b> ${meta.targetSize || '미지정'}</li>${couponTextForTarget}</ul><br><p>위 내용으로 타겟팅 배너 세팅을 요청드립니다.</p>`,
             assignee: '', 
             gnb: ['기타'] 
           });
         }
 
         // 🌟 3. 부모 일감 본문: HTML 리스트(ul, li)로 프로모션 정보 상세 나열
+        // 🌟 [수정] 쿠폰 발급 항목에 금액(couponBenefit)이 함께 노출되도록 변경
         const parentDescText = 
           "<h3>📌 캠페인 공통 정보</h3>" +
           "<ul>" +
@@ -973,7 +979,7 @@
           "<li><b>예상 모수:</b> " + (meta.targetSize ? meta.targetSize + "명" : "미지정") + "</li>" +
           "<li><b>타겟 조건:</b> " + (meta.targetCondition || "미지정") + "</li>" +
           "<li><b>편성 일정:</b> " + (meta.startDate || "미지정") + " ~ " + (meta.dueDate || "미지정") + "</li>" +
-          "<li><b>쿠폰 발급:</b> " + (meta.hasCoupon === 'Y' ? "포함 (자동지급 등)" : "미포함") + "</li>" +
+          "<li><b>쿠폰 발급:</b> " + (meta.hasCoupon === 'Y' ? `포함 (${meta.couponBenefit || '금액 미지정'})` : "미포함") + "</li>" +
           "<li><b>총 요청 건수:</b> " + assets.length + "건</li>" +
           "</ul><br>" +
           "<h3>🗺️ 고객 이동 경로 (Userflow)</h3>" +
@@ -1002,7 +1008,7 @@
             assignee: cleanAssignee,
             assets: assets
           }
-        };        
+        };
         // 확장 프로그램으로 데이터 전송 이벤트 발생
         const event = new CustomEvent('TEST_JIRA_SEND', { detail: finalData });
         window.dispatchEvent(event);
