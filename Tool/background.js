@@ -324,7 +324,6 @@ async function createJiraHierarchy(data, sourceTabId) {
       // 분할된 청크(Chunks) 단위로 루프를 돌며 데이터 수집
       for (let c = 0; c < chunks.length; c++) {
         const chunkSize = chunks[c];
-        // 2개 이상으로 쪼개졌을 경우에만 _1, _2 꼬리표 붙임
         const suffix = chunks.length > 1 ? `_${c + 1}` : '';
         const currentCampaignName = (meta.campaignName || '') + suffix;
 
@@ -333,13 +332,26 @@ async function createJiraHierarchy(data, sourceTabId) {
           const asset = assets[i];
           const assetData = asset.data || {};
           const gnbStr = Array.isArray(assetData.gnb) ? assetData.gnb.join(', ') : (assetData.gnb || '미지정');
-          const mainCopy = assetData.mainTitle || assetData.copy || assetData.bannerCopy || assetData.previewTitle || assetData.topLogo || '카피 없음';
           const imgUrl = assetData.imageUrl || assetData.bgImg || assetData.bannerImg || assetData.previewImg || '';
+          
+          // 🌟 [개선] 누락되는 카피가 없도록 모든 텍스트 요소 긁어모으기
+          let textParts = [];
+          if (assetData.topText) textParts.push(assetData.topText);
+          if (assetData.mainTitle) textParts.push(assetData.mainTitle);
+          if (assetData.copy) textParts.push(assetData.copy);
+          if (assetData.bannerCopy) textParts.push(assetData.bannerCopy);
+          if (assetData.previewTitle) textParts.push(assetData.previewTitle);
+          if (assetData.topLogo) textParts.push(assetData.topLogo);
+          if (assetData.subText) textParts.push(assetData.subText);
+          if (assetData.subTitle) textParts.push(assetData.subTitle);
+          if (assetData.buttonText) textParts.push(assetData.buttonText);
+          if (assetData.badgeText) textParts.push(assetData.badgeText);
+          
+          const mainCopy = textParts.length > 0 ? textParts.join(' / ') : '카피 없음';
           
           const childJiraUrl = createdIssues && createdIssues[i] ? `${baseUrl}/browse/${createdIssues[i].key}` : '';
           const isBannerAsset = asset.type && asset.type.includes("BANNER") ? "Y" : "N";
 
-          // 💡 [수정] 바로 쏘지 않고 배열에 Push
           bulkPayload.push({
             parentJira: `${baseUrl}/browse/${parentKey}`,
             childJira: childJiraUrl, 
@@ -355,19 +367,19 @@ async function createJiraHierarchy(data, sourceTabId) {
             targetSize: isTarget ? chunkSize : 0, 
             targetCondition: meta.targetCondition || '',
             notiChannel: '',
-            mainCopy: mainCopy,
+            mainCopy: mainCopy, // 모든 카피 통합 반영
             landingUrl: assetData.landingValue || '',
             designLink: imgUrl,
-            hasCoupon: 'N' // 배너 쪽은 무조건 N
+            // 🌟 [개선] 모수가 0이므로 캠페인 단위 통일성을 위해 실제 메타의 쿠폰 여부(Y/N)를 동일하게 부여
+            hasCoupon: meta.hasCoupon || 'N' 
           });
         }
 
-        // 4-2. 타겟팅 캠페인일 경우, 모수를 포함하는 '타겟팅 운영 요청' 마스터 행 수집
+        // 4-2. 타겟팅 캠페인일 경우, 마스터 행 수집
         if (isTarget) {
           const bannerTypes = assets.length > 0 ? assets.map(a => a.name).join(', ') : '배너 없음 (타겟 전용)'; 
           const targetChildJiraUrl = createdIssues && createdIssues[assets.length] ? `${baseUrl}/browse/${createdIssues[assets.length].key}` : '';
 
-          // 💡 [수정] 바로 쏘지 않고 배열에 Push
           bulkPayload.push({
             parentJira: `${baseUrl}/browse/${parentKey}`,
             childJira: targetChildJiraUrl,
@@ -386,12 +398,12 @@ async function createJiraHierarchy(data, sourceTabId) {
             mainCopy: `타겟팅 세팅 요청 (포함 배너: ${bannerTypes})`,
             landingUrl: '',
             designLink: '',
-            hasCoupon: meta.hasCoupon || 'N' // 쿠폰 데이터는 마스터 행에만 들어감
+            hasCoupon: meta.hasCoupon || 'N' // 마스터 행도 동일하게 부여
           });
         }
       }
 
-      // 🌟 [추가] 수집된 모든 행(rows)을 묶어서 단 1번의 요청으로 일괄 전송!
+      // 수집된 모든 행을 묶어서 단 1번의 요청으로 일괄 전송 (Bulk Insert)
       if (bulkPayload.length > 0) {
         await sendToGAS({ 
           action: "bulkInsert", 
