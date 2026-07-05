@@ -23,8 +23,14 @@ const observer = new MutationObserver((mutations) => {
   codeBlocks.forEach(block => {
     if (block.getAttribute('data-btv-processed') === 'true') return;
 
-    // 1. 블록 내 텍스트 및 HTML 요소 가져오기 (💡 누락되었던 변수 선언 추가!)
-    const text = block.textContent.trim();
+    // 1. 블록 내 텍스트 및 HTML 요소 가져오기
+    // 💡 값을 덮어씌울 수 있도록 const 대신 let으로 변경
+    let text = block.textContent.trim();
+    
+    // 🧹 [핵심 추가] JSON 뿐만 아니라 Mermaid 파서도 정상 작동하도록 특수 공백 사전 제거
+    text = text.replace(/\u00A0/g, ' '); 
+    text = text.replace(/[\u200B-\u200D\uFEFF]/g, '');
+
     const codeElement = block.querySelector('code');
 
     // 2. [핵심 로직] JSON인지 확인하고 "CREATE_CAMPAIGN_ASSETS" 액션이 있는지 검사
