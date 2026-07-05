@@ -23,15 +23,8 @@ const observer = new MutationObserver((mutations) => {
   codeBlocks.forEach(block => {
     if (block.getAttribute('data-btv-processed') === 'true') return;
 
-    // 1. 블록 내 텍스트 및 HTML 요소 가져오기
-    // 💡 값을 덮어씌울 수 있도록 const 대신 let으로 변경
-    let text = block.textContent.trim();
-    
-    // 🧹 [핵심 추가] JSON 뿐만 아니라 Mermaid 파서도 정상 작동하도록 특수 공백 사전 제거
-    text = text.replace(/\u00A0/g, ' '); 
-    text = text.replace(/[\u200B-\u200D\uFEFF]/g, '');
-    text = text.trim(); // 💡 [수정 1] 공백 치환 후 양끝 공백을 한 번 더 확실하게 제거
-
+    // 1. 블록 내 텍스트 및 HTML 요소 가져오기 (💡 누락되었던 변수 선언 추가!)
+    const text = block.textContent.trim();
     const codeElement = block.querySelector('code');
 
     // 2. [핵심 로직] JSON인지 확인하고 "CREATE_CAMPAIGN_ASSETS" 액션이 있는지 검사
@@ -61,22 +54,13 @@ const observer = new MutationObserver((mutations) => {
     }
 
     // 🎨 기능 B: Mermaid 마크다운 감지 및 시각화 렌더링
+    // 💡 정의되지 않았던 codeText 대신 올바르게 text 변수 사용
     const isMermaid = (codeElement && (codeElement.className.includes('mermaid') || codeElement.className.includes('language-mermaid'))) ||
                       text.startsWith('graph ') ||
                       text.startsWith('flowchart ');
 
-    // 🚨 [핵심 버그 수정] 무한 루프 방지: 마지막으로 시도한 텍스트를 기억해 둡니다.
-    const lastTriedText = block.getAttribute('data-last-mermaid-text');
-
-    // 텍스트가 이전과 다르거나 처음 시도하는 경우에만 진입
-    if (isMermaid && block.getAttribute('data-mermaid-processed') !== 'true' && lastTriedText !== text) {
-      // 1️⃣ 지금 시도하는 텍스트를 기록해둠 (DOM이 변경되어 다시 불려도 같은 텍스트면 무시됨)
-      block.setAttribute('data-last-mermaid-text', text);
-
-      // 이전에 실패해서 남은 찌꺼기 컨테이너가 있다면 미리 제거
-      if (block.nextElementSibling && block.nextElementSibling.id && block.nextElementSibling.id.startsWith('mermaid-')) {
-        block.nextElementSibling.remove();
-      }
+    if (isMermaid && block.getAttribute('data-mermaid-processed') !== 'true') {
+      block.setAttribute('data-mermaid-processed', 'true');
 
       const uniqueId = 'mermaid-' + Math.random().toString(36).substr(2, 9);
       const graphContainer = document.createElement('div');
@@ -96,8 +80,6 @@ const observer = new MutationObserver((mutations) => {
         mermaid.parse(text).then((isValid) => {
             if(isValid) {
                 mermaid.render(uniqueId + '-svg', text).then((result) => {
-                  // ✅ 2️⃣ 완벽하게 성공했을 때만 영구 처리 완료 딱지를 붙임
-                  block.setAttribute('data-mermaid-processed', 'true');
                   graphContainer.innerHTML = `
                     <div style="display:flex; align-items:center; gap:8px; margin-bottom:15px;">
                       <span style="background:#4f3df6; color:white; padding:4px 8px; border-radius:6px; font-size:12px; font-weight:bold;">UX</span>
@@ -108,12 +90,14 @@ const observer = new MutationObserver((mutations) => {
                 }).catch(err => { throw err; });
             }
         }).catch((err) => {
-            // 🚨 3️⃣ 에러가 나면 원본을 다시 보여주고 컨테이너만 지움
-            // -> 다음 타이핑으로 text 글자가 하나라도 바뀌면 맨 위 if문을 통과해서 다시 시도함!
+            console.warn("⚠️ Mermaid 파싱 에러 (원본 텍스트 유지):", err);
             block.style.display = 'block'; 
             graphContainer.remove(); 
+            const errorSvg = document.getElementById(uniqueId + '-svg');
+            if (errorSvg) errorSvg.remove();
         });
       } catch (e) {
+        console.error("Mermaid 렌더링 예외:", e);
         block.style.display = 'block'; 
         graphContainer.remove();
       }
@@ -151,20 +135,7 @@ function injectButton(targetBlock) {
       const endIndex = currentText.lastIndexOf('}');
       if (startIndex === -1 || endIndex === -1) throw new Error("JSON 괄호({})를 찾을 수 없습니다.");
 
-      let pureJsonText = currentText.substring(startIndex, endIndex + 1);
-
-      // 🧹 [추가된 핵심 로직: 데이터 정제(Cleaning)]
-      // 1. 제미나이 화면에서 들여쓰기용으로 흔히 쓰이는 특수 공백(NBSP)을 일반 공백으로 치환
-      pureJsonText = pureJsonText.replace(/\u00A0/g, ' ');
-      
-      // 2. 눈에 보이지 않는 기타 유니코드 쓰레기 값(Zero-width space 등) 제거
-      pureJsonText = pureJsonText.replace(/[\u200B-\u200D\uFEFF]/g, '');
-      
-      // 3. 간혹 백슬래시(\)가 두 번 중복해서 들어가는 등 이스케이프가 꼬일 경우를 대비한 안전장치
-      // (필요 시 주석 해제하여 사용)
-      // pureJsonText = pureJsonText.replace(/\\\\n/g, '\\n'); 
-      
-      // 정제된 텍스트로 JSON 파싱 시도
+      const pureJsonText = currentText.substring(startIndex, endIndex + 1);
       const parsedData = JSON.parse(pureJsonText);
       
       chrome.runtime.sendMessage({ action: "TRANSFER_DATA_TO_CAMPAIGN_TOOL", payload: parsedData });
