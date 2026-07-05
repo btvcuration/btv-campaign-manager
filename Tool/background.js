@@ -321,20 +321,20 @@ async function createJiraHierarchy(data, sourceTabId) {
       // 💡 [수정] 모아서 한 번에 쏠 빈 배열(바구니) 생성
       let bulkPayload = [];
 
+      // 🌟 [background.js 수정]
       // 분할된 청크(Chunks) 단위로 루프를 돌며 데이터 수집
       for (let c = 0; c < chunks.length; c++) {
         const chunkSize = chunks[c];
         const suffix = chunks.length > 1 ? `_${c + 1}` : '';
         const currentCampaignName = (meta.campaignName || '') + suffix;
 
-        // 4-1. 개별 배너/Task 데이터 수집
+        // 4-1. 개별 배너 데이터 수집
         for (let i = 0; i < assets.length; i++) {
           const asset = assets[i];
           const assetData = asset.data || {};
           const gnbStr = Array.isArray(assetData.gnb) ? assetData.gnb.join(', ') : (assetData.gnb || '미지정');
           const imgUrl = assetData.imageUrl || assetData.bgImg || assetData.bannerImg || assetData.previewImg || '';
           
-          // 🌟 [개선] 누락되는 카피가 없도록 모든 텍스트 요소 긁어모으기
           let textParts = [];
           if (assetData.topText) textParts.push(assetData.topText);
           if (assetData.mainTitle) textParts.push(assetData.mainTitle);
@@ -350,7 +350,12 @@ async function createJiraHierarchy(data, sourceTabId) {
           const mainCopy = textParts.length > 0 ? textParts.join(' / ') : '카피 없음';
           
           const childJiraUrl = createdIssues && createdIssues[i] ? `${baseUrl}/browse/${createdIssues[i].key}` : '';
-          const isBannerAsset = asset.type && asset.type.includes("BANNER") ? "Y" : "N";
+          
+          // 💡 [수정 1] TODAY_BTV도 배너로 정상 인식하도록 조건 추가
+          const isBannerAsset = asset.type && (asset.type.includes("BANNER") || asset.type.includes("TODAY")) ? "Y" : "N";
+
+          // 💡 [수정 2] 쿠폰 Y/N 여부를 공백이나 대소문자 상관없이 정확히 판별 (안전 장치)
+          const safeHasCoupon = (meta.hasCoupon || '').trim().toUpperCase() === 'Y' ? 'Y' : 'N';
 
           bulkPayload.push({
             parentJira: `${baseUrl}/browse/${parentKey}`,
@@ -364,21 +369,24 @@ async function createJiraHierarchy(data, sourceTabId) {
             startDate: assetData.startDate || meta.startDate || '',
             endDate: assetData.dueDate || meta.dueDate || '',
             assignee: assignee || '',
-            targetSize: isTarget ? chunkSize : 0, 
+            // 💡 [수정 3] 배너 행은 모수를 무조건 0으로 고정하여 중복 차감 완벽 방지!
+            targetSize: 0, 
             targetCondition: meta.targetCondition || '',
             notiChannel: '',
-            mainCopy: mainCopy, // 모든 카피 통합 반영
+            mainCopy: mainCopy,
             landingUrl: assetData.landingValue || '',
             designLink: imgUrl,
-            // 🌟 [개선] 모수가 0이므로 캠페인 단위 통일성을 위해 실제 메타의 쿠폰 여부(Y/N)를 동일하게 부여
-            hasCoupon: meta.hasCoupon || 'N' 
+            hasCoupon: safeHasCoupon
           });
         }
 
-        // 4-2. 타겟팅 캠페인일 경우, 마스터 행 수집
+        // 4-2. 타겟팅 캠페인 마스터 행 수집
         if (isTarget) {
           const bannerTypes = assets.length > 0 ? assets.map(a => a.name).join(', ') : '배너 없음 (타겟 전용)'; 
           const targetChildJiraUrl = createdIssues && createdIssues[assets.length] ? `${baseUrl}/browse/${createdIssues[assets.length].key}` : '';
+          
+          // 💡 마스터 행에도 동일한 안전 장치 적용
+          const safeHasCoupon = (meta.hasCoupon || '').trim().toUpperCase() === 'Y' ? 'Y' : 'N';
 
           bulkPayload.push({
             parentJira: `${baseUrl}/browse/${parentKey}`,
@@ -392,13 +400,14 @@ async function createJiraHierarchy(data, sourceTabId) {
             startDate: meta.startDate || '',
             endDate: meta.dueDate || '',
             assignee: assignee || '',
+            // 💡 마스터 행에만 실제 모수(chunkSize)를 1회 적용!
             targetSize: chunkSize, 
             targetCondition: meta.targetCondition || '',
             notiChannel: '',
             mainCopy: `타겟팅 세팅 요청 (포함 배너: ${bannerTypes})`,
             landingUrl: '',
             designLink: '',
-            hasCoupon: meta.hasCoupon || 'N' // 마스터 행도 동일하게 부여
+            hasCoupon: safeHasCoupon
           });
         }
       }
