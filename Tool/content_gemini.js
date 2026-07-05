@@ -65,8 +65,18 @@ const observer = new MutationObserver((mutations) => {
                       text.startsWith('graph ') ||
                       text.startsWith('flowchart ');
 
-    if (isMermaid && block.getAttribute('data-mermaid-processed') !== 'true') {
-      block.setAttribute('data-mermaid-processed', 'true');
+    // 🚨 [핵심 버그 수정] 무한 루프 방지: 마지막으로 시도한 텍스트를 기억해 둡니다.
+    const lastTriedText = block.getAttribute('data-last-mermaid-text');
+
+    // 텍스트가 이전과 다르거나 처음 시도하는 경우에만 진입
+    if (isMermaid && block.getAttribute('data-mermaid-processed') !== 'true' && lastTriedText !== text) {
+      // 1️⃣ 지금 시도하는 텍스트를 기록해둠 (DOM이 변경되어 다시 불려도 같은 텍스트면 무시됨)
+      block.setAttribute('data-last-mermaid-text', text);
+
+      // 이전에 실패해서 남은 찌꺼기 컨테이너가 있다면 미리 제거
+      if (block.nextElementSibling && block.nextElementSibling.id && block.nextElementSibling.id.startsWith('mermaid-')) {
+        block.nextElementSibling.remove();
+      }
 
       const uniqueId = 'mermaid-' + Math.random().toString(36).substr(2, 9);
       const graphContainer = document.createElement('div');
@@ -86,6 +96,8 @@ const observer = new MutationObserver((mutations) => {
         mermaid.parse(text).then((isValid) => {
             if(isValid) {
                 mermaid.render(uniqueId + '-svg', text).then((result) => {
+                  // ✅ 2️⃣ 완벽하게 성공했을 때만 영구 처리 완료 딱지를 붙임
+                  block.setAttribute('data-mermaid-processed', 'true');
                   graphContainer.innerHTML = `
                     <div style="display:flex; align-items:center; gap:8px; margin-bottom:15px;">
                       <span style="background:#4f3df6; color:white; padding:4px 8px; border-radius:6px; font-size:12px; font-weight:bold;">UX</span>
@@ -96,16 +108,12 @@ const observer = new MutationObserver((mutations) => {
                 }).catch(err => { throw err; });
             }
         }).catch((err) => {
-            // 🚨 [수정 2] AI가 타이핑 중이라 에러가 났다면? 다음 타이핑 때 다시 시도하도록 딱지 제거!
-            block.removeAttribute('data-mermaid-processed');
+            // 🚨 3️⃣ 에러가 나면 원본을 다시 보여주고 컨테이너만 지움
+            // -> 다음 타이핑으로 text 글자가 하나라도 바뀌면 맨 위 if문을 통과해서 다시 시도함!
             block.style.display = 'block'; 
             graphContainer.remove(); 
-            const errorSvg = document.getElementById(uniqueId + '-svg');
-            if (errorSvg) errorSvg.remove();
         });
       } catch (e) {
-        // 🚨 [수정 3] 동기적인 에러가 발생해도 마찬가지로 딱지 제거!
-        block.removeAttribute('data-mermaid-processed');
         block.style.display = 'block'; 
         graphContainer.remove();
       }
