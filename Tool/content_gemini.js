@@ -30,6 +30,7 @@ const observer = new MutationObserver((mutations) => {
     // 🧹 [핵심 추가] JSON 뿐만 아니라 Mermaid 파서도 정상 작동하도록 특수 공백 사전 제거
     text = text.replace(/\u00A0/g, ' '); 
     text = text.replace(/[\u200B-\u200D\uFEFF]/g, '');
+    text = text.trim(); // 💡 [수정 1] 공백 치환 후 양끝 공백을 한 번 더 확실하게 제거
 
     const codeElement = block.querySelector('code');
 
@@ -60,7 +61,6 @@ const observer = new MutationObserver((mutations) => {
     }
 
     // 🎨 기능 B: Mermaid 마크다운 감지 및 시각화 렌더링
-    // 💡 정의되지 않았던 codeText 대신 올바르게 text 변수 사용
     const isMermaid = (codeElement && (codeElement.className.includes('mermaid') || codeElement.className.includes('language-mermaid'))) ||
                       text.startsWith('graph ') ||
                       text.startsWith('flowchart ');
@@ -96,14 +96,16 @@ const observer = new MutationObserver((mutations) => {
                 }).catch(err => { throw err; });
             }
         }).catch((err) => {
-            console.warn("⚠️ Mermaid 파싱 에러 (원본 텍스트 유지):", err);
+            // 🚨 [수정 2] AI가 타이핑 중이라 에러가 났다면? 다음 타이핑 때 다시 시도하도록 딱지 제거!
+            block.removeAttribute('data-mermaid-processed');
             block.style.display = 'block'; 
             graphContainer.remove(); 
             const errorSvg = document.getElementById(uniqueId + '-svg');
             if (errorSvg) errorSvg.remove();
         });
       } catch (e) {
-        console.error("Mermaid 렌더링 예외:", e);
+        // 🚨 [수정 3] 동기적인 에러가 발생해도 마찬가지로 딱지 제거!
+        block.removeAttribute('data-mermaid-processed');
         block.style.display = 'block'; 
         graphContainer.remove();
       }
