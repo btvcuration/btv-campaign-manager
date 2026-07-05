@@ -970,7 +970,8 @@
         }
 
         // 🌟 3. 부모 일감 본문: HTML 리스트(ul, li)로 프로모션 정보 상세 나열
-        // 🌟 [수정] 쿠폰 발급 항목에 금액(couponBenefit)이 함께 노출되도록 변경
+        const safeHasCoupon = (meta.hasCoupon || '').trim().toUpperCase() === 'Y' ? 'Y' : 'N'; // 💡 안전한 파싱
+        
         const parentDescText = 
           "<h3>📌 캠페인 공통 정보</h3>" +
           "<ul>" +
@@ -980,7 +981,8 @@
           "<li><b>예상 모수:</b> " + (meta.targetSize ? meta.targetSize + "명" : "미지정") + "</li>" +
           "<li><b>타겟 조건:</b> " + (meta.targetCondition || "미지정") + "</li>" +
           "<li><b>편성 일정:</b> " + (meta.startDate || "미지정") + " ~ " + (meta.dueDate || "미지정") + "</li>" +
-          "<li><b>쿠폰 발급:</b> " + (meta.hasCoupon === 'Y' ? `포함 (${meta.couponBenefit || '금액 미지정'})` : "미포함") + "</li>" +
+          // 💡 [수정] 띄어쓰기 방어 로직 적용 및 할인 금액(couponBenefit) 노출 추가
+          "<li><b>쿠폰 발급:</b> " + (safeHasCoupon === 'Y' ? "포함 (" + (meta.couponBenefit || "혜택 미상") + ")" : "미포함") + "</li>" +
           "<li><b>총 요청 건수:</b> " + assets.length + "건</li>" +
           "</ul><br>" +
           "<h3>🗺️ 고객 이동 경로 (Userflow)</h3>" +
