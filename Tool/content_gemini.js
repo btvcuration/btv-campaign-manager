@@ -135,7 +135,20 @@ function injectButton(targetBlock) {
       const endIndex = currentText.lastIndexOf('}');
       if (startIndex === -1 || endIndex === -1) throw new Error("JSON 괄호({})를 찾을 수 없습니다.");
 
-      const pureJsonText = currentText.substring(startIndex, endIndex + 1);
+      let pureJsonText = currentText.substring(startIndex, endIndex + 1);
+
+      // 🧹 [추가된 핵심 로직: 데이터 정제(Cleaning)]
+      // 1. 제미나이 화면에서 들여쓰기용으로 흔히 쓰이는 특수 공백(NBSP)을 일반 공백으로 치환
+      pureJsonText = pureJsonText.replace(/\u00A0/g, ' ');
+      
+      // 2. 눈에 보이지 않는 기타 유니코드 쓰레기 값(Zero-width space 등) 제거
+      pureJsonText = pureJsonText.replace(/[\u200B-\u200D\uFEFF]/g, '');
+      
+      // 3. 간혹 백슬래시(\)가 두 번 중복해서 들어가는 등 이스케이프가 꼬일 경우를 대비한 안전장치
+      // (필요 시 주석 해제하여 사용)
+      // pureJsonText = pureJsonText.replace(/\\\\n/g, '\\n'); 
+      
+      // 정제된 텍스트로 JSON 파싱 시도
       const parsedData = JSON.parse(pureJsonText);
       
       chrome.runtime.sendMessage({ action: "TRANSFER_DATA_TO_CAMPAIGN_TOOL", payload: parsedData });
