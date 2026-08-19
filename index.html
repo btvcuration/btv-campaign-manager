@@ -75,9 +75,10 @@
     const DEFAULT_MINI_EPG_BANNER = { imageUrl: '', buttonText: '감상하기', landingValue: 'UI_PATH: /join', gnb: '실시간 채널', note: '', memos: [], startDate: '', dueDate: '' };
     const DEFAULT_TODAY_BTV = { topText: '상단 문구', mainTitle: '메인 문구', subText: '서브 텍스트', landingValue: 'UI_PATH: /join', buttonText: '자세히 보기', imageUrl: '', gnb: '홈', note: '', memos: [], startDate: '', dueDate: '' };
     const DEFAULT_GENERAL_BANNER = { colType: '2단', previewTitle: '배경 좌상단 텍스트 (1줄)', previewSub: '서브 설명글 영역', previewImg: '', bannerCopy: '배너 내 텍스트', bannerImg: '', landingValue: 'UI_PATH: /join', gnb: '영화시리즈', note: '', memos: [], startDate: '', dueDate: '' };
-    // 🌟 신규 세트 배너 초기값 (배열 형태)
+    
+    // [수정할 코드]
     const DEFAULT_GENERAL_SET_BANNER = { 
-      colType: '3단', 
+      colType: '2단', 
       selectedCardIndex: 0,
       cards: [
         { heroTitle: '세트 1 좌상단 타이틀', heroSub: '세트 1에 대한 서브 설명글', heroImg: '', cardCopy: '카드 1 타이틀', cardImg: '', landingValue: 'UI_PATH: /set1' },
@@ -86,6 +87,7 @@
       ], 
       gnb: '영화시리즈', note: '', memos: [], startDate: '', dueDate: '' 
     };
+    
     const DEFAULT_FULL_PROMO_BANNER = { bgImg: '', topLogo: '상단 타이틀', mainCopy: '메인 하이라이트 문구', subCopy: '서브 텍스트 라인', card1Title: '블룸 하우스', card1Sub: '카드 1 설명', card1Img: '', card1Landing: '', card2Title: '블룸 하우스', card2Sub: '카드 2 설명', card2Img: '', card2Landing: '', card3Title: '블룸 하우스', card3Sub: '카드 3 설명', card3Img: '', card3Landing: '', landingValue: 'UI_PATH: /join', gnb: '홈', note: '', memos: [], startDate: '', dueDate: '' };
     const DEFAULT_BIG_BANNER = { subType: '기본형', mainTitle: '메인 문구', subTitle: '서브 타이틀', desc: '상세 설명글을 입력해주세요.', buttonText: '바로가기', imageUrl: '', logoImg: '', landingValue: 'UI_PATH: /join', gnb: '홈', note: '', memos: [], startDate: '', dueDate: '' };
     const DEFAULT_LONG_BANNER = { copy: '세로형 배너 메인 카피', subTitle: '서브 카피 입력', imageUrl: '', landingValue: 'UI_PATH: /join', gnb: '홈', note: '', memos: [], startDate: '', dueDate: '' };
@@ -301,7 +303,7 @@
       // 🌟 신규: 일반 배너 (세트형) 렌더링
       if (block.type === 'GENERAL_SET_BANNER') {
         const colType = block.data?.colType || '3단';
-        const numCards = colType === '3단' ? 3 : 2;
+        const numCards = colType === '3단' ? 2 : 3;
         const activeIdx = block.data?.selectedCardIndex || 0;
         const activeCard = block.data?.cards?.[activeIdx] || {};
 
@@ -1184,15 +1186,17 @@
                         {activeAsset.type === 'GENERAL_SET_BANNER' && (
                           <>
                             <div className="col-span-2">
-                              <select value={activeAsset.data?.colType || '3단'} onChange={e => {
+                              <select value={activeAsset.data?.colType || '2단'} onChange={e => {
                                 handleAssetChange(activeAsset.id, 'colType', e.target.value);
-                                if (e.target.value === '2단' && activeAsset.data?.selectedCardIndex === 2) {
-                                  handleAssetChange(activeAsset.id, 'selectedCardIndex', 1); // 인덱스 초과 방지
+                                // 🌟 3단 폭(총 2개 배치)으로 변경 시, 포커스가 세번째 카드에 머물러 있으면 두번째 카드로 초기화
+                                if (e.target.value === '3단' && activeAsset.data?.selectedCardIndex === 2) {
+                                  handleAssetChange(activeAsset.id, 'selectedCardIndex', 1);
                                 }
                               }} className="w-full bg-[#0a0812] border border-[#262833] rounded-lg px-3 py-2 text-xs text-white outline-none focus:border-[#4f3df6]">
-                                <option value="2단">2단 배너 세트 (좌/우 분할형)</option>
-                                <option value="3단">3단 배너 세트 (3등분 와이드형)</option>
+                                <option value="2단">2단 배너 폭 (총 3개 카드 구성)</option>
+                                <option value="3단">3단 배너 폭 (총 2개 와이드 구성)</option>
                               </select>
+                            </div>
                             </div>
                             
                             {(() => {
@@ -1797,7 +1801,7 @@
       // 🌟 신규: 일반 배너 (세트형) 렌더링
       if (block.type === 'GENERAL_SET_BANNER') {
         const colType = block.data?.colType || '3단';
-        const numCards = colType === '3단' ? 3 : 2;
+        const numCards = colType === '3단' ? 2 : 3;
         const activeIdx = block.data?.selectedCardIndex || 0;
         const activeCard = block.data?.cards?.[activeIdx] || {};
 
@@ -1825,7 +1829,7 @@
                   <div 
                     key={i} 
                     onClick={() => onUpdate && onUpdate(block.id, 'selectedCardIndex', i)}
-                    className={`relative rounded-xl overflow-hidden shadow-[0_10px_30px_rgba(0,0,0,0.8)] flex bg-[#1a1c26] shrink-0 h-full cursor-pointer transition-all duration-200 ${colType === '3단' ? 'aspect-[196/89]' : 'aspect-[129/89]'} ${isSelected ? 'border-[3px] border-[#7387FF] ring-4 ring-[#7387FF]/30 transform -translate-y-1' : 'border border-white/20 hover:border-white/50 opacity-60 hover:opacity-100'}`}
+                    className={`relative rounded-xl overflow-hidden shadow-[0_10px_30px_rgba(0,0,0,0.8)] flex bg-[#1a1c26] shrink-0 h-full cursor-pointer transition-all duration-200 ${colType === '3단' ? 'aspect-[196/89]' : 'aspect-[129/89]'} ${isSelected ? 'border-[3px] border-[#7387FF]' : 'border border-white/20 hover:border-white/50 opacity-60 hover:opacity-100'}`}
                   >
                     {cardData.cardCopy && <div className="w-[70%] h-full flex flex-col justify-center items-start p-6 z-20 bg-gradient-to-r from-[#1a1c26] via-[#1a1c26]/90 to-transparent pointer-events-none"><p className="text-white font-extrabold text-xl leading-[1.2] tracking-tighter whitespace-pre-wrap drop-shadow-md">{cardData.cardCopy}</p></div>}
                     <div className="absolute inset-0 w-full h-full bg-cover bg-center z-10 bg-[#0a0a0f] pointer-events-none" style={{ backgroundImage: checkIsUrl(cardData.cardImg) ? `url(${cardData.cardImg})` : 'none' }}>
@@ -2324,7 +2328,7 @@
           setActiveTabId(asset.id);
           
           if (asset.type === 'GENERAL_SET_BANNER') {
-            const colCount = asset.data?.colType === '3단' ? 3 : 2;
+            const colCount = asset.data?.colType === '3단' ? 2 : 3;
             let setImages = [];
             
             for (let c = 0; c < colCount; c++) {
@@ -2680,14 +2684,15 @@
                         {activeAsset.type === 'GENERAL_SET_BANNER' && (
                           <>
                             <div className="col-span-2">
-                              <select value={activeAsset.data?.colType || '3단'} onChange={e => {
+                              <select value={activeAsset.data?.colType || '2단'} onChange={e => {
                                 handleAssetChange(activeAsset.id, 'colType', e.target.value);
-                                if (e.target.value === '2단' && activeAsset.data?.selectedCardIndex === 2) {
-                                  handleAssetChange(activeAsset.id, 'selectedCardIndex', 1); // 인덱스 초과 방지
+                                // 🌟 3단 폭(총 2개 배치)으로 변경 시, 포커스가 세번째 카드에 머물러 있으면 두번째 카드로 초기화
+                                if (e.target.value === '3단' && activeAsset.data?.selectedCardIndex === 2) {
+                                  handleAssetChange(activeAsset.id, 'selectedCardIndex', 1);
                                 }
                               }} className="w-full bg-[#0a0812] border border-[#262833] rounded-lg px-3 py-2 text-xs text-white outline-none focus:border-[#4f3df6]">
-                                <option value="2단">2단 배너 세트 (좌/우 분할형)</option>
-                                <option value="3단">3단 배너 세트 (3등분 와이드형)</option>
+                                <option value="2단">2단 배너 폭 (총 3개 카드 구성)</option>
+                                <option value="3단">3단 배너 폭 (총 2개 와이드 구성)</option>
                               </select>
                             </div>
                             
