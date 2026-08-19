@@ -26,7 +26,6 @@
     .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
     .custom-scrollbar::-webkit-scrollbar-thumb { background: #2e3038; border-radius: 4px; }
     .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #44464f; }
-    /* 프로그레스 바 애니메이션 */
     .progress-stripes { background-image: linear-gradient(45deg, rgba(255, 255, 255, 0.15) 25%, transparent 25%, transparent 50%, rgba(255, 255, 255, 0.15) 50%, rgba(255, 255, 255, 0.15) 75%, transparent 75%, transparent); background-size: 1rem 1rem; animation: progress-stripes 1s linear infinite; }
     @keyframes progress-stripes { from { background-position: 1rem 0; } to { background-position: 0 0; } }
   </style>
@@ -50,6 +49,7 @@
     const TEMPLATE_URLS = {
       'TODAY_BTV': 'https://raw.githubusercontent.com/btvcuration/campaign/main/assets/images/ui-templates/today_btv.png',
       'GENERAL_BANNER': 'https://raw.githubusercontent.com/btvcuration/campaign/main/assets/images/ui-templates/general_banner_2col.png',
+      'GENERAL_SET_BANNER': 'https://raw.githubusercontent.com/btvcuration/campaign/main/assets/images/ui-templates/general_banner_2col.png',
       'FULL_PROMO_BANNER': 'https://raw.githubusercontent.com/btvcuration/campaign/main/assets/images/ui-templates/full_promo.png',
       'BIG_BANNER': 'https://raw.githubusercontent.com/btvcuration/campaign/main/assets/images/ui-templates/big_banner.png',
       'LONG_BANNER': 'https://raw.githubusercontent.com/btvcuration/campaign/main/assets/images/ui-templates/long_banner.png',
@@ -61,7 +61,8 @@
 
     const BANNER_SPECS = [
       { type: 'TODAY_BTV', name: 'Today B tv', icon: MonitorPlay, ratio: '16:9', desc: '홈 최상단 대형 배너. 75% 이미지 배치.' },
-      { type: 'GENERAL_BANNER', name: '일반 배너', icon: LayoutPanelLeft, ratio: '가변', desc: '배경 프리뷰와 하단 배너 카드 세트.' },
+      { type: 'GENERAL_BANNER', name: '일반 배너', icon: LayoutPanelLeft, ratio: '가변', desc: '배경 프리뷰와 하단 배너 카드 1개 세팅.' },
+      { type: 'GENERAL_SET_BANNER', name: '일반 배너 (세트형)', icon: Grid, ratio: '가변', desc: '연속된 2/3단 패키지 배너 세팅 및 통합 기획.' },
       { type: 'FULL_PROMO_BANNER', name: '풀프로모션', icon: LayoutTemplate, ratio: '16:9', desc: '공통 배경 위에 메인 카피와 3개 카드 세트.' },
       { type: 'BIG_BANNER', name: '빅배너', icon: Monitor, ratio: '24.5:8.3', desc: '텍스트와 우측 이미지로 구성된 대형 영역.' },
       { type: 'LONG_BANNER', name: '롱배너', icon: Smartphone, ratio: '129:181', desc: '세로형 긴 배너. 카피 가독성 중요.' },
@@ -71,15 +72,20 @@
       { type: 'MINI_EPG_BANNER', name: '미니 EPG 배너', icon: Tv, ratio: '가변', desc: '실시간 방송 시청 중 노출되는 썸네일.' }
     ];
 
-    const getAssetIcon = (type) => {
-      const spec = BANNER_SPECS.find(s => s.type === type);
-      const IconComponent = spec ? spec.icon : LayoutTemplate;
-      return <IconComponent size={14} />;
-    };
-
     const DEFAULT_MINI_EPG_BANNER = { imageUrl: '', buttonText: '감상하기', landingValue: 'UI_PATH: /join', gnb: '실시간 채널', note: '', memos: [], startDate: '', dueDate: '' };
     const DEFAULT_TODAY_BTV = { topText: '상단 문구', mainTitle: '메인 문구', subText: '서브 텍스트', landingValue: 'UI_PATH: /join', buttonText: '자세히 보기', imageUrl: '', gnb: '홈', note: '', memos: [], startDate: '', dueDate: '' };
     const DEFAULT_GENERAL_BANNER = { colType: '2단', previewTitle: '배경 좌상단 텍스트 (1줄)', previewSub: '서브 설명글 영역', previewImg: '', bannerCopy: '배너 내 텍스트', bannerImg: '', landingValue: 'UI_PATH: /join', gnb: '영화시리즈', note: '', memos: [], startDate: '', dueDate: '' };
+    // 🌟 신규 세트 배너 초기값 (배열 형태)
+    const DEFAULT_GENERAL_SET_BANNER = { 
+      colType: '3단', 
+      selectedCardIndex: 0,
+      cards: [
+        { heroTitle: '세트 1 좌상단 타이틀', heroSub: '세트 1에 대한 서브 설명글', heroImg: '', cardCopy: '카드 1 타이틀', cardImg: '', landingValue: 'UI_PATH: /set1' },
+        { heroTitle: '세트 2 좌상단 타이틀', heroSub: '세트 2에 대한 서브 설명글', heroImg: '', cardCopy: '카드 2 타이틀', cardImg: '', landingValue: 'UI_PATH: /set2' },
+        { heroTitle: '세트 3 좌상단 타이틀', heroSub: '세트 3에 대한 서브 설명글', heroImg: '', cardCopy: '카드 3 타이틀', cardImg: '', landingValue: 'UI_PATH: /set3' }
+      ], 
+      gnb: '영화시리즈', note: '', memos: [], startDate: '', dueDate: '' 
+    };
     const DEFAULT_FULL_PROMO_BANNER = { bgImg: '', topLogo: '상단 타이틀', mainCopy: '메인 하이라이트 문구', subCopy: '서브 텍스트 라인', card1Title: '블룸 하우스', card1Sub: '카드 1 설명', card1Img: '', card1Landing: '', card2Title: '블룸 하우스', card2Sub: '카드 2 설명', card2Img: '', card2Landing: '', card3Title: '블룸 하우스', card3Sub: '카드 3 설명', card3Img: '', card3Landing: '', landingValue: 'UI_PATH: /join', gnb: '홈', note: '', memos: [], startDate: '', dueDate: '' };
     const DEFAULT_BIG_BANNER = { subType: '기본형', mainTitle: '메인 문구', subTitle: '서브 타이틀', desc: '상세 설명글을 입력해주세요.', buttonText: '바로가기', imageUrl: '', logoImg: '', landingValue: 'UI_PATH: /join', gnb: '홈', note: '', memos: [], startDate: '', dueDate: '' };
     const DEFAULT_LONG_BANNER = { copy: '세로형 배너 메인 카피', subTitle: '서브 카피 입력', imageUrl: '', landingValue: 'UI_PATH: /join', gnb: '홈', note: '', memos: [], startDate: '', dueDate: '' };
@@ -168,7 +174,8 @@
       );
     };
 
-    const PreviewDisplay = ({ block }) => {
+    // 🌟 수정된 PreviewDisplay: onUpdate를 전달받아 상태 변경 가능하게 함
+    const PreviewDisplay = ({ block, onUpdate }) => {
       if (!block) return null;
       const checkIsUrl = (str) => Boolean(str && typeof str === 'string' && str.startsWith('http'));
       const checkHasText = (str) => Boolean(str && !checkIsUrl(str) && str.trim() !== '');
@@ -285,6 +292,55 @@
               {[1,2,3,4,5].map(i => (
                 <div key={i} className="h-full aspect-[2/3] bg-[#222530] rounded-md border border-white/5 shadow-lg shrink-0">
                 </div>
+              ))}
+            </div>
+          </div>
+        );
+      }
+
+      // 🌟 신규: 일반 배너 (세트형) 렌더링
+      if (block.type === 'GENERAL_SET_BANNER') {
+        const colType = block.data?.colType || '3단';
+        const numCards = colType === '3단' ? 3 : 2;
+        const activeIdx = block.data?.selectedCardIndex || 0;
+        const activeCard = block.data?.cards?.[activeIdx] || {};
+
+        return (
+          <div className="relative w-full aspect-[16/9] bg-[#0a0a0f] overflow-hidden shrink-0">
+            <div className="absolute inset-0 h-full bg-[#0a0a0f] z-0 px-10 transition-all duration-300">
+              <div className="absolute right-0 top-0 w-[65%] h-[60%] bg-no-repeat bg-contain bg-right-top z-0" style={{backgroundImage: checkIsUrl(activeCard.heroImg) ? `url(${activeCard.heroImg})` : 'none'}}>
+                {!checkIsUrl(activeCard.heroImg) && !checkHasText(activeCard.heroImg) && <div className="absolute inset-0 bg-gradient-to-bl from-indigo-900/30 to-[#0a0a0f]"></div>}
+                <FallbackText text={activeCard.heroImg} alignClass="justify-end items-start pt-10 pr-10" />
+              </div>
+              <div className="absolute inset-0 bg-gradient-to-r from-[#0a0a0f] from-[20%] via-[#0a0a0f]/95 via-[40%] to-transparent to-[60%] z-10 pointer-events-none"></div>
+              <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0f] from-[35%] via-[#0a0a0f]/95 via-[50%] to-transparent to-[75%] z-10 pointer-events-none"></div>
+              <div className="absolute left-[80px] top-[12%] w-[35%] z-20 flex flex-col gap-2">
+                <h1 className="text-white text-[2.2rem] font-black leading-[1.15] whitespace-nowrap overflow-hidden text-ellipsis tracking-tighter drop-shadow-xl">{activeCard.heroTitle || '상단 타이틀'}</h1>
+                <p className="text-slate-300 text-[16px] font-medium leading-[1.2] whitespace-pre-wrap mt-2">{activeCard.heroSub || '서브 설명글 영역'}</p>
+              </div>
+            </div>
+            
+            <div className="absolute bottom-[12%] left-[80px] right-0 flex items-center gap-4 z-30 overflow-hidden pr-8 h-[185px]">
+              {Array.from({length: numCards}).map((_, i) => {
+                const cardData = block.data?.cards?.[i] || {};
+                const isSelected = i === activeIdx;
+                
+                return (
+                  <div 
+                    key={i} 
+                    onClick={() => onUpdate && onUpdate(block.id, 'selectedCardIndex', i)}
+                    className={`relative rounded-xl overflow-hidden shadow-[0_10px_30px_rgba(0,0,0,0.8)] flex bg-[#1a1c26] shrink-0 h-full cursor-pointer transition-all duration-200 ${colType === '3단' ? 'aspect-[196/89]' : 'aspect-[129/89]'} ${isSelected ? 'border-[3px] border-[#7387FF] ring-4 ring-[#7387FF]/30 transform -translate-y-1' : 'border border-white/20 hover:border-white/50 opacity-60 hover:opacity-100'}`}
+                  >
+                    {cardData.cardCopy && <div className="w-[70%] h-full flex flex-col justify-center items-start p-6 z-20 bg-gradient-to-r from-[#1a1c26] via-[#1a1c26]/90 to-transparent pointer-events-none"><p className="text-white font-extrabold text-xl leading-[1.2] tracking-tighter whitespace-pre-wrap drop-shadow-md">{cardData.cardCopy}</p></div>}
+                    <div className="absolute inset-0 w-full h-full bg-cover bg-center z-10 bg-[#0a0a0f] pointer-events-none" style={{ backgroundImage: checkIsUrl(cardData.cardImg) ? `url(${cardData.cardImg})` : 'none' }}>
+                      {!checkIsUrl(cardData.cardImg) && !checkHasText(cardData.cardImg) && <div className="absolute inset-0 flex items-center justify-center"><ImageIcon size={32} className="text-white/10"/></div>}
+                      <FallbackText text={cardData.cardImg} /><div className="absolute inset-0 bg-gradient-to-r from-[#1a1c26] via-[#1a1c26]/60 to-transparent w-[60%] pointer-events-none z-10"></div>
+                    </div>
+                  </div>
+                );
+              })}
+              {[1,2,3,4].map(i => (
+                <div key={`dummy-${i}`} className="h-full aspect-[2/3] bg-[#222530] rounded-md border border-white/5 shadow-lg shrink-0"></div>
               ))}
             </div>
           </div>
@@ -495,13 +551,10 @@
         );
       }
 
-      // LONG_BANNER
       if (block.type === 'LONG_BANNER') {
         return (
           <div className="relative w-full aspect-[16/9] bg-[#0a0a0f] overflow-hidden shrink-0 flex items-center justify-center">
-            {/* 🌟 수정된 롱배너 3단 배치 UI */}
             <div className="absolute inset-0 p-12 flex justify-center gap-4 z-0 bg-[#0a0a0f]">
-              {/* 좌측 메인 롱배너 영역 (테두리 통일) */}
               <div className="h-[90%] aspect-[129/181.5] bg-[#1a1c26] rounded-xl overflow-hidden relative shadow-[0_10px_30px_rgba(0,0,0,0.8)] border-[3px] border-[#7387FF] shrink-0">
                 <div className="absolute inset-0 bg-cover bg-top bg-no-repeat z-10" style={{ backgroundImage: checkIsUrl(block.data?.imageUrl) ? `url(${block.data.imageUrl})` : 'none' }}>
                   {!checkIsUrl(block.data?.imageUrl) && !checkHasText(block.data?.imageUrl) && <div className="absolute inset-0 flex items-center justify-center bg-[#0a0a0f]"><ImageIcon size={48} className="text-white/10"/></div>}
@@ -513,7 +566,6 @@
                 </div>
               </div>
               
-              {/* 우측 비어있는 롱배너 2개 (2단 배너 포스터처럼 배치) */}
               {[1, 2].map(i => (
                 <div key={i} className="h-[90%] aspect-[129/181.5] bg-[#222530] rounded-xl border border-white/5 shadow-lg shrink-0 flex items-center justify-center relative overflow-hidden">
                    <ImageIcon size={48} className="text-white/5" />
@@ -536,43 +588,21 @@
       const [openAccordions, setOpenAccordions] = useState({ campaign: true, banner: true });
 
       const handleSettingsClick = () => setIsSettingsOpen(true);
-      // 🌟 [추가] 담당자 정보 직접 수정 핸들러
       const handleConfigChange = (gnbName, field, value) => {
-        setConfigMap(prev => ({
-          ...prev,
-          [gnbName]: {
-            ...prev[gnbName],
-            [field]: value
-          }
-        }));
+        setConfigMap(prev => ({ ...prev, [gnbName]: { ...prev[gnbName], [field]: value } }));
       };
-      // 🌟 [추가] 설정 저장 API 호출 함수
+      
       const handleSaveConfig = async () => {
-        setIsSettingsOpen(false); // 일단 모달 닫기
-        
+        setIsSettingsOpen(false);
         try {
-          // CF Worker Proxy URL (POST 용)
           const proxyUrl = "https://btv-proxy.alcheminos.workers.dev";
-          
-          // 객체(Object) 형태를 GAS가 읽기 편하게 배열(Array)로 변환
-          const configDataArray = Object.entries(configMap).map(([gnb, info]) => ({
-            gnb: gnb,
-            name: info.name,
-            jiraId: info.jiraId
-          }));
-
+          const configDataArray = Object.entries(configMap).map(([gnb, info]) => ({ gnb: gnb, name: info.name, jiraId: info.jiraId }));
           const response = await fetch(proxyUrl, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              action: "updateConfig",
-              configData: configDataArray
-            })
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ action: "updateConfig", configData: configDataArray })
           });
-
           if (!response.ok) throw new Error("네트워크 응답 오류");
           console.log("✅ Config 시트 업데이트 완료");
-
         } catch (error) {
           console.error("저장 실패:", error);
           alert("설정 저장 중 오류가 발생했습니다. 구글 시트를 확인해주세요.");
@@ -591,14 +621,10 @@
           lastPayloadStr.current = currentPayloadStr;
           setTimeout(() => { lastPayloadStr.current = ""; }, 1500); 
 
-          // 🌟 [수정] 데이터 경로를 rawGasData 내부로 정확히 매핑!
           const aiMeta = payload.rawGasData?.meta || payload.campaignMeta;
           const aiAssets = payload.rawGasData?.assets || payload.assets;
-
           const aiMermaid = payload.mermaidCode || payload.rawGasData?.mermaidCode;
-          if (aiMermaid) {
-            setMermaidCode(aiMermaid);
-          }
+          if (aiMermaid) setMermaidCode(aiMermaid);
 
           if (aiMeta) {
             setCampaignMeta(prev => ({ 
@@ -608,7 +634,6 @@
               targetSize: aiMeta.targetSize || prev.targetSize,
               startDate: aiMeta.startDate || prev.startDate,
               dueDate: aiMeta.dueDate || prev.dueDate,
-              // 💡 [추가] AI가 넘겨준 쿠폰 정보를 잃어버리지 않도록 State에 명시적 저장!
               hasCoupon: aiMeta.hasCoupon || prev.hasCoupon,
               couponBenefit: aiMeta.couponBenefit || prev.couponBenefit
             }));
@@ -628,6 +653,7 @@
               let baseData = {};
               if (aiAsset.type === 'TODAY_BTV') baseData = { ...DEFAULT_TODAY_BTV };
               else if (aiAsset.type === 'GENERAL_BANNER') baseData = { ...DEFAULT_GENERAL_BANNER };
+              else if (aiAsset.type === 'GENERAL_SET_BANNER') baseData = { ...DEFAULT_GENERAL_SET_BANNER };
               else if (aiAsset.type === 'FULL_PROMO_BANNER') baseData = { ...DEFAULT_FULL_PROMO_BANNER };
               else if (aiAsset.type === 'BIG_BANNER') baseData = { ...DEFAULT_BIG_BANNER };
               else if (aiAsset.type === 'LONG_BANNER') baseData = { ...DEFAULT_LONG_BANNER };
@@ -655,7 +681,6 @@
 
             setAssets(newAssets);
             setActiveTabId(newAssets[0].id); 
-            
             setExportState({ isExporting: true, progress: 100, msg: `🎉 AI 기획안(${newAssets.length}건) 적용 완료!`});
             setTimeout(() => setExportState({ isExporting: false, progress: 0, msg: '' }), 3000);
           }
@@ -668,45 +693,38 @@
       const [activeTabId, setActiveTabId] = useState('asset-1');
       const [isAddAssetModalOpen, setIsAddAssetModalOpen] = useState(false);
       const [localShowSafeZone, setLocalShowSafeZone] = useState(false);
-      // 🌟 [추가] GNB별 담당자 매핑 Config 상태 및 Proxy API 호출
       const [configMap, setConfigMap] = useState({});
       
       useEffect(() => {
         const fetchConfig = async () => {
           try {
-            // 💡 구축해두신 CF Worker Proxy 주소 활용 (action 파라미터는 GAS 스펙에 맞게 조정)
             const proxyUrl = "https://btv-proxy.alcheminos.workers.dev?action=getConfig";
-            
-            const response = await fetch(proxyUrl, {
-              method: 'GET', // GAS 구현 방식에 따라 POST로 변경 가능
-              headers: {
-                'Content-Type': 'application/json'
-              }
-            });
-            
+            const response = await fetch(proxyUrl, { method: 'GET', headers: { 'Content-Type': 'application/json' } });
             if (!response.ok) throw new Error("네트워크 응답이 올바르지 않습니다.");
-            
             const configData = await response.json();
-            
-            // 불러온 JSON 데이터를 상태에 저장 (예: { "영화시리즈": { "name": "권서영", "jiraId": "kwon123" } })
             setConfigMap(configData);
-      
           } catch (error) {
             console.error("Config 로드 실패:", error);
-            // 🚨 API 실패 시 화면이 터지지 않도록 최소한의 Fallback(기본값) 데이터 세팅
-            setConfigMap({
-              "영화시리즈": { "name": "담당자 미지정", "jiraId": "system_auto" },
-              "TV 방송": { "name": "담당자 미지정", "jiraId": "system_auto" }
-            });
+            setConfigMap({ "영화시리즈": { "name": "담당자 미지정", "jiraId": "system_auto" }, "TV 방송": { "name": "담당자 미지정", "jiraId": "system_auto" } });
           }
         };
-        
         fetchConfig();
       }, []);
 
       const handleMetaChange = (e) => setCampaignMeta({ ...campaignMeta, [e.target.name]: e.target.value });
+      
       const handleAssetChange = (id, field, value) => {
         setAssets(prevAssets => prevAssets.map(asset => asset.id === id ? { ...asset, data: { ...asset.data, [field]: value } } : asset));
+      };
+      
+      // 🌟 배열 형태의 데이터를 업데이트 하기 위한 핸들러
+      const handleCardChange = (id, cardIndex, field, value) => {
+        setAssets(prevAssets => prevAssets.map(asset => {
+          if (asset.id !== id) return asset;
+          const newCards = [...(asset.data.cards || [])];
+          newCards[cardIndex] = { ...newCards[cardIndex], [field]: value };
+          return { ...asset, data: { ...asset.data, cards: newCards } };
+        }));
       };
 
       const handleAddMemo = () => {
@@ -721,6 +739,7 @@
         let newData = {};
         if (type === 'TODAY_BTV') newData = { ...DEFAULT_TODAY_BTV };
         else if (type === 'GENERAL_BANNER') newData = { ...DEFAULT_GENERAL_BANNER };
+        else if (type === 'GENERAL_SET_BANNER') newData = { ...DEFAULT_GENERAL_SET_BANNER };
         else if (type === 'FULL_PROMO_BANNER') newData = { ...DEFAULT_FULL_PROMO_BANNER };
         else if (type === 'BIG_BANNER') newData = { ...DEFAULT_BIG_BANNER };
         else if (type === 'LONG_BANNER') newData = { ...DEFAULT_LONG_BANNER };
@@ -747,57 +766,33 @@
         }
       };
 
-      // 🌟 확장프로그램 다이렉트 ZIP 다운로드 함수
       const handleDownloadExtension = async () => {
         setExportState({ isExporting: true, progress: 10, msg: "최신 확장프로그램 패킹 준비 중..." });
-        
         try {
           const zip = new window.JSZip();
-          
-          // Tool 폴더 내에 있는 실제 파일 목록
-          const filesToFetch = [
-            "manifest.json",
-            "background.js",
-            "content.js",
-            "content_gemini.js",
-            "mermaid.min.js"
-          ];
-
-          // 깃허브 원본 파일(Raw) 경로
+          const filesToFetch = ["manifest.json", "background.js", "content.js", "content_gemini.js", "mermaid.min.js"];
           const baseUrl = "https://raw.githubusercontent.com/btvcuration/campaign/main/Tool";
 
           for (let i = 0; i < filesToFetch.length; i++) {
             const fileName = filesToFetch[i];
-            const currentProgress = 10 + Math.floor((i / filesToFetch.length) * 60);
-            setExportState({ isExporting: true, progress: currentProgress, msg: `${fileName} 가져오는 중...` });
-            
+            setExportState({ isExporting: true, progress: 10 + Math.floor((i / filesToFetch.length) * 60), msg: `${fileName} 가져오는 중...` });
             const response = await fetch(`${baseUrl}/${fileName}?t=${new Date().getTime()}`);
             if (!response.ok) throw new Error(`${fileName} 파일을 찾을 수 없습니다.`);
-            
-            const fileContent = await response.text();
-            zip.file(fileName, fileContent);
+            zip.file(fileName, await response.text());
           }
 
           setExportState({ isExporting: true, progress: 85, msg: "압축 파일 생성 중..." });
-          
           const blob = await zip.generateAsync({ type: "blob" });
           const downloadUrl = URL.createObjectURL(blob);
-          
           const link = document.createElement("a");
-          link.href = downloadUrl;
-          link.download = `btv-campaign-extension-${new Date().toISOString().slice(0,10)}.zip`;
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
-          URL.revokeObjectURL(downloadUrl);
+          link.href = downloadUrl; link.download = `btv-campaign-extension-${new Date().toISOString().slice(0,10)}.zip`;
+          document.body.appendChild(link); link.click(); document.body.removeChild(link); URL.revokeObjectURL(downloadUrl);
           
           setExportState({ isExporting: true, progress: 100, msg: "✅ 최신 버전 다운로드 완료!" });
-          
           setTimeout(() => {
             setExportState({ isExporting: false, progress: 0, msg: '' });
             alert("확장 프로그램 다운로드가 완료되었습니다.\n기존 버전 삭제 후 새로 등록하시고 키보드 F5를 눌러 새로고침 해주세요!");
           }, 1500);
-
         } catch (e) {
           console.error("Extension Download Error:", e);
           setExportState({ isExporting: true, progress: 100, msg: "⚠️ 다운로드 실패" });
@@ -811,7 +806,6 @@
           if (campaignMeta.target !== 'TARGET') return alert("전송할 배너 기획안이 없고, 타겟팅 캠페인도 아닙니다.");
         }
         
-        // 🌟 수정: Jira 전송 전 확인 팝업 추가
         const isConfirmed = window.confirm("Jira 일감 전송을 시작하시겠습니까?\n\n확인(OK)을 누르면 화면 캡처가 시작됩니다.\n※ 주의: Jira에 미리 로그인이 되어있어야 정상 작동합니다.");
         if (!isConfirmed) return;
 
@@ -826,26 +820,50 @@
         setExportState({ isExporting: true, progress: 10, msg: "이미지 추출 준비 중..." });
         let capturedImages = {};
 
+        // 🌟 수정: 세트형 배너는 다중 캡처 지원
         for (let i = 0; i < assets.length; i++) {
           const asset = assets[i];
           const currentProgress = 10 + Math.floor((i / assets.length) * 40); 
-          setExportState({ isExporting: true, progress: currentProgress, msg: `[${asset.name}] 캡처 진행 중...` });
           
           setActiveTabId(asset.id);
-          await new Promise(r => setTimeout(r, 800)); 
           
-          const element = document.getElementById('capture-preview-area');
-          if (element) {
-            const rect = element.getBoundingClientRect();
-            const cropData = { x: rect.left, y: rect.top, width: rect.width, height: rect.height };
-
-            const dataUrl = await new Promise((resolve) => {
-              const timeout = setTimeout(() => { window.removeEventListener('RECEIVE_SCREENSHOT', listener); resolve(null); }, 3000);
-              const listener = (e) => { clearTimeout(timeout); window.removeEventListener('RECEIVE_SCREENSHOT', listener); resolve(e.detail.dataUrl); };
-              window.addEventListener('RECEIVE_SCREENSHOT', listener);
-              window.dispatchEvent(new CustomEvent('REQUEST_SCREENSHOT', { detail: cropData }));
-            });
-            if (dataUrl) capturedImages[asset.id] = dataUrl;
+          if (asset.type === 'GENERAL_SET_BANNER') {
+            const colCount = asset.data?.colType === '3단' ? 3 : 2;
+            let setImages = [];
+            
+            for (let c = 0; c < colCount; c++) {
+              setExportState({ isExporting: true, progress: currentProgress, msg: `[${asset.name}] 세트 ${c+1}/${colCount} 캡처 중...` });
+              handleAssetChange(asset.id, 'selectedCardIndex', c);
+              await new Promise(r => setTimeout(r, 1000)); // UI 업데이트 대기
+              
+              const element = document.getElementById('capture-preview-area');
+              if (element) {
+                const rect = element.getBoundingClientRect();
+                const dataUrl = await new Promise((resolve) => {
+                  const timeout = setTimeout(() => resolve(null), 3000);
+                  const listener = (e) => { clearTimeout(timeout); window.removeEventListener('RECEIVE_SCREENSHOT', listener); resolve(e.detail.dataUrl); };
+                  window.addEventListener('RECEIVE_SCREENSHOT', listener);
+                  window.dispatchEvent(new CustomEvent('REQUEST_SCREENSHOT', { detail: { x: rect.left, y: rect.top, width: rect.width, height: rect.height } }));
+                });
+                if (dataUrl) setImages.push(dataUrl);
+              }
+            }
+            capturedImages[asset.id] = setImages;
+          } else {
+            setExportState({ isExporting: true, progress: currentProgress, msg: `[${asset.name}] 캡처 진행 중...` });
+            await new Promise(r => setTimeout(r, 800)); 
+            
+            const element = document.getElementById('capture-preview-area');
+            if (element) {
+              const rect = element.getBoundingClientRect();
+              const dataUrl = await new Promise((resolve) => {
+                const timeout = setTimeout(() => resolve(null), 3000);
+                const listener = (e) => { clearTimeout(timeout); window.removeEventListener('RECEIVE_SCREENSHOT', listener); resolve(e.detail.dataUrl); };
+                window.addEventListener('RECEIVE_SCREENSHOT', listener);
+                window.dispatchEvent(new CustomEvent('REQUEST_SCREENSHOT', { detail: { x: rect.left, y: rect.top, width: rect.width, height: rect.height } }));
+              });
+              if (dataUrl) capturedImages[asset.id] = dataUrl;
+            }
           }
         }
 
@@ -859,7 +877,10 @@
             let finalMermaidCode = mermaidCode;
             assets.forEach(asset => {
               const tplUrl = TEMPLATE_URLS[asset.type];
-              if (tplUrl && capturedImages[asset.id]) { finalMermaidCode = finalMermaidCode.replace(tplUrl, capturedImages[asset.id]); }
+              if (tplUrl) {
+                const targetImg = Array.isArray(capturedImages[asset.id]) ? capturedImages[asset.id][0] : capturedImages[asset.id];
+                if (targetImg) finalMermaidCode = finalMermaidCode.replace(tplUrl, targetImg);
+              }
             });
             const mermaidContainer = document.createElement('div');
             mermaidContainer.style.cssText = 'position:absolute; top:0; left:0; width:1400px; background:#0f111a; padding:50px; border-radius:20px; color:white; z-index:-9999; font-family:Pretendard, sans-serif;';
@@ -882,7 +903,7 @@
           workflowContainer.style.cssText = 'position:absolute; top:0; left:0; width:1400px; background:#0f111a; padding:50px; border-radius:20px; display:flex; flex-direction:column; align-items:center; color:white; font-family:Pretendard, sans-serif; z-index:-9999;';
           let flowHtml = `<div style="width:100%; text-align:left; margin-bottom:40px; border-bottom:2px solid #262833; padding-bottom:15px;"><h2 style="color:#7387ff; margin:0; font-size:28px; font-weight:900;">🎯 B tv Campaign Userflow</h2><p style="color:#cbd5e1; margin:8px 0 0 0; font-size:16px;">${meta.campaignName || "신규 캠페인"}</p></div><div style="display:flex; align-items:center; justify-content:center; gap:20px; width:100%; flex-wrap:wrap;">`;
           assets.forEach((asset, idx) => {
-             const imgData = capturedImages[asset.id];
+             const imgData = Array.isArray(capturedImages[asset.id]) ? capturedImages[asset.id][0] : capturedImages[asset.id];
              flowHtml += `<div style="display:flex; flex-direction:column; align-items:center; width:280px;"><div style="width:100%; background:#1a1c26; padding:15px; border-radius:16px; border:1px solid #303340; box-shadow:0 10px 25px rgba(0,0,0,0.5);"><img src="${imgData}" style="width:100%; border-radius:8px; object-fit:contain; display:block;" /></div><div style="margin-top:20px; text-align:center;"><span style="background:#4f3df6; color:white; padding:5px 12px; border-radius:20px; font-size:13px; font-weight:bold;">Step ${idx + 1}</span><p style="margin:10px 0 0 0; font-size:15px; font-weight:bold; color:#e2e8f0; word-break:keep-all;">${asset.name}</p><p style="margin:5px 0 0 0; font-size:12px; color:#7387ff; font-weight:bold;">[${asset.data?.gnb || '미지정'}]</p></div></div>`;
              if (idx < assets.length - 1) { flowHtml += `<div style="color:#7387ff; font-size:32px; font-weight:bold; margin-bottom:50px;">➔</div>`; }
           });
@@ -895,53 +916,33 @@
           document.body.removeChild(workflowContainer);
         }
 
-        setExportState({ isExporting: true, progress: 85, msg: "Jira API 데이터 전송 중..." });
+        setExportState({ isExporting: true, progress: 85, msg: "Jira 최적화 데이터 압축 중..." });
 
-        // 🌟 [신규 추가] 본문 글자 수 폭발 방지를 위한 Base64 초고압축 함수
         const compressImageForBody = (dataUrl, maxWidth = 500, quality = 0.4) => {
           if (!dataUrl) return Promise.resolve('');
           return new Promise((resolve) => {
             const img = new Image();
             img.onload = () => {
               const canvas = document.createElement('canvas');
-              let width = img.width;
-              let height = img.height;
-              // 지정된 사이즈보다 크면 비율에 맞춰 축소
-              if (width > maxWidth) {
-                height = Math.floor((maxWidth / width) * height);
-                width = maxWidth;
-              }
-              canvas.width = width;
-              canvas.height = height;
+              let width = img.width; let height = img.height;
+              if (width > maxWidth) { height = Math.floor((maxWidth / width) * height); width = maxWidth; }
+              canvas.width = width; canvas.height = height;
               const ctx = canvas.getContext('2d');
               ctx.drawImage(img, 0, 0, width, height);
-              // 용량이 1/10 이하로 줄어드는 jpeg 변환
               resolve(canvas.toDataURL('image/jpeg', quality));
             };
             img.src = dataUrl;
           });
         };
 
-        setExportState({ isExporting: true, progress: 85, msg: "Jira 최적화 데이터 압축 중..." });
-
-        // 플로우차트 이미지 초고압축 (본문 썸네일용, 최대 600px)
         let workflowCompressedUrl = '';
-        if (workflowDataUrl) {
-          workflowCompressedUrl = await compressImageForBody(workflowDataUrl, 600, 0.4);
-        }
+        if (workflowDataUrl) workflowCompressedUrl = await compressImageForBody(workflowDataUrl, 600, 0.4);
 
-        // 🌟 1. HTML 기반 부모 일감 표 생성
         let parentTable = `<table border="1" style="border-collapse: collapse; width: 100%; text-align: center; font-size: 13px;"><tbody><tr style="background-color: #f4f5f7; color: #333;"><td style="padding: 10px; font-weight: bold; width: 5%;">순번</td><td style="padding: 10px; font-weight: bold; width: 25%;">배너명</td><td style="padding: 10px; font-weight: bold; width: 15%;">편성 GNB</td><td style="padding: 10px; font-weight: bold; width: 25%;">랜딩 URL</td><td style="padding: 10px; font-weight: bold; width: 30%;">시안 미리보기</td></tr>`;
         let parentImagesToUpload = [];
-
-        // 고화질 원본은 첨부파일 배열로 안전하게 전달
-        if (workflowDataUrl) {
-          parentImagesToUpload.push({ filename: 'workflow_summary.png', dataUrl: workflowDataUrl });
-        }
-
+        if (workflowDataUrl) parentImagesToUpload.push({ filename: 'workflow_summary.png', dataUrl: workflowDataUrl });
         let uniqueAssignees = new Set();
 
-        // 💡 비동기 압축 처리를 위해 Promise.all 사용
         const childIssues = await Promise.all(assets.map(async (asset, idx) => {
           const data = asset?.data || {};
           let targetGnbs = Array.isArray(data.gnb) ? data.gnb : [data.gnb || '미지정'];
@@ -951,48 +952,91 @@
           const targetGnbForAssign = targetGnbs[0];
           const assigneeInfo = configMap[targetGnbForAssign];
           const mappedAssigneeJiraId = assigneeInfo ? assigneeInfo.jiraId : cleanAssignee; 
-          
           uniqueAssignees.add(mappedAssigneeJiraId);
           
           const dateInfo = data.startDate ? `${data.startDate} ~ ${data.dueDate || ''}` : '미지정';
-          let copyText = data.mainTitle || data.copy || data.bannerCopy || data.previewTitle || '미지정';
-          const imgName = `banner_preview_${idx + 1}.png`;
-          const imgDataUrl = capturedImages[asset.id] || '';
           
-          // 🌟 개별 배너 썸네일 초고압축 (본문 6만 5천 자 제한 완벽 회피!)
-          const compressedThumb = await compressImageForBody(imgDataUrl, 200, 0.3); // 표 삽입용 (초미니)
-          const compressedBody = await compressImageForBody(imgDataUrl, 500, 0.4); // 하위 일감 본문용 (적당히)
-          
-          parentTable += `<tr><td style="padding: 10px;">${idx + 1}</td><td style="padding: 10px; font-weight: bold;">${asset?.name || '미지정'}</td><td style="padding: 10px;">${targetGnbs.join(', ')}</td><td style="padding: 10px; word-break: break-all;">${data.landingValue || '미지정'}</td><td style="padding: 10px; color: #4f3df6; text-align: center;">` + 
-            (compressedThumb ? `<img src="${compressedThumb}" style="max-width: 100%; border: 1px solid #ccc; border-radius: 4px; margin-bottom: 5px;" /><br>` : '') + 
-            `<b>${imgName}</b></td></tr>`;
+          // 🌟 세트형 배너 다중 이미지 및 표 처리
+          if (asset.type === 'GENERAL_SET_BANNER') {
+            const setImagesArr = capturedImages[asset.id] || [];
+            const colCount = data.colType === '3단' ? 3 : 2;
+            let compressedThumbsHTML = '';
+            let compressedBodyHTML = '';
+            let childTableRows = '';
             
-          // 🚨 원본 고화질 이미지는 첨부파일 배열에 보관하여 화질 손상 없음
-          if (imgDataUrl) { parentImagesToUpload.push({ filename: imgName, dataUrl: imgDataUrl }); }
+            for (let c = 0; c < colCount; c++) {
+               const imgUrl = setImagesArr[c] || '';
+               const imgName = `banner_set_${idx + 1}_card_${c + 1}.png`;
+               const cardData = data.cards[c] || {};
+               if (imgUrl) parentImagesToUpload.push({ filename: imgName, dataUrl: imgUrl });
+               
+               const cThumb = await compressImageForBody(imgUrl, 200, 0.3);
+               const cBody = await compressImageForBody(imgUrl, 500, 0.4);
+               if (cThumb) compressedThumbsHTML += `<img src="${cThumb}" style="max-width: 100%; border: 1px solid #ccc; border-radius: 4px; margin-bottom: 5px;" /><br>`;
+               if (cBody) compressedBodyHTML += `<h4>[상태 ${c+1}: ${cardData.heroTitle || '미입력'}]</h4><img src="${cBody}" style="max-width: 100%; border: 1px solid #e2e8f0; border-radius: 8px; margin-bottom: 15px;" /><br>`;
+               
+               childTableRows += `
+                 <tr>
+                   <td style='padding: 8px; font-weight: bold; background-color: #f9f9fb;'>카드 ${c+1}</td>
+                   <td style='padding: 8px;'><b>Hero:</b> ${cardData.heroTitle}<br><b>Card:</b> ${cardData.cardCopy}</td>
+                   <td style='padding: 8px; word-break: break-all;'>${cardData.landingValue || '미지정'}</td>
+                 </tr>
+               `;
+            }
 
-          // 🌟 2. 하위 일감 본문: HTML 표 및 초고압축 썸네일 직접 삽입
-          const childDesc = 
-            "<h3>🖼️ 상세 기획</h3>" +
-            "<table border='1' style='border-collapse: collapse; width: 100%; text-align: left; font-size: 13px;'>" +
-            "<tr><th style='padding: 8px; background-color: #f4f5f7; width: 25%;'>편성 GNB</th><td style='padding: 8px; font-weight: bold;'>" + targetGnbs.join(', ') + "</td></tr>" +
-            "<tr><th style='padding: 8px; background-color: #f4f5f7;'>편성 일정</th><td style='padding: 8px;'>" + dateInfo + "</td></tr>" +
-            "<tr><th style='padding: 8px; background-color: #f4f5f7;'>주요 카피</th><td style='padding: 8px;'>" + copyText.replace(/\n/g, '<br>') + "</td></tr>" +
-            "<tr><th style='padding: 8px; background-color: #f4f5f7;'>랜딩 URL</th><td style='padding: 8px;'>" + (data.landingValue || '미지정') + "</td></tr>" +
-            "<tr><th style='padding: 8px; background-color: #f4f5f7;'>비고</th><td style='padding: 8px;'>" + (data.note || '없음').replace(/\n/g, '<br>') + "</td></tr>" +
-            "</table>" +
-            "<br><h3>🎨 시뮬레이터 캡처 시안</h3>" +
-            (compressedBody ? `<img src="${compressedBody}" style="max-width: 100%; border: 1px solid #e2e8f0; border-radius: 8px; margin: 10px 0;" />` : '') +
-            "<p>※ 고화질 원본은 본문 하단 <b>첨부파일(${imgName})</b>을 확인해 주세요.</p>";
+            parentTable += `<tr><td style="padding: 10px;">${idx + 1}</td><td style="padding: 10px; font-weight: bold;">${asset?.name || '미지정'} (세트형)</td><td style="padding: 10px;">${targetGnbs.join(', ')}</td><td style="padding: 10px; word-break: break-all;">복합 랜딩</td><td style="padding: 10px; color: #4f3df6; text-align: center;">` + 
+              compressedThumbsHTML + `<b>(세트 이미지 참조)</b></td></tr>`;
 
-          return {
-            title: `[디자인] ${meta.campaignName || "신규 캠페인"} _ ${asset?.name || '미지정'}`, 
-            desc: childDesc, 
-            assignee: mappedAssigneeJiraId, 
-            imageData: imgDataUrl, // 첨부되는건 무조건 고화질 원본
-            startDate: data.startDate, 
-            dueDate: data.dueDate, 
-            gnb: targetGnbs 
-          };
+            const childDesc = 
+              "<h3>🖼️ 세트 상세 기획</h3>" +
+              "<table border='1' style='border-collapse: collapse; width: 100%; text-align: left; font-size: 13px;'>" +
+              "<tr><th style='padding: 8px; background-color: #f4f5f7; width: 25%;'>편성 GNB</th><td colspan='2' style='padding: 8px; font-weight: bold;'>" + targetGnbs.join(', ') + "</td></tr>" +
+              "<tr><th style='padding: 8px; background-color: #f4f5f7;'>편성 일정</th><td colspan='2' style='padding: 8px;'>" + dateInfo + "</td></tr>" +
+              "<tr style='background-color: #e2e8f0;'><th style='padding: 8px; text-align: center;'>구분</th><th style='padding: 8px; text-align: center;'>주요 카피</th><th style='padding: 8px; text-align: center;'>랜딩 URL</th></tr>" +
+              childTableRows +
+              "</table><br><h3>🎨 캡처 시안 (상태별)</h3>" + compressedBodyHTML + "<p>※ 고화질 원본은 본문 하단 <b>첨부파일</b>을 확인해 주세요.</p>";
+
+            return {
+              title: `[디자인] ${meta.campaignName || "신규 캠페인"} _ ${asset?.name || '미지정'}`, 
+              desc: childDesc, 
+              assignee: mappedAssigneeJiraId, 
+              imagesDataArr: setImagesArr, // 🌟 세트 이미지는 배열로 넘겨 Background에서 개별 첨부하게 처리
+              startDate: data.startDate, 
+              dueDate: data.dueDate, 
+              gnb: targetGnbs 
+            };
+          } else {
+            // 단일 배너
+            let copyText = data.mainTitle || data.copy || data.bannerCopy || data.previewTitle || '미지정';
+            const imgName = `banner_preview_${idx + 1}.png`;
+            const imgDataUrl = capturedImages[asset.id] || '';
+            const compressedThumb = await compressImageForBody(imgDataUrl, 200, 0.3);
+            const compressedBody = await compressImageForBody(imgDataUrl, 500, 0.4);
+            
+            parentTable += `<tr><td style="padding: 10px;">${idx + 1}</td><td style="padding: 10px; font-weight: bold;">${asset?.name || '미지정'}</td><td style="padding: 10px;">${targetGnbs.join(', ')}</td><td style="padding: 10px; word-break: break-all;">${data.landingValue || '미지정'}</td><td style="padding: 10px; color: #4f3df6; text-align: center;">` + 
+              (compressedThumb ? `<img src="${compressedThumb}" style="max-width: 100%; border: 1px solid #ccc; border-radius: 4px; margin-bottom: 5px;" /><br>` : '') + 
+              `<b>${imgName}</b></td></tr>`;
+              
+            if (imgDataUrl) parentImagesToUpload.push({ filename: imgName, dataUrl: imgDataUrl });
+
+            const childDesc = 
+              "<h3>🖼️ 상세 기획</h3>" +
+              "<table border='1' style='border-collapse: collapse; width: 100%; text-align: left; font-size: 13px;'>" +
+              "<tr><th style='padding: 8px; background-color: #f4f5f7; width: 25%;'>편성 GNB</th><td style='padding: 8px; font-weight: bold;'>" + targetGnbs.join(', ') + "</td></tr>" +
+              "<tr><th style='padding: 8px; background-color: #f4f5f7;'>편성 일정</th><td style='padding: 8px;'>" + dateInfo + "</td></tr>" +
+              "<tr><th style='padding: 8px; background-color: #f4f5f7;'>주요 카피</th><td style='padding: 8px;'>" + copyText.replace(/\n/g, '<br>') + "</td></tr>" +
+              "<tr><th style='padding: 8px; background-color: #f4f5f7;'>랜딩 URL</th><td style='padding: 8px;'>" + (data.landingValue || '미지정') + "</td></tr>" +
+              "<tr><th style='padding: 8px; background-color: #f4f5f7;'>비고</th><td style='padding: 8px;'>" + (data.note || '없음').replace(/\n/g, '<br>') + "</td></tr>" +
+              "</table><br><h3>🎨 시뮬레이터 캡처 시안</h3>" +
+              (compressedBody ? `<img src="${compressedBody}" style="max-width: 100%; border: 1px solid #e2e8f0; border-radius: 8px; margin: 10px 0;" />` : '') +
+              "<p>※ 고화질 원본은 본문 하단 <b>첨부파일(${imgName})</b>을 확인해 주세요.</p>";
+
+            return {
+              title: `[디자인] ${meta.campaignName || "신규 캠페인"} _ ${asset?.name || '미지정'}`, 
+              desc: childDesc, assignee: mappedAssigneeJiraId, imageData: imgDataUrl, 
+              startDate: data.startDate, dueDate: data.dueDate, gnb: targetGnbs 
+            };
+          }
         }));
 
         if (assets.length > 0) parentTable += `</tbody></table>`;
@@ -1002,62 +1046,30 @@
           const bannerTypes = assets.length > 0 ? assets.map(a => a.name).join(', ') : '배너 없음 (타겟/푸시 전용)'; 
           const targetDate = meta.startDate ? `${meta.startDate} ~ ${meta.dueDate || ''}` : '미지정';
           uniqueAssignees.add(cleanAssignee);
-          
-          const couponTextForTarget = meta.hasCoupon === 'Y' 
-            ? `<li><b>지급 혜택:</b> ${meta.couponBenefit || '미지정'}</li>` 
-            : '';
-
+          const couponTextForTarget = meta.hasCoupon === 'Y' ? `<li><b>지급 혜택:</b> ${meta.couponBenefit || '미지정'}</li>` : '';
           childIssues.push({
             title: `[운영] ${meta.campaignName || "신규 캠페인"} 타겟팅 세팅 요청`,
             desc: `<h3>🎯 타겟팅 캠페인 운영 요청</h3><ul><li><b>노출 배너 유형:</b> ${bannerTypes}</li><li><b>편성 일정:</b> ${targetDate}</li><li><b>예상 타겟 모수:</b> ${meta.targetSize || '미지정'}</li>${couponTextForTarget}</ul><br><p>위 내용으로 타겟팅 배너 세팅을 요청드립니다.</p>`,
-            assignee: '', 
-            gnb: ['기타'] 
+            assignee: '', gnb: ['기타'] 
           });
         }
 
-        // 🌟 3. 부모 일감 본문 조립 (초고압축 썸네일 사용)
         const safeHasCoupon = (meta.hasCoupon || '').trim().toUpperCase() === 'Y' ? 'Y' : 'N';
-        
         const parentDescText = 
           "<h3>📌 캠페인 공통 정보</h3>" +
-          "<ul>" +
-          "<li><b>캠페인명:</b> " + (meta.campaignName || "미지정") + "</li>" +
-          "<li><b>대상 상품:</b> " + (meta.product || "미지정") + "</li>" +
-          "<li><b>타겟 유형:</b> " + (meta.target || "MASS") + "</li>" +
-          "<li><b>예상 모수:</b> " + (meta.targetSize ? meta.targetSize + "명" : "미지정") + "</li>" +
-          "<li><b>타겟 조건:</b> " + (meta.targetCondition || "미지정") + "</li>" +
-          "<li><b>편성 일정:</b> " + (meta.startDate || "미지정") + " ~ " + (meta.dueDate || "미지정") + "</li>" +
-          "<li><b>쿠폰 발급:</b> " + (safeHasCoupon === 'Y' ? "포함 (" + (meta.couponBenefit || "혜택 미상") + ")" : "미포함") + "</li>" +
-          "<li><b>총 요청 건수:</b> " + assets.length + "건</li>" +
-          "</ul><br>" +
+          "<ul><li><b>캠페인명:</b> " + (meta.campaignName || "미지정") + "</li><li><b>대상 상품:</b> " + (meta.product || "미지정") + "</li><li><b>타겟 유형:</b> " + (meta.target || "MASS") + "</li><li><b>예상 모수:</b> " + (meta.targetSize ? meta.targetSize + "명" : "미지정") + "</li><li><b>타겟 조건:</b> " + (meta.targetCondition || "미지정") + "</li><li><b>편성 일정:</b> " + (meta.startDate || "미지정") + " ~ " + (meta.dueDate || "미지정") + "</li><li><b>쿠폰 발급:</b> " + (safeHasCoupon === 'Y' ? "포함 (" + (meta.couponBenefit || "혜택 미상") + ")" : "미포함") + "</li><li><b>총 요청 건수:</b> " + assets.length + "건</li></ul><br>" +
           "<h3>🗺️ 고객 이동 경로 (Userflow)</h3>" +
           (workflowCompressedUrl ? `<img src="${workflowCompressedUrl}" style="max-width: 100%; border: 1px solid #e2e8f0; border-radius: 8px; margin: 10px 0;" /><p>※ 고화질 원본은 본문 하단 첨부파일(<b>workflow_summary.png</b>)을 확인해 주세요.</p>` : "<p>배너 없는 프로모션</p>") + "<br><br>" +
-          "<h3>📊 배너 편성 종합표</h3>" +
-          parentTable + "<br><hr><br>" +
-          "<p>하위 작업(Sub-task)으로 개별 상세 기획안이 첨부되어 있습니다.</p>";
+          "<h3>📊 배너 편성 종합표</h3>" + parentTable + "<br><hr><br><p>하위 작업(Sub-task)으로 개별 상세 기획안이 첨부되어 있습니다.</p>";
 
-        // 🌟 4. 부모 일감에 달릴 자동 멘션 댓글 텍스트 생성
         const mentionString = Array.from(uniqueAssignees).map(id => `[~${id}]`).join(' ');
         const parentCommentText = `${mentionString}\n담당자님, 신규 캠페인 프로모션이 등록되었습니다. 각 영역별 하위 일감(Sub-task)을 확인하시어 배너 편성 및 세팅을 부탁드립니다.`;
 
         const finalData = {
-          parent: {
-            title: `[캠페인] ${meta.campaignName || "신규 캠페인"}`, 
-            desc: parentDescText,
-            assignee: cleanAssignee, 
-            startDate: meta.startDate, 
-            dueDate: meta.dueDate, 
-            images: parentImagesToUpload,
-            comment: parentCommentText // 💡 백그라운드로 댓글 데이터 전달
-          },
+          parent: { title: `[캠페인] ${meta.campaignName || "신규 캠페인"}`, desc: parentDescText, assignee: cleanAssignee, startDate: meta.startDate, dueDate: meta.dueDate, images: parentImagesToUpload, comment: parentCommentText },
           children: childIssues,
-          rawGasData: {
-            meta: meta,
-            assignee: cleanAssignee,
-            assets: assets
-          }
+          rawGasData: { meta: meta, assignee: cleanAssignee, assets: assets }
         };
-        // 확장 프로그램으로 데이터 전송 이벤트 발생
         const event = new CustomEvent('TEST_JIRA_SEND', { detail: finalData });
         window.dispatchEvent(event);
         
@@ -1165,6 +1177,45 @@
                             <div className="col-span-2"><textarea placeholder="서브 텍스트 입력" rows={1} value={activeAsset.data?.subText || ''} onChange={e => handleAssetChange(activeAsset.id, 'subText', e.target.value)} className="w-full bg-[#0a0812] border border-[#262833] rounded-lg px-3 py-2 text-xs text-slate-300 outline-none focus:border-[#4f3df6] transition-all duration-300 h-9 focus:h-16 resize-none custom-scrollbar leading-snug" /></div>
                             <div className="col-span-2"><input type="text" placeholder="배경 이미지 URL" value={activeAsset.data?.imageUrl || ''} onChange={e => handleAssetChange(activeAsset.id, 'imageUrl', e.target.value)} className="w-full bg-[#0a0812] border border-[#262833] rounded-lg px-3 py-2 text-xs text-white outline-none focus:border-[#4f3df6]" /></div>
                             <div className="col-span-2"><input type="text" placeholder="랜딩 URL (예: UI_PATH: /synopsis_page)" value={activeAsset.data?.landingValue || ''} onChange={e => handleAssetChange(activeAsset.id, 'landingValue', e.target.value)} className="w-full bg-[#0a0812] border border-[#262833] rounded-lg px-3 py-2 text-xs text-[#7387ff] outline-none focus:border-[#4f3df6]" /></div>
+                          </>
+                        )}
+                        
+                        {/* 🌟 신규 추가: 세트형 일반 배너 폼 */}
+                        {activeAsset.type === 'GENERAL_SET_BANNER' && (
+                          <>
+                            <div className="col-span-2">
+                              <select value={activeAsset.data?.colType || '3단'} onChange={e => {
+                                handleAssetChange(activeAsset.id, 'colType', e.target.value);
+                                if (e.target.value === '2단' && activeAsset.data?.selectedCardIndex === 2) {
+                                  handleAssetChange(activeAsset.id, 'selectedCardIndex', 1); // 인덱스 초과 방지
+                                }
+                              }} className="w-full bg-[#0a0812] border border-[#262833] rounded-lg px-3 py-2 text-xs text-white outline-none focus:border-[#4f3df6]">
+                                <option value="2단">2단 배너 세트 (좌/우 분할형)</option>
+                                <option value="3단">3단 배너 세트 (3등분 와이드형)</option>
+                              </select>
+                            </div>
+                            
+                            {(() => {
+                              const activeIdx = activeAsset.data?.selectedCardIndex || 0;
+                              const cardData = activeAsset.data?.cards?.[activeIdx] || {};
+                              
+                              return (
+                                <>
+                                  <div className="col-span-2 border-t border-[#1a1c26] mt-2 pt-2 flex items-center justify-between">
+                                    <span className="text-[10px] font-bold text-pink-400">현재 포커스: 카드 {activeIdx + 1} 설정</span>
+                                    <span className="text-[9px] text-slate-500 bg-[#262833] px-2 py-0.5 rounded">* 미리보기에서 다른 카드를 클릭해보세요.</span>
+                                  </div>
+                                  <div className="col-span-2"><input type="text" placeholder={`[카드 ${activeIdx + 1}] Hero 좌상단 타이틀`} value={cardData.heroTitle || ''} onChange={e => handleCardChange(activeAsset.id, activeIdx, 'heroTitle', e.target.value)} className="w-full bg-[#12141c] border border-[#303340] rounded-lg px-3 py-2 text-xs font-bold text-white outline-none focus:border-pink-400" /></div>
+                                  <div className="col-span-2"><textarea placeholder={`[카드 ${activeIdx + 1}] Hero 서브글 (2~3줄)`} rows={1} value={cardData.heroSub || ''} onChange={e => handleCardChange(activeAsset.id, activeIdx, 'heroSub', e.target.value)} className="w-full bg-[#12141c] border border-[#303340] rounded-lg px-3 py-2 text-xs text-slate-300 outline-none focus:border-pink-400 transition-all duration-300 h-9 focus:h-20 resize-none custom-scrollbar leading-snug" /></div>
+                                  <div className="col-span-2"><input type="text" placeholder={`[카드 ${activeIdx + 1}] Hero 우상단 이미지 URL`} value={cardData.heroImg || ''} onChange={e => handleCardChange(activeAsset.id, activeIdx, 'heroImg', e.target.value)} className="w-full bg-[#12141c] border border-[#303340] rounded-lg px-3 py-2 text-xs text-white outline-none focus:border-pink-400" /></div>
+                                  
+                                  <div className="col-span-2 border-t border-[#1a1c26] mt-1 pt-2 text-[10px] font-bold text-[#7387ff]">카드 {activeIdx + 1} 내부 설정</div>
+                                  <div className="col-span-2"><textarea placeholder={`[카드 ${activeIdx + 1}] 내 텍스트`} rows={1} value={cardData.cardCopy || ''} onChange={e => handleCardChange(activeAsset.id, activeIdx, 'cardCopy', e.target.value)} className="w-full bg-[#0a0812] border border-[#262833] rounded-lg px-3 py-2 text-xs text-white outline-none focus:border-[#7387ff] transition-all duration-300 h-9 focus:h-16 resize-none custom-scrollbar leading-snug" /></div>
+                                  <div className="col-span-2"><input type="text" placeholder={`[카드 ${activeIdx + 1}] 배경 이미지 URL`} value={cardData.cardImg || ''} onChange={e => handleCardChange(activeAsset.id, activeIdx, 'cardImg', e.target.value)} className="w-full bg-[#0a0812] border border-[#262833] rounded-lg px-3 py-2 text-xs text-white outline-none focus:border-[#7387ff]" /></div>
+                                  <div className="col-span-2"><input type="text" placeholder={`[카드 ${activeIdx + 1}] 랜딩 URL`} value={cardData.landingValue || ''} onChange={e => handleCardChange(activeAsset.id, activeIdx, 'landingValue', e.target.value)} className="w-full bg-[#0a0812] border border-[#262833] rounded-lg px-3 py-2 text-xs text-[#7387ff] outline-none focus:border-[#7387ff]" /></div>
+                                </>
+                              );
+                            })()}
                           </>
                         )}
                         
@@ -1277,7 +1328,6 @@
                  Preview Layout <span className="text-[#4f3df6] font-black text-xl">·</span> <span className="text-slate-400 text-sm font-medium">{activeAsset?.name}</span>
                </h2>
                <div className="flex gap-3">
-                 {/* 🌟 수정: <a> 태그 대신 <button>으로 변경하고 onClick 연결 */}
                  <button onClick={handleDownloadExtension} className="flex items-center gap-1.5 px-4 py-2 bg-[#1a1c26] text-slate-300 rounded-lg text-xs font-bold border border-[#303340] hover:bg-[#262833] hover:text-white transition-colors">
                    <Download size={14}/> 익스텐션 다운로드
                  </button>
@@ -1286,7 +1336,6 @@
                    <MessageSquare size={14}/> 메모 추가
                  </button>
 
-                 {/* 🌟 1. 배너 삭제 버튼 추가 */}
                  {assets.length > 1 && (
                    <button onClick={(e) => removeAsset(activeAsset.id, e)} className="flex items-center gap-1.5 px-4 py-2 bg-red-500/10 text-red-400 rounded-lg text-xs font-bold border border-red-500/30 hover:bg-red-500/20 hover:text-red-300 transition-colors">
                      <Trash2 size={14}/> 배너 삭제
@@ -1310,7 +1359,7 @@
             <div className="flex-1 relative overflow-hidden flex flex-col items-center justify-center p-12 bg-[#06070a]">
               <div className="w-full max-w-[1000px] aspect-[16/9] bg-[#000000] rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.8)] border-[8px] border-[#1a1c26] relative overflow-hidden flex items-center justify-center">
                 <div id="capture-preview-area" className="w-full h-full relative">
-                   <PreviewDisplay block={activeAsset} localShowSafeZone={localShowSafeZone} />
+                   <PreviewDisplay block={activeAsset} onUpdate={handleAssetChange} />
                    <OverlayMemos block={activeAsset} onUpdate={handleAssetChange} />
                 </div>
               </div>
@@ -1328,9 +1377,9 @@
                     className={`relative w-[200px] h-[120px] rounded-xl border-2 transition-all shrink-0 flex flex-col overflow-hidden group cursor-pointer ${activeTabId === asset.id ? 'border-[#4f3df6] shadow-[0_0_15px_rgba(79,61,246,0.3)]' : 'border-[#262833] hover:border-[#4f3df6]/50'}`}
                     onClick={() => setActiveTabId(asset.id)}
                   >
-                    <div className="h-[180px] bg-[#0c0d14] border-t border-[#1a1c26] shrink-0 flex flex-col z-20">
+                    <div className="h-[180px] bg-[#0c0d14] border-t border-[#1a1c26] shrink-0 flex flex-col z-20 pointer-events-none">
                       <div className="absolute top-0 left-0 w-[1000px] origin-top-left transform scale-[0.2]">
-                        <PreviewDisplay block={asset} localShowSafeZone={false} />
+                        <PreviewDisplay block={asset} />
                       </div>
                       <div className="absolute inset-0 bg-black/10 group-hover:bg-transparent transition-colors"></div>
                     </div>
@@ -1383,7 +1432,1502 @@
                         </div>
                       </div>
                       
-                      {/* 🌟 [수정] disabled를 풀고, 두 개의 독립된 input으로 나누어 수정 가능하게 처리 */}
+                      {Object.entries(configMap).map(([gnbName, info], i) => (
+                        <div key={i} className="grid grid-cols-3 gap-0 text-xs border-t border-[#262833] items-center">
+                          <div className="p-2.5 text-center border-r border-[#262833] text-slate-400 font-bold">
+                            {gnbName}
+                          </div>
+                          <div className="col-span-2 grid grid-cols-2 gap-2 p-2">
+                            <input 
+                              type="text" 
+                              placeholder="이름"
+                              value={info.name || ''} 
+                              onChange={(e) => handleConfigChange(gnbName, 'name', e.target.value)}
+                              className="w-full bg-[#0a0812] border border-[#303340] rounded-md px-2 py-1.5 text-white outline-none focus:border-[#4f3df6] transition-colors" 
+                            />
+                            <input 
+                              type="text" 
+                              placeholder="Jira ID"
+                              value={info.jiraId || ''} 
+                              onChange={(e) => handleConfigChange(gnbName, 'jiraId', e.target.value)}
+                              className="w-full bg-[#0a0812] border border-[#303340] rounded-md px-2 py-1.5 text-white outline-none focus:border-[#4f3df6] transition-colors" 
+                            />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                </div>
+                
+                <div className="p-4 border-t border-[#262833] bg-[#0f111a] flex justify-end">
+                  <button onClick={handleSaveConfig} className="px-6 py-2 bg-[#4f3df6] hover:bg-[#6252ff] text-white rounded-lg text-xs font-bold transition-all shadow-lg">저장 및 닫기</button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {isAddAssetModalOpen && (
+            <div className="fixed inset-0 bg-[#0a0812]/95 backdrop-blur-md z-50 flex items-center justify-center p-4 animate-in zoom-in-95 duration-200">
+              <div className="bg-[#12141c] w-[900px] border border-[#262833] rounded-3xl shadow-2xl flex flex-col overflow-hidden ring-1 ring-white/10">
+                <div className="p-6 border-b border-[#262833] flex justify-between items-center bg-[#0f111a]">
+                  <h3 className="text-xl font-black text-white flex items-center gap-2"><LayoutTemplate size={22} className="text-[#4f3df6]"/> Select Template</h3>
+                  <button onClick={() => setIsAddAssetModalOpen(false)} className="p-1.5 hover:bg-[#262833] rounded-full text-slate-400 hover:text-white transition-colors"><X size={20}/></button>
+                </div>
+                <div className="p-8 grid grid-cols-2 lg:grid-cols-3 gap-5 max-h-[70vh] overflow-y-auto custom-scrollbar bg-[#0a0812]">
+                  {BANNER_SPECS.map((spec) => (
+                    <div key={spec.type} onClick={() => addAsset(spec.type, spec.name)} className="bg-[#1a1c26] border border-[#262833] rounded-2xl p-6 cursor-pointer hover:border-[#4f3df6] hover:-translate-y-1 hover:shadow-[0_10px_30px_rgba(79,61,246,0.2)] transition-all flex flex-col h-full group">
+                      <div className="flex items-start justify-between mb-4"><div className="p-3 bg-[#0a0812] border border-[#303340] rounded-xl text-[#7387ff] group-hover:bg-[#4f3df6] group-hover:border-[#4f3df6] group-hover:text-white transition-colors"><spec.icon size={24} /></div><span className="text-[10px] font-bold bg-[#0a0812] border border-[#303340] text-slate-400 px-2 py-1 rounded-md font-mono">{spec.ratio}</span></div>
+                      <h4 className="text-lg font-bold text-white mb-1 group-hover:text-[#7387ff] transition-colors">{spec.name}</h4>
+                      <p className="text-xs text-slate-500 leading-relaxed mt-auto pt-4 border-t border-[#262833]">{spec.desc}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+        </div>
+      );
+    } 
+    const root = createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html><!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>B tv Campaign Agent</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.23.0/babel.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10.6.1/dist/mermaid.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  
+  <script type="importmap">
+    {
+      "imports": {
+        "react": "https://esm.sh/react@18.2.0",
+        "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
+        "lucide-react": "https://esm.sh/lucide-react@0.292.0?external=react"
+      }
+    }
+  </script>
+
+  <style>
+    body { margin: 0; padding: 0; background-color: #0f111a; font-family: 'Pretendard', -apple-system, sans-serif; color: #cbd5e1; overflow: hidden; }
+    .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: #2e3038; border-radius: 4px; }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #44464f; }
+    .progress-stripes { background-image: linear-gradient(45deg, rgba(255, 255, 255, 0.15) 25%, transparent 25%, transparent 50%, rgba(255, 255, 255, 0.15) 50%, rgba(255, 255, 255, 0.15) 75%, transparent 75%, transparent); background-size: 1rem 1rem; animation: progress-stripes 1s linear infinite; }
+    @keyframes progress-stripes { from { background-position: 1rem 0; } to { background-position: 0 0; } }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel" data-type="module">
+    import React, { useState, useRef, useEffect } from 'react';
+    import { createRoot } from 'react-dom/client';
+    
+    import { 
+      Tv, LayoutTemplate, Send, ChevronRight, ChevronDown, ChevronUp, Copy, CheckCircle, 
+      Search, Mic, Menu, Home, Grid, Settings, Calendar, GitMerge, Plus, PlusCircle, Trash2, 
+      Image as ImageIcon, ListTodo, Smartphone, LayoutPanelLeft, MonitorPlay, Sparkles, Bot, 
+      X, User, ExternalLink, Monitor, Layout, Type, RectangleHorizontal, FileText, CalendarDays, MessageSquare, Loader2, Lock, Users, Download
+    } from 'lucide-react';
+
+    const GNB_OPTIONS = ['홈', 'Btv+', '영화시리즈', 'TV 방송', '무료', '애니메이션', '해피시니어', '키즈', 'OTT홈', '실시간 채널', '광고 홈', '콘텐츠', '기타'];
+
+    const TEMPLATE_URLS = {
+      'TODAY_BTV': 'https://raw.githubusercontent.com/btvcuration/campaign/main/assets/images/ui-templates/today_btv.png',
+      'GENERAL_BANNER': 'https://raw.githubusercontent.com/btvcuration/campaign/main/assets/images/ui-templates/general_banner_2col.png',
+      'GENERAL_SET_BANNER': 'https://raw.githubusercontent.com/btvcuration/campaign/main/assets/images/ui-templates/general_banner_2col.png',
+      'FULL_PROMO_BANNER': 'https://raw.githubusercontent.com/btvcuration/campaign/main/assets/images/ui-templates/full_promo.png',
+      'BIG_BANNER': 'https://raw.githubusercontent.com/btvcuration/campaign/main/assets/images/ui-templates/big_banner.png',
+      'LONG_BANNER': 'https://raw.githubusercontent.com/btvcuration/campaign/main/assets/images/ui-templates/long_banner.png',
+      'STRIP_BANNER': 'https://raw.githubusercontent.com/btvcuration/campaign/main/assets/images/ui-templates/strip_banner.png',
+      'SYNOPSIS_BANNER': 'https://raw.githubusercontent.com/btvcuration/campaign/main/assets/images/ui-templates/synopsis_banner.png',
+      'PROMO_POPUP': 'https://raw.githubusercontent.com/btvcuration/campaign/main/assets/images/ui-templates/promo_popup.png',
+      'MINI_EPG_BANNER': 'https://raw.githubusercontent.com/btvcuration/campaign/main/assets/images/ui-templates/mini_epg.png'
+    };
+
+    const BANNER_SPECS = [
+      { type: 'TODAY_BTV', name: 'Today B tv', icon: MonitorPlay, ratio: '16:9', desc: '홈 최상단 대형 배너. 75% 이미지 배치.' },
+      { type: 'GENERAL_BANNER', name: '일반 배너', icon: LayoutPanelLeft, ratio: '가변', desc: '배경 프리뷰와 하단 배너 카드 1개 세팅.' },
+      { type: 'GENERAL_SET_BANNER', name: '일반 배너 (세트형)', icon: Grid, ratio: '가변', desc: '연속된 2/3단 패키지 배너 세팅 및 통합 기획.' },
+      { type: 'FULL_PROMO_BANNER', name: '풀프로모션', icon: LayoutTemplate, ratio: '16:9', desc: '공통 배경 위에 메인 카피와 3개 카드 세트.' },
+      { type: 'BIG_BANNER', name: '빅배너', icon: Monitor, ratio: '24.5:8.3', desc: '텍스트와 우측 이미지로 구성된 대형 영역.' },
+      { type: 'LONG_BANNER', name: '롱배너', icon: Smartphone, ratio: '129:181', desc: '세로형 긴 배너. 카피 가독성 중요.' },
+      { type: 'STRIP_BANNER', name: '띠배너', icon: RectangleHorizontal, ratio: '가변', desc: '콘텐츠 사이 삽입되는 가로형 긴 띠배너.' },
+      { type: 'SYNOPSIS_BANNER', name: '시놉시스 배너', icon: RectangleHorizontal, ratio: '가변', desc: '시놉시스 화면에 노출되는 쿠폰/할인 띠배너.' },
+      { type: 'PROMO_POPUP', name: 'TV 팝업', icon: Sparkles, ratio: '4:3', desc: '중앙 팝업 공지. 이미지와 하단 액션 버튼.' },
+      { type: 'MINI_EPG_BANNER', name: '미니 EPG 배너', icon: Tv, ratio: '가변', desc: '실시간 방송 시청 중 노출되는 썸네일.' }
+    ];
+
+    const DEFAULT_MINI_EPG_BANNER = { imageUrl: '', buttonText: '감상하기', landingValue: 'UI_PATH: /join', gnb: '실시간 채널', note: '', memos: [], startDate: '', dueDate: '' };
+    const DEFAULT_TODAY_BTV = { topText: '상단 문구', mainTitle: '메인 문구', subText: '서브 텍스트', landingValue: 'UI_PATH: /join', buttonText: '자세히 보기', imageUrl: '', gnb: '홈', note: '', memos: [], startDate: '', dueDate: '' };
+    const DEFAULT_GENERAL_BANNER = { colType: '2단', previewTitle: '배경 좌상단 텍스트 (1줄)', previewSub: '서브 설명글 영역', previewImg: '', bannerCopy: '배너 내 텍스트', bannerImg: '', landingValue: 'UI_PATH: /join', gnb: '영화시리즈', note: '', memos: [], startDate: '', dueDate: '' };
+    // 🌟 신규 세트 배너 초기값 (배열 형태)
+    const DEFAULT_GENERAL_SET_BANNER = { 
+      colType: '3단', 
+      selectedCardIndex: 0,
+      cards: [
+        { heroTitle: '세트 1 좌상단 타이틀', heroSub: '세트 1에 대한 서브 설명글', heroImg: '', cardCopy: '카드 1 타이틀', cardImg: '', landingValue: 'UI_PATH: /set1' },
+        { heroTitle: '세트 2 좌상단 타이틀', heroSub: '세트 2에 대한 서브 설명글', heroImg: '', cardCopy: '카드 2 타이틀', cardImg: '', landingValue: 'UI_PATH: /set2' },
+        { heroTitle: '세트 3 좌상단 타이틀', heroSub: '세트 3에 대한 서브 설명글', heroImg: '', cardCopy: '카드 3 타이틀', cardImg: '', landingValue: 'UI_PATH: /set3' }
+      ], 
+      gnb: '영화시리즈', note: '', memos: [], startDate: '', dueDate: '' 
+    };
+    const DEFAULT_FULL_PROMO_BANNER = { bgImg: '', topLogo: '상단 타이틀', mainCopy: '메인 하이라이트 문구', subCopy: '서브 텍스트 라인', card1Title: '블룸 하우스', card1Sub: '카드 1 설명', card1Img: '', card1Landing: '', card2Title: '블룸 하우스', card2Sub: '카드 2 설명', card2Img: '', card2Landing: '', card3Title: '블룸 하우스', card3Sub: '카드 3 설명', card3Img: '', card3Landing: '', landingValue: 'UI_PATH: /join', gnb: '홈', note: '', memos: [], startDate: '', dueDate: '' };
+    const DEFAULT_BIG_BANNER = { subType: '기본형', mainTitle: '메인 문구', subTitle: '서브 타이틀', desc: '상세 설명글을 입력해주세요.', buttonText: '바로가기', imageUrl: '', logoImg: '', landingValue: 'UI_PATH: /join', gnb: '홈', note: '', memos: [], startDate: '', dueDate: '' };
+    const DEFAULT_LONG_BANNER = { copy: '세로형 배너 메인 카피', subTitle: '서브 카피 입력', imageUrl: '', landingValue: 'UI_PATH: /join', gnb: '홈', note: '', memos: [], startDate: '', dueDate: '' };
+    const DEFAULT_STRIP_BANNER = { mainTitle: '메인 이벤트 타이틀', subTitle: '서브 프로모션 텍스트', imageUrl: '', landingValue: 'UI_PATH: /join', gnb: '이벤트', note: '', memos: [], startDate: '', dueDate: '' };
+    const DEFAULT_SYNOPSIS_BANNER = { mainTitle: '2,000명 추첨 증정', subTitle: '~7.20 | 다음날 발급', imageUrl: '', badgeText: '영화 쿠폰\n3,300원', landingValue: 'UI_PATH: /join', gnb: '콘텐츠', note: '', memos: [], startDate: '', dueDate: '' };
+    const DEFAULT_PROMO_POPUP = { imageUrl: '', buttonText: '바로가기', closeText: '닫기', landingValue: 'UI_PATH: /join', gnb: '홈', note: '', memos: [], startDate: '', dueDate: '' };
+
+    const DraggableMemo = ({ memo, updateMemo, removeMemo }) => {
+      const [pos, setPos] = useState({ x: memo.x || 50, y: memo.y || 50 });
+      const isDragging = useRef(false);
+      const dragStart = useRef({ mouseX: 0, mouseY: 0, boxX: 0, boxY: 0 });
+
+      useEffect(() => { setPos({ x: memo.x || 50, y: memo.y || 50 }); }, [memo.x, memo.y]);
+
+      const handleMouseDown = (e) => {
+        if (e.target.tagName === 'TEXTAREA' || e.target.closest('button')) return;
+        
+        e.preventDefault(); e.stopPropagation();
+        isDragging.current = true;
+        dragStart.current = { mouseX: e.clientX, mouseY: e.clientY, boxX: pos.x, boxY: pos.y };
+
+        const handleMouseMove = (ev) => {
+          if (!isDragging.current) return;
+          ev.preventDefault();
+          const dx = ev.clientX - dragStart.current.mouseX;
+          const dy = ev.clientY - dragStart.current.mouseY;
+          setPos({ x: dragStart.current.boxX + dx, y: dragStart.current.boxY + dy });
+        };
+
+        const handleMouseUp = (ev) => {
+          if (!isDragging.current) return;
+          isDragging.current = false;
+          const dx = ev.clientX - dragStart.current.mouseX;
+          const dy = ev.clientY - dragStart.current.mouseY;
+          updateMemo(memo.id, { x: dragStart.current.boxX + dx, y: dragStart.current.boxY + dy });
+          
+          document.removeEventListener('mousemove', handleMouseMove);
+          document.removeEventListener('mouseup', handleMouseUp);
+        };
+
+        document.addEventListener('mousemove', handleMouseMove, { passive: false });
+        document.addEventListener('mouseup', handleMouseUp);
+      };
+
+      return (
+        <div 
+          onMouseDown={handleMouseDown}
+          className="absolute bg-yellow-300/95 backdrop-blur-sm px-4 py-3 rounded-xl shadow-2xl border border-yellow-400 min-w-[200px] max-w-[300px] transition-shadow hover:shadow-[0_0_20px_rgba(250,204,21,0.6)] cursor-move z-50 pointer-events-auto"
+          style={{ transform: `translate3d(${pos.x}px, ${pos.y}px, 0)`, left: 0, top: 0, willChange: 'transform' }}
+        >
+          <div className="flex items-center justify-between gap-4 mb-2 pointer-events-none">
+            <div className="flex items-center gap-1.5 text-yellow-800 font-bold text-[10px]"><MessageSquare size={12}/> 시안 메모</div>
+            <button onMouseDown={(e) => e.stopPropagation()} onClick={() => removeMemo(memo.id)} className="pointer-events-auto text-yellow-700 hover:text-red-600 hover:bg-yellow-400 p-1 rounded-full transition-colors"><X size={12}/></button>
+          </div>
+          <textarea 
+            onMouseDown={(e) => e.stopPropagation()}
+            value={memo.text} 
+            onChange={(e) => updateMemo(memo.id, { text: e.target.value })}
+            className="w-full bg-yellow-100/50 border border-yellow-400/30 rounded p-2 text-xs text-yellow-900 font-bold outline-none resize-none focus:bg-white focus:ring-1 focus:ring-yellow-500 custom-scrollbar h-[60px] cursor-text pointer-events-auto"
+            placeholder="여기에 메모를 입력하세요..."
+          />
+        </div>
+      );
+    };
+
+    const OverlayMemos = ({ block, onUpdate }) => {
+      const memos = block.data?.memos || [];
+      if (memos.length === 0) return null;
+
+      const updateMemo = (id, updates) => {
+        const updatedMemos = memos.map(m => m.id === id ? { ...m, ...updates } : m);
+        onUpdate(block.id, 'memos', updatedMemos);
+      };
+
+      const removeMemo = (id) => {
+        const updatedMemos = memos.filter(m => m.id !== id);
+        onUpdate(block.id, 'memos', updatedMemos);
+      };
+
+      return (
+        <div className="absolute inset-0 pointer-events-none z-50 overflow-visible">
+          {memos.map(memo => (
+            <DraggableMemo key={memo.id} memo={memo} updateMemo={updateMemo} removeMemo={removeMemo} />
+          ))}
+        </div>
+      );
+    };
+
+    // 🌟 수정된 PreviewDisplay: onUpdate를 전달받아 상태 변경 가능하게 함
+    const PreviewDisplay = ({ block, onUpdate }) => {
+      if (!block) return null;
+      const checkIsUrl = (str) => Boolean(str && typeof str === 'string' && str.startsWith('http'));
+      const checkHasText = (str) => Boolean(str && !checkIsUrl(str) && str.trim() !== '');
+
+      const FallbackText = ({ text, alignClass = 'justify-center items-center text-center px-4' }) => {
+        if (!checkHasText(text) || checkIsUrl(text)) return null;
+        return (
+          <div className={`absolute inset-0 flex flex-col sm:flex-row gap-2 ${alignClass} text-white font-black select-none drop-shadow-[0_4px_4px_rgba(0,0,0,0.9)] z-20`}>
+            <div className="flex items-center text-white/90 shrink-0 bg-black/20 px-2 py-1 rounded-lg backdrop-blur-sm"><ImageIcon size={22} className="mr-1.5 opacity-90" /><span className="text-sm font-bold tracking-tight">요청 이미지</span></div>
+            <span className="text-xl sm:text-2xl truncate leading-tight">{text}</span>
+          </div>
+        );
+      };
+
+      if (block.type === 'TODAY_BTV') {
+        return (
+          <div className="relative w-full aspect-[16/9] bg-[#0a0a0f] overflow-hidden shrink-0">
+            <div className="absolute inset-0 bg-[#0a0a0f]"></div>
+            
+            <div className="absolute right-[0%] top-[0%] w-[70%] h-[70%] bg-no-repeat bg-cover bg-right-top z-0" style={{ backgroundImage: checkIsUrl(block.data?.imageUrl) ? `url(${block.data.imageUrl})` : 'none' }}>
+              {!checkIsUrl(block.data?.imageUrl) && !checkHasText(block.data?.imageUrl) && <div className="absolute inset-0 bg-gradient-to-bl from-[#1e1b4b] to-[#0a0a0f] opacity-50"></div>}
+              <FallbackText text={block.data?.imageUrl} alignClass="justify-end items-start pt-10 pr-10" />
+              
+              <div className="absolute inset-0 bg-gradient-to-r from-[#0a0a0f] via-transparent to-transparent w-[35%]"></div>
+              <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0f] via-transparent to-transparent h-[35%] top-auto bottom-0"></div>
+            </div>
+            
+            <div className="absolute inset-0 w-[50%] bg-gradient-to-r from-[#0a0a0f] via-[#0a0a0f]/95 to-transparent z-10 pointer-events-none"></div>
+            <div className="absolute inset-0 top-[40%] bg-gradient-to-t from-[#0a0a0f] via-[#0a0a0f]/90 to-transparent z-10 pointer-events-none"></div>
+            
+            <div className="absolute inset-0 z-20 flex flex-col pointer-events-none text-white px-10">
+              
+              <div className="absolute left-[80px] top-[48%] -translate-y-1/2 w-[45%] pl-2">
+                <h3 className="text-[#32d782] text-sm font-bold mb-2 tracking-tight">{block.data?.topText || '상단 카피'}</h3>
+                <h1 className="text-white text-4xl font-black mb-3 leading-[1.15] whitespace-pre-wrap tracking-tighter drop-shadow-lg">{block.data?.mainTitle || '타이틀 입력'}</h1>
+                <p className="text-slate-200 text-sm font-medium leading-[1.6] drop-shadow-md whitespace-pre-wrap">{block.data?.subText || '서브 텍스트'}</p>
+                <div className="mt-5 inline-flex bg-[#4631e6] text-white px-6 py-2.5 rounded font-bold text-sm shadow-xl">자세히 보기</div>
+              </div>
+              
+              <div className="absolute bottom-10 left-[80px] right-0 flex gap-3 overflow-hidden">
+                {[1,2,3,4,5,6,7].map(i => (
+                  <div key={i} className="w-[14%] aspect-[14/9] bg-[#222530] rounded-md border border-white/5 shadow-lg shrink-0">
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        );
+      }
+      
+      if (block.type === 'FULL_PROMO_BANNER') {
+        return (
+          <div className="relative w-full aspect-[16/9] bg-[#0a0a0f] overflow-hidden shrink-0">
+            <div className="absolute inset-0 bg-cover bg-center bg-no-repeat z-0" style={{backgroundImage: checkIsUrl(block.data?.bgImg) ? `url(${block.data.bgImg})` : 'none'}}>
+              {!checkIsUrl(block.data?.bgImg) && !checkHasText(block.data?.bgImg) && <div className="absolute inset-0 bg-gradient-to-br from-[#1e1b4b] to-[#0a0a0f]"></div>}
+              <FallbackText text={block.data?.bgImg} /><div className="absolute inset-0 bg-black/50 backdrop-blur-[2px]"></div>
+            </div>
+            <div className="relative z-10 flex flex-col items-center pt-[8%] px-10 gap-4">
+              <h2 className="text-white text-[1.8rem] font-black drop-shadow-lg">{block.data?.topLogo || '상단 타이틀'}</h2>
+              <div className="w-[10%] h-0.5 bg-white/50 rounded-full mb-2"></div>
+              {block.data?.mainCopy && <div className="text-cyan-300 px-6 py-1.5 text-2xl font-black leading-snug whitespace-pre-wrap text-center max-w-[85%] drop-shadow-xl">{block.data.mainCopy}</div>}
+              {block.data?.subCopy && <div className="text-purple-300 px-5 py-1 text-sm font-bold leading-snug whitespace-pre-wrap text-center max-w-[80%] drop-shadow-md">{block.data.subCopy}</div>}
+            </div>
+            <div className="absolute bottom-[8%] left-[5%] right-[5%] flex justify-center gap-6 z-10 h-[40%]">
+              {[1,2,3].map(i => (
+                <div key={i} className="flex-1 bg-[#0a0812]/90 border border-white/10 rounded-xl flex flex-col overflow-hidden shadow-[0_10px_30px_rgba(0,0,0,0.8)] ring-1 ring-white/5">
+                  <div className="p-4 text-center flex flex-col gap-1 items-center justify-center h-[35%] bg-gradient-to-b from-[#1a1c26] to-[#0a0812]"><h4 className="text-white font-black text-sm truncate w-full">{block.data?.[`card${i}Title`] || `카드 ${i} 타이틀`}</h4><p className="text-yellow-400 text-[10px] font-bold truncate w-full">{block.data?.[`card${i}Sub`] || '서브 텍스트 입력'}</p></div>
+                  <div className="flex-1 bg-cover bg-center bg-[#1a1c26] relative" style={{backgroundImage: checkIsUrl(block.data?.[`card${i}Img`]) ? `url(${block.data[`card${i}Img`]})` : 'none'}}>
+                    {!checkIsUrl(block.data?.[`card${i}Img`]) && !checkHasText(block.data?.[`card${i}Img`]) && <div className="absolute inset-0 flex items-center justify-center"><ImageIcon size={24} className="text-white/10"/></div>}
+                    <FallbackText text={block.data?.[`card${i}Img`]} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      }
+
+      if (block.type === 'GENERAL_BANNER') {
+        return (
+          <div className="relative w-full aspect-[16/9] bg-[#0a0a0f] overflow-hidden shrink-0">
+            <div className="absolute inset-0 h-full bg-[#0a0a0f] z-0 px-10">
+              <div className="absolute right-0 top-0 w-[65%] h-[60%] bg-no-repeat bg-contain bg-right-top z-0" style={{backgroundImage: checkIsUrl(block.data?.previewImg) ? `url(${block.data.previewImg})` : 'none'}}>
+                {!checkIsUrl(block.data?.previewImg) && !checkHasText(block.data?.previewImg) && <div className="absolute inset-0 bg-gradient-to-bl from-indigo-900/30 to-[#0a0a0f]"></div>}
+                <FallbackText text={block.data?.previewImg} alignClass="justify-end items-start pt-10 pr-10" />
+              </div>
+              <div className="absolute inset-0 bg-gradient-to-r from-[#0a0a0f] from-[20%] via-[#0a0a0f]/95 via-[40%] to-transparent to-[60%] z-10 pointer-events-none"></div>
+              <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0f] from-[35%] via-[#0a0a0f]/95 via-[50%] to-transparent to-[75%] z-10 pointer-events-none"></div>
+              <div className="absolute left-[80px] top-[12%] w-[35%] z-20 flex flex-col gap-2">
+                <h1 className="text-white text-[2.2rem] font-black leading-[1.15] whitespace-nowrap overflow-hidden text-ellipsis tracking-tighter drop-shadow-xl">{block.data?.previewTitle || '프리뷰 좌상단 텍스트 (1줄)'}</h1>
+                <p className="text-slate-300 text-[16px] font-medium leading-[1.2] whitespace-pre-wrap mt-2">{block.data?.previewSub || '서브 설명글 영역\n2줄에서 3줄 정도 작성 요망'}</p>
+              </div>
+            </div>
+            <div className="absolute bottom-[12%] left-[80px] right-0 flex items-center gap-4 z-30 overflow-hidden pr-8 h-[185px]">
+              <div className={`relative rounded-xl overflow-hidden shadow-[0_10px_30px_rgba(0,0,0,0.8)] border-[3px] border-[#7387FF] flex bg-[#1a1c26] shrink-0 h-full ${block.data?.colType === '1단' ? 'aspect-[62/89] flex-col' : block.data?.colType === '3단' ? 'aspect-[196/89]' : 'aspect-[129/89]'}`}>
+                {block.data?.colType === '1단' ? (
+                  <>
+                    {block.data?.bannerCopy && <div className="w-full h-[45%] p-5 pb-2 text-left z-20 flex items-start bg-gradient-to-b from-[#1a1c26] to-transparent"><p className="text-white font-extrabold text-xl leading-[1.2] tracking-tighter whitespace-pre-wrap drop-shadow-md">{block.data.bannerCopy}</p></div>}
+                    <div className="absolute inset-0 w-full h-full bg-cover bg-center z-10" style={{ backgroundImage: checkIsUrl(block.data?.bannerImg) ? `url(${block.data.bannerImg})` : 'none' }}>
+                      {!checkIsUrl(block.data?.bannerImg) && !checkHasText(block.data?.bannerImg) && <div className="absolute inset-0 bg-[#0a0a0f] flex items-center justify-center"><ImageIcon size={20} className="text-white/10"/></div>}
+                      <FallbackText text={block.data?.bannerImg} />
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    {block.data?.bannerCopy && <div className="w-[70%] h-full flex flex-col justify-center items-start p-6 z-20 bg-gradient-to-r from-[#1a1c26] via-[#1a1c26]/90 to-transparent"><p className="text-white font-extrabold text-xl leading-[1.2] tracking-tighter whitespace-pre-wrap drop-shadow-md">{block.data.bannerCopy}</p></div>}
+                    <div className="absolute inset-0 w-full h-full bg-cover bg-center z-10 bg-[#0a0a0f]" style={{ backgroundImage: checkIsUrl(block.data?.bannerImg) ? `url(${block.data.bannerImg})` : 'none' }}>
+                      {!checkIsUrl(block.data?.bannerImg) && !checkHasText(block.data?.bannerImg) && <div className="absolute inset-0 flex items-center justify-center"><ImageIcon size={32} className="text-white/10"/></div>}
+                      <FallbackText text={block.data?.bannerImg} /><div className="absolute inset-0 bg-gradient-to-r from-[#1a1c26] via-[#1a1c26]/60 to-transparent w-[60%] pointer-events-none z-10"></div>
+                    </div>
+                  </>
+                )}
+              </div>
+              {[1,2,3,4,5].map(i => (
+                <div key={i} className="h-full aspect-[2/3] bg-[#222530] rounded-md border border-white/5 shadow-lg shrink-0">
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      }
+
+      // 🌟 신규: 일반 배너 (세트형) 렌더링
+      if (block.type === 'GENERAL_SET_BANNER') {
+        const colType = block.data?.colType || '3단';
+        const numCards = colType === '3단' ? 3 : 2;
+        const activeIdx = block.data?.selectedCardIndex || 0;
+        const activeCard = block.data?.cards?.[activeIdx] || {};
+
+        return (
+          <div className="relative w-full aspect-[16/9] bg-[#0a0a0f] overflow-hidden shrink-0">
+            <div className="absolute inset-0 h-full bg-[#0a0a0f] z-0 px-10 transition-all duration-300">
+              <div className="absolute right-0 top-0 w-[65%] h-[60%] bg-no-repeat bg-contain bg-right-top z-0" style={{backgroundImage: checkIsUrl(activeCard.heroImg) ? `url(${activeCard.heroImg})` : 'none'}}>
+                {!checkIsUrl(activeCard.heroImg) && !checkHasText(activeCard.heroImg) && <div className="absolute inset-0 bg-gradient-to-bl from-indigo-900/30 to-[#0a0a0f]"></div>}
+                <FallbackText text={activeCard.heroImg} alignClass="justify-end items-start pt-10 pr-10" />
+              </div>
+              <div className="absolute inset-0 bg-gradient-to-r from-[#0a0a0f] from-[20%] via-[#0a0a0f]/95 via-[40%] to-transparent to-[60%] z-10 pointer-events-none"></div>
+              <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0f] from-[35%] via-[#0a0a0f]/95 via-[50%] to-transparent to-[75%] z-10 pointer-events-none"></div>
+              <div className="absolute left-[80px] top-[12%] w-[35%] z-20 flex flex-col gap-2">
+                <h1 className="text-white text-[2.2rem] font-black leading-[1.15] whitespace-nowrap overflow-hidden text-ellipsis tracking-tighter drop-shadow-xl">{activeCard.heroTitle || '상단 타이틀'}</h1>
+                <p className="text-slate-300 text-[16px] font-medium leading-[1.2] whitespace-pre-wrap mt-2">{activeCard.heroSub || '서브 설명글 영역'}</p>
+              </div>
+            </div>
+            
+            <div className="absolute bottom-[12%] left-[80px] right-0 flex items-center gap-4 z-30 overflow-hidden pr-8 h-[185px]">
+              {Array.from({length: numCards}).map((_, i) => {
+                const cardData = block.data?.cards?.[i] || {};
+                const isSelected = i === activeIdx;
+                
+                return (
+                  <div 
+                    key={i} 
+                    onClick={() => onUpdate && onUpdate(block.id, 'selectedCardIndex', i)}
+                    className={`relative rounded-xl overflow-hidden shadow-[0_10px_30px_rgba(0,0,0,0.8)] flex bg-[#1a1c26] shrink-0 h-full cursor-pointer transition-all duration-200 ${colType === '3단' ? 'aspect-[196/89]' : 'aspect-[129/89]'} ${isSelected ? 'border-[3px] border-[#7387FF] ring-4 ring-[#7387FF]/30 transform -translate-y-1' : 'border border-white/20 hover:border-white/50 opacity-60 hover:opacity-100'}`}
+                  >
+                    {cardData.cardCopy && <div className="w-[70%] h-full flex flex-col justify-center items-start p-6 z-20 bg-gradient-to-r from-[#1a1c26] via-[#1a1c26]/90 to-transparent pointer-events-none"><p className="text-white font-extrabold text-xl leading-[1.2] tracking-tighter whitespace-pre-wrap drop-shadow-md">{cardData.cardCopy}</p></div>}
+                    <div className="absolute inset-0 w-full h-full bg-cover bg-center z-10 bg-[#0a0a0f] pointer-events-none" style={{ backgroundImage: checkIsUrl(cardData.cardImg) ? `url(${cardData.cardImg})` : 'none' }}>
+                      {!checkIsUrl(cardData.cardImg) && !checkHasText(cardData.cardImg) && <div className="absolute inset-0 flex items-center justify-center"><ImageIcon size={32} className="text-white/10"/></div>}
+                      <FallbackText text={cardData.cardImg} /><div className="absolute inset-0 bg-gradient-to-r from-[#1a1c26] via-[#1a1c26]/60 to-transparent w-[60%] pointer-events-none z-10"></div>
+                    </div>
+                  </div>
+                );
+              })}
+              {[1,2,3,4].map(i => (
+                <div key={`dummy-${i}`} className="h-full aspect-[2/3] bg-[#222530] rounded-md border border-white/5 shadow-lg shrink-0"></div>
+              ))}
+            </div>
+          </div>
+        );
+      }
+      
+      if (block.type === 'BIG_BANNER') {
+        const isSubscription = block.data?.subType === '가입하기형';
+        
+        return (
+          <div className="relative w-full aspect-[16/9] bg-[#0a0a0f] overflow-hidden shrink-0">
+            
+            <div className={`absolute left-[40px] top-[10%] w-[94%] h-[220px] bg-transparent overflow-hidden shadow-2xl flex items-center z-10 ${isSubscription ? 'rounded-none' : 'rounded-[16px]'}`}>
+              {block.data?.subType !== '가입하기형' ? (
+                <>
+                  <div className="w-[37%] h-full flex flex-col justify-center items-start pl-12 pr-4 text-left z-10 shrink-0">
+                    <h2 className="text-white font-black whitespace-pre-wrap leading-[1.1] text-[2.2rem] tracking-tight drop-shadow-xl">{block.data?.mainTitle || '메인 문구 입력'}</h2>
+                    <div className="mt-2.5 flex flex-col gap-1.5"><p className="text-[#ff5e3a] font-bold text-base tracking-tight">{block.data?.subTitle || '서브 타이틀 입력'}</p><p className="text-slate-300 font-medium text-[13px] tracking-tight whitespace-pre-wrap">{block.data?.desc || '상세 설명글을 입력해주세요.'}</p></div>
+                    <div className="inline-flex items-center justify-center bg-[#4f3df6] text-white px-5 py-1.5 rounded-full font-bold text-xs shadow-lg mt-5">바로가기</div>
+                  </div>
+                  <div className="flex-1 h-full py-4 pr-5 flex items-center justify-end relative z-0">
+                    <div className="w-full max-w-[600px] aspect-[24.5/8.3] rounded-xl overflow-hidden bg-[#1a1c26] relative shadow-inner">
+                      <div className="absolute inset-0 bg-no-repeat bg-cover bg-center transition-all" style={{ backgroundImage: checkIsUrl(block.data?.imageUrl) ? `url(${block.data.imageUrl})` : 'none' }}>
+                        {!checkIsUrl(block.data?.imageUrl) && !checkHasText(block.data?.imageUrl) && <div className="absolute inset-0 flex items-center justify-center"><ImageIcon size={64} className="text-white/10"/></div>}
+                        <FallbackText text={block.data?.imageUrl} />
+                      </div>
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="absolute inset-0 z-0">
+                    <div className="absolute right-0 top-0 w-[70%] h-full bg-no-repeat bg-cover bg-right-top transition-all duration-500" style={{ backgroundImage: checkIsUrl(block.data?.imageUrl) ? `url(${block.data.imageUrl})` : 'none' }}>
+                      {!checkIsUrl(block.data?.imageUrl) && !checkHasText(block.data?.imageUrl) && <div className="absolute inset-0 bg-gradient-to-br from-indigo-900/30 to-[#0a0a0f] flex items-center justify-end pr-32"><ImageIcon size={64} className="text-white/10"/></div>}
+                      <FallbackText text={block.data?.imageUrl} alignClass="justify-end items-center pr-32" />
+                    </div>
+                    <div className="absolute inset-0 bg-gradient-to-r from-[#0f111a] from-[35%] via-[#0f111a]/60 via-[50%] to-transparent to-[65%] pointer-events-none"></div>
+                    <div className="absolute inset-0 bg-gradient-to-t from-[#0f111a] via-transparent to-transparent h-[35%] top-auto bottom-0 pointer-events-none"></div>
+                  </div>
+                  <div className="relative z-10 flex flex-col justify-center h-full px-12 max-w-[60%]">
+                    {checkIsUrl(block.data?.logoImg) ? <img src={block.data.logoImg} alt="logo" className="h-8 mb-3 object-contain object-left drop-shadow-lg" /> : <div className="text-white/50 text-[10px] mb-3 font-bold border border-white/20 px-2 py-1 rounded inline-block w-max bg-black/30">월정액 로고</div>}
+                    <h2 className="text-white text-[2.1rem] font-black mb-1.5 drop-shadow-md tracking-tight leading-tight">{block.data?.mainTitle || '메인 타이틀을 입력하세요'}</h2>
+                    {block.data?.subTitle && <p className="text-red-500 font-bold text-base mb-1 drop-shadow-sm">{block.data.subTitle}</p>}
+                    <p className="text-slate-300 text-[14px] font-medium leading-snug whitespace-pre-wrap mb-6 drop-shadow-md">{block.data?.desc || '상세 설명글을 입력해주세요.'}</p>
+                    <div className="bg-[#4f3df6] text-white px-6 py-2 rounded-full font-bold text-sm shadow-lg shadow-[#4f3df6]/20 w-max flex items-center justify-center">10,000원/월 가입하기</div>
+                  </div>
+                </>
+              )}
+            </div>
+  
+            <div className="absolute bottom-[12%] left-[80px] right-0 flex items-center gap-4 z-30 overflow-hidden pr-8 h-[185px]">
+              {[1,2,3,4,5,6,7].map(i => (
+                <div key={i} className="h-full aspect-[2/3] bg-[#222530] rounded-md border border-white/5 shadow-lg shrink-0">
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      }
+      
+      if (block.type === 'STRIP_BANNER') {
+        return (
+          <div className="relative w-full aspect-[16/9] bg-[#0a0a0f] overflow-hidden shrink-0">
+            
+            <div className="absolute left-[80px] top-[18%] w-[85%] h-[140px] bg-[#1a1c26] rounded-[16px] overflow-hidden shadow-2xl border-[3px] border-[#7387FF] flex items-center z-10">
+              <div className="absolute right-0 top-0 bottom-0 w-[40%] bg-cover bg-right bg-no-repeat z-0" style={{ backgroundImage: checkIsUrl(block.data?.imageUrl) ? `url(${block.data.imageUrl})` : 'none' }}>
+                {!checkIsUrl(block.data?.imageUrl) && !checkHasText(block.data?.imageUrl) && (
+                  <div className="absolute inset-0 flex items-center justify-end pr-10 bg-[#12141c]">
+                    <ImageIcon size={32} className="text-white/10"/>
+                  </div>
+                )}
+                <FallbackText text={block.data?.imageUrl} alignClass="justify-end items-center pr-10" />
+                <div className="absolute inset-0 bg-gradient-to-r from-[#1a1c26] via-[#1a1c26]/85 via-[30%] to-transparent"></div>
+              </div>
+
+              <div className="w-[60%] flex flex-col justify-center pl-10 pr-4 z-10 relative">
+                <h2 className="text-white font-extrabold text-[1.6rem] tracking-tight mb-1 truncate drop-shadow-md">
+                  {block.data?.mainTitle || '메인 문구 입력'}
+                </h2>
+                <p className="text-slate-400 font-medium text-sm truncate whitespace-nowrap overflow-hidden text-ellipsis">
+                  {block.data?.subTitle || '서브 문구 입력'}
+                </p>
+              </div>
+            </div>
+
+            <div className="absolute bottom-[12%] left-[80px] right-0 flex items-center gap-4 z-30 overflow-hidden pr-8 h-[185px]">
+              {[1,2,3,4,5,6,7].map(i => (
+                <div key={i} className="h-full aspect-[2/3] bg-[#222530] rounded-md border border-white/5 shadow-lg shrink-0">
+                </div>
+              ))}
+            </div>
+
+          </div>
+        );
+      }
+
+      if (block.type === 'SYNOPSIS_BANNER') {
+        return (
+          <div className="relative w-full aspect-[16/9] bg-[#0a0a0f] overflow-hidden shrink-0">
+            
+            <div className="absolute bottom-[20%] left-[100px] flex flex-col items-start gap-5 z-20">
+              
+              <div className="space-y-1.5 flex flex-col items-start">
+                <div className="text-white text-[2.2rem] font-black tracking-tight leading-tight truncate">
+                  콘텐츠 타이틀
+                </div>
+                <div className="text-slate-300 text-[15px] font-medium max-w-[400px] truncate">
+                  [VOD 상세 줄거리 및 콘텐츠 에피소드 요약 영역]
+                </div>
+              </div>
+
+              <div className="flex flex-row items-center gap-3 h-[80px]">
+                
+                <div className="h-full px-10 bg-[#222530] text-white rounded-xl font-bold text-lg shadow-xl flex items-center justify-center select-none shrink-0">
+                  구매하기
+                </div>
+                
+                <div className="h-full px-10 bg-[#222530] text-slate-300 border border-white/5 rounded-xl font-bold text-lg flex items-center justify-center select-none shrink-0">
+                  예고편 보기
+                </div>
+
+                <div className="h-full w-[280px] bg-gradient-to-r from-[#1a1a1a] to-[#2a2a2a] rounded-xl relative overflow-hidden shadow-[0_10px_40px_rgba(0,0,0,0.5)] border-[3px] border-[#7387FF] flex items-center justify-between px-5 shrink-0 z-10">
+                  <div className="absolute -bottom-10 -right-10 w-[100px] h-[100px] bg-[#7387FF]/10 blur-2xl rounded-full pointer-events-none"></div>
+                  
+                  <div className="flex flex-col justify-center z-10 pr-2">
+                    <h2 className="text-white font-extrabold text-lg tracking-tight whitespace-pre-wrap leading-tight drop-shadow-md">
+                      {block.data?.mainTitle || '메인 문구 입력'}
+                    </h2>
+                    {block.data?.subTitle && (
+                      <p className="text-slate-300 font-bold text-[11px] mt-1 tracking-tight">
+                        {block.data.subTitle}
+                      </p>
+                    )}
+                  </div>
+                  
+                  <div className="z-10 shrink-0 ml-auto relative">
+                    {checkIsUrl(block.data?.imageUrl) ? (
+                      <img src={block.data.imageUrl} alt="badge" className="w-[50px] h-[50px] object-contain drop-shadow-lg" />
+                    ) : (
+                      <div className="bg-gradient-to-br from-[#ffffff] to-[#e0e0e0] rounded-lg flex items-center justify-center text-center px-2 py-1.5 shadow-[0_4px_10px_rgba(0,0,0,0.3)] border border-white/50 min-w-[60px] min-h-[40px]">
+                        <span className="text-[#111] font-black text-[10px] whitespace-pre-wrap leading-snug">
+                          {block.data?.badgeText || '뱃지'}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+              </div>
+            </div>
+          </div>
+        );
+      }
+
+      if (block.type === 'PROMO_POPUP') {
+        return (
+          <div className="relative w-full aspect-[16/9] bg-[#0a0a0f] overflow-hidden shrink-0 flex items-center justify-center">
+            
+            <div className="bg-[#26272e] p-5 rounded-xl shadow-[0_20px_60px_rgba(0,0,0,0.8)] flex flex-col w-[680px] z-10">
+              <div className="relative w-full aspect-[16/9] bg-[#0c0920] rounded-lg overflow-hidden mb-6 shadow-inner">
+                <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: checkIsUrl(block.data?.imageUrl) ? `url(${block.data.imageUrl})` : 'none' }}>
+                  {!checkIsUrl(block.data?.imageUrl) && <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-[#1a1359] to-[#0a0812]"><ImageIcon size={64} className="text-white/10" /></div>}
+                  <FallbackText text={block.data?.imageUrl} />
+                </div>
+              </div>
+              <div className="flex justify-center gap-3 w-full pb-2">
+                <div className="w-[240px] py-3.5 bg-[#401ce8] text-white rounded-lg font-extrabold text-xl flex items-center justify-center shadow-[0_4px_15px_rgba(64,28,232,0.4)] tracking-tight">{block.data?.buttonText || '바로가기'}</div>
+                <div className="w-[240px] py-3.5 bg-[#1f2026] text-slate-200 rounded-lg font-bold text-xl flex items-center justify-center tracking-tight shadow-md">{block.data?.closeText || '닫기'}</div>
+              </div>
+            </div>
+
+          </div>
+        );
+      }
+
+      if (block.type === 'MINI_EPG_BANNER') {
+        return (
+          <div className="relative w-full aspect-[16/9] max-w-[1000px] bg-[#0c0d14] rounded-lg overflow-hidden shadow-2xl shrink-0 mt-4">
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0"><span className="text-white/[0.03] font-black text-[180px] tracking-[0.2em] select-none">LIVE</span></div>
+            
+            <div className="absolute bottom-[8%] left-[5%] right-[5%] h-[140px] bg-transparent rounded-lg shadow-2xl flex items-center p-4 backdrop-blur-md z-10 gap-6">
+              
+              <div className="h-full aspect-[1.48/1] bg-[#0a0a0f] rounded-md relative overflow-hidden border-[2px] border-[#7387FF] shadow-[0_0_20px_rgba(255,255,255,0.2)] shrink-0 flex items-center justify-center">
+                <div className="absolute inset-0 bg-cover bg-center bg-no-repeat transition-transform z-0" style={{ backgroundImage: checkIsUrl(block.data?.imageUrl) ? `url(${block.data.imageUrl})` : 'none' }}>
+                  {!checkIsUrl(block.data?.imageUrl) && <ImageIcon size={32} className="text-white/20"/>}
+                </div>
+                <div className="absolute inset-x-0 bottom-0 h-[45%] bg-gradient-to-t from-black/90 to-transparent pointer-events-none z-10"></div>
+                <div className="absolute bottom-2.5 left-2.5 flex items-center gap-1.5 z-20">
+                  <div className="bg-white text-[#111] font-black text-[11px] px-2.5 py-0.5 rounded-[12px] shadow-md tracking-tighter">OK</div><div className="text-white font-extrabold text-[15px] tracking-tight drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">{block.data?.buttonText || '감상하기'}</div>
+                </div>
+                <FallbackText text={block.data?.imageUrl} />
+              </div>
+
+              <div className="flex-1 h-full flex flex-col justify-center pb-2">
+                <div className="flex items-center gap-2 mb-1 text-[#5ea3ff] font-bold text-[15px] tracking-wider"><span>003 ★</span><span>tvN</span></div>
+                <h3 className="text-white font-black text-[1.9rem] drop-shadow-md mb-2 truncate leading-tight">
+                  벌거벗은 세계사 206회 <span className="text-[10px] bg-white/20 px-1 py-0.5 rounded ml-1 align-middle">ALL</span>
+                </h3>
+                <div className="flex items-center gap-3 w-full border-t border-white/20 pt-2">
+                  <span className="text-slate-300 text-[13px] font-bold">14:00</span>
+                  <div className="w-[150px] h-[3px] bg-[#333] rounded-full overflow-hidden"><div className="w-[60%] h-full bg-[#5ea3ff]"></div></div>
+                  <span className="text-slate-400 text-[12px] font-bold">16:00 | 현재 시각 15:32</span>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        );
+      }
+
+      if (block.type === 'LONG_BANNER') {
+        return (
+          <div className="relative w-full aspect-[16/9] bg-[#0a0a0f] overflow-hidden shrink-0 flex items-center justify-center">
+            <div className="absolute inset-0 p-12 flex justify-center gap-4 z-0 bg-[#0a0a0f]">
+              <div className="h-[90%] aspect-[129/181.5] bg-[#1a1c26] rounded-xl overflow-hidden relative shadow-[0_10px_30px_rgba(0,0,0,0.8)] border-[3px] border-[#7387FF] shrink-0">
+                <div className="absolute inset-0 bg-cover bg-top bg-no-repeat z-10" style={{ backgroundImage: checkIsUrl(block.data?.imageUrl) ? `url(${block.data.imageUrl})` : 'none' }}>
+                  {!checkIsUrl(block.data?.imageUrl) && !checkHasText(block.data?.imageUrl) && <div className="absolute inset-0 flex items-center justify-center bg-[#0a0a0f]"><ImageIcon size={48} className="text-white/10"/></div>}
+                  <FallbackText text={block.data?.imageUrl} alignClass="justify-center items-center text-center px-4" />
+                </div>
+                <div className="absolute bottom-0 inset-x-0 p-6 bg-gradient-to-t from-black via-black/80 to-transparent z-20 text-center flex flex-col justify-end h-[40%]">
+                  <p className="text-white font-extrabold text-xl leading-tight drop-shadow-md whitespace-pre-wrap">{block.data?.copy || '메인 카피 입력'}</p>
+                  {block.data?.subTitle && <p className="text-slate-300 font-medium text-xs mt-2 whitespace-pre-wrap">{block.data.subTitle}</p>}
+                </div>
+              </div>
+              
+              {[1, 2].map(i => (
+                <div key={i} className="h-[90%] aspect-[129/181.5] bg-[#222530] rounded-xl border border-white/5 shadow-lg shrink-0 flex items-center justify-center relative overflow-hidden">
+                   <ImageIcon size={48} className="text-white/5" />
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      }
+    };
+    
+    function App() {
+      const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+      const [mermaidCode, setMermaidCode] = useState(''); 
+      const [campaignMeta, setCampaignMeta] = useState({ campaignName: '신규 캠페인', target: 'MASS', targetSize: '', toneAndManner: '', startDate: '2026-06-12', dueDate: '2026-06-25' });
+      const [assets, setAssets] = useState([{ id: 'asset-1', type: 'TODAY_BTV', name: 'Today B tv', data: { ...DEFAULT_TODAY_BTV, gnb: ['홈'] } }]);
+      const [exportState, setExportState] = useState({ isExporting: false, progress: 0, msg: '' });
+      const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+      
+      const [openAccordions, setOpenAccordions] = useState({ campaign: true, banner: true });
+
+      const handleSettingsClick = () => setIsSettingsOpen(true);
+      const handleConfigChange = (gnbName, field, value) => {
+        setConfigMap(prev => ({ ...prev, [gnbName]: { ...prev[gnbName], [field]: value } }));
+      };
+      
+      const handleSaveConfig = async () => {
+        setIsSettingsOpen(false);
+        try {
+          const proxyUrl = "https://btv-proxy.alcheminos.workers.dev";
+          const configDataArray = Object.entries(configMap).map(([gnb, info]) => ({ gnb: gnb, name: info.name, jiraId: info.jiraId }));
+          const response = await fetch(proxyUrl, {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ action: "updateConfig", configData: configDataArray })
+          });
+          if (!response.ok) throw new Error("네트워크 응답 오류");
+          console.log("✅ Config 시트 업데이트 완료");
+        } catch (error) {
+          console.error("저장 실패:", error);
+          alert("설정 저장 중 오류가 발생했습니다. 구글 시트를 확인해주세요.");
+        }
+      };
+
+      const lastPayloadStr = useRef("");
+
+      useEffect(() => {
+        const handleAiData = (event) => {
+          const payload = event.detail;
+          if (!payload || payload.action !== "CREATE_CAMPAIGN_ASSETS") return;
+
+          const currentPayloadStr = JSON.stringify(payload);
+          if (lastPayloadStr.current === currentPayloadStr) return;
+          lastPayloadStr.current = currentPayloadStr;
+          setTimeout(() => { lastPayloadStr.current = ""; }, 1500); 
+
+          const aiMeta = payload.rawGasData?.meta || payload.campaignMeta;
+          const aiAssets = payload.rawGasData?.assets || payload.assets;
+          const aiMermaid = payload.mermaidCode || payload.rawGasData?.mermaidCode;
+          if (aiMermaid) setMermaidCode(aiMermaid);
+
+          if (aiMeta) {
+            setCampaignMeta(prev => ({ 
+              ...prev, 
+              campaignName: aiMeta.campaignName || prev.campaignName,
+              target: aiMeta.target || prev.target,
+              targetSize: aiMeta.targetSize || prev.targetSize,
+              startDate: aiMeta.startDate || prev.startDate,
+              dueDate: aiMeta.dueDate || prev.dueDate,
+              hasCoupon: aiMeta.hasCoupon || prev.hasCoupon,
+              couponBenefit: aiMeta.couponBenefit || prev.couponBenefit
+            }));
+          }
+
+          if (aiAssets && Array.isArray(aiAssets)) {
+            if (aiAssets.length === 0) {
+              setAssets([]);
+              setActiveTabId(null);
+              setExportState({ isExporting: true, progress: 100, msg: `🎉 타겟팅 기획안 적용 완료! (배너 없음)`});
+              setTimeout(() => setExportState({ isExporting: false, progress: 0, msg: '' }), 3000);
+              return; 
+            }
+          
+            const timestamp = Date.now();
+            const newAssets = aiAssets.map((aiAsset, index) => {
+              let baseData = {};
+              if (aiAsset.type === 'TODAY_BTV') baseData = { ...DEFAULT_TODAY_BTV };
+              else if (aiAsset.type === 'GENERAL_BANNER') baseData = { ...DEFAULT_GENERAL_BANNER };
+              else if (aiAsset.type === 'GENERAL_SET_BANNER') baseData = { ...DEFAULT_GENERAL_SET_BANNER };
+              else if (aiAsset.type === 'FULL_PROMO_BANNER') baseData = { ...DEFAULT_FULL_PROMO_BANNER };
+              else if (aiAsset.type === 'BIG_BANNER') baseData = { ...DEFAULT_BIG_BANNER };
+              else if (aiAsset.type === 'LONG_BANNER') baseData = { ...DEFAULT_LONG_BANNER };
+              else if (aiAsset.type === 'STRIP_BANNER') baseData = { ...DEFAULT_STRIP_BANNER };
+              else if (aiAsset.type === 'SYNOPSIS_BANNER') baseData = { ...DEFAULT_SYNOPSIS_BANNER };
+              else if (aiAsset.type === 'PROMO_POPUP') baseData = { ...DEFAULT_PROMO_POPUP };
+              else if (aiAsset.type === 'MINI_EPG_BANNER') baseData = { ...DEFAULT_MINI_EPG_BANNER };
+
+              let rawGnb = aiAsset.data?.gnb || baseData.gnb;
+              let gnbArray = Array.isArray(rawGnb) ? rawGnb : [rawGnb];
+              let cleanedGnb = gnbArray.map(g => {
+                if (g.includes('영화') && g.includes('시리즈')) return '영화시리즈';
+                if (g.includes('TV') && g.includes('방송')) return 'TV 방송';
+                if (g === 'OTT 홈' || g === 'OTT') return 'OTT홈';
+                return g;
+              });
+
+              return {
+                id: `ai-asset-${index}-${timestamp}`,
+                type: aiAsset.type,
+                name: aiAsset.name || `${aiAsset.type.replace('_', ' ')} (AI)`, 
+                data: { ...baseData, ...aiAsset.data, gnb: cleanedGnb, startDate: aiMeta?.startDate || baseData.startDate, dueDate: aiMeta?.dueDate || baseData.dueDate } 
+              };
+            });
+
+            setAssets(newAssets);
+            setActiveTabId(newAssets[0].id); 
+            setExportState({ isExporting: true, progress: 100, msg: `🎉 AI 기획안(${newAssets.length}건) 적용 완료!`});
+            setTimeout(() => setExportState({ isExporting: false, progress: 0, msg: '' }), 3000);
+          }
+        };
+
+        window.addEventListener('RECEIVE_AI_DATA', handleAiData);
+        return () => window.removeEventListener('RECEIVE_AI_DATA', handleAiData);
+      }, []);
+
+      const [activeTabId, setActiveTabId] = useState('asset-1');
+      const [isAddAssetModalOpen, setIsAddAssetModalOpen] = useState(false);
+      const [localShowSafeZone, setLocalShowSafeZone] = useState(false);
+      const [configMap, setConfigMap] = useState({});
+      
+      useEffect(() => {
+        const fetchConfig = async () => {
+          try {
+            const proxyUrl = "https://btv-proxy.alcheminos.workers.dev?action=getConfig";
+            const response = await fetch(proxyUrl, { method: 'GET', headers: { 'Content-Type': 'application/json' } });
+            if (!response.ok) throw new Error("네트워크 응답이 올바르지 않습니다.");
+            const configData = await response.json();
+            setConfigMap(configData);
+          } catch (error) {
+            console.error("Config 로드 실패:", error);
+            setConfigMap({ "영화시리즈": { "name": "담당자 미지정", "jiraId": "system_auto" }, "TV 방송": { "name": "담당자 미지정", "jiraId": "system_auto" } });
+          }
+        };
+        fetchConfig();
+      }, []);
+
+      const handleMetaChange = (e) => setCampaignMeta({ ...campaignMeta, [e.target.name]: e.target.value });
+      
+      const handleAssetChange = (id, field, value) => {
+        setAssets(prevAssets => prevAssets.map(asset => asset.id === id ? { ...asset, data: { ...asset.data, [field]: value } } : asset));
+      };
+      
+      // 🌟 배열 형태의 데이터를 업데이트 하기 위한 핸들러
+      const handleCardChange = (id, cardIndex, field, value) => {
+        setAssets(prevAssets => prevAssets.map(asset => {
+          if (asset.id !== id) return asset;
+          const newCards = [...(asset.data.cards || [])];
+          newCards[cardIndex] = { ...newCards[cardIndex], [field]: value };
+          return { ...asset, data: { ...asset.data, cards: newCards } };
+        }));
+      };
+
+      const handleAddMemo = () => {
+        const currentMemos = activeAsset.data?.memos || [];
+        const offset = currentMemos.length * 20; 
+        const newMemo = { id: `memo-${Date.now()}`, text: '', x: 50 + offset, y: 50 + offset };
+        handleAssetChange(activeAsset.id, 'memos', [...currentMemos, newMemo]);
+      };
+
+      const addAsset = (type, name) => {
+        const newId = `asset-${Date.now()}`;
+        let newData = {};
+        if (type === 'TODAY_BTV') newData = { ...DEFAULT_TODAY_BTV };
+        else if (type === 'GENERAL_BANNER') newData = { ...DEFAULT_GENERAL_BANNER };
+        else if (type === 'GENERAL_SET_BANNER') newData = { ...DEFAULT_GENERAL_SET_BANNER };
+        else if (type === 'FULL_PROMO_BANNER') newData = { ...DEFAULT_FULL_PROMO_BANNER };
+        else if (type === 'BIG_BANNER') newData = { ...DEFAULT_BIG_BANNER };
+        else if (type === 'LONG_BANNER') newData = { ...DEFAULT_LONG_BANNER };
+        else if (type === 'STRIP_BANNER') newData = { ...DEFAULT_STRIP_BANNER };
+        else if (type === 'SYNOPSIS_BANNER') newData = { ...DEFAULT_SYNOPSIS_BANNER };
+        else if (type === 'PROMO_POPUP') newData = { ...DEFAULT_PROMO_POPUP };
+        
+        newData.startDate = campaignMeta.startDate;
+        newData.dueDate = campaignMeta.dueDate;
+
+        setAssets([...assets, { id: newId, type, name, data: newData }]);
+        setActiveTabId(newId);
+        setIsAddAssetModalOpen(false);
+        setOpenAccordions({ ...openAccordions, banner: true }); 
+      };
+
+      const removeAsset = (id, e) => {
+        e.stopPropagation();
+        if (assets.length <= 1) return alert('최소 1개 제작물은 유지해야 합니다.');
+        setAssets(assets.filter(a => a.id !== id));
+        if (activeTabId === id) {
+          const remainingAssets = assets.filter(a => a.id !== id);
+          setActiveTabId(remainingAssets[0].id);
+        }
+      };
+
+      const handleDownloadExtension = async () => {
+        setExportState({ isExporting: true, progress: 10, msg: "최신 확장프로그램 패킹 준비 중..." });
+        try {
+          const zip = new window.JSZip();
+          const filesToFetch = ["manifest.json", "background.js", "content.js", "content_gemini.js", "mermaid.min.js"];
+          const baseUrl = "https://raw.githubusercontent.com/btvcuration/campaign/main/Tool";
+
+          for (let i = 0; i < filesToFetch.length; i++) {
+            const fileName = filesToFetch[i];
+            setExportState({ isExporting: true, progress: 10 + Math.floor((i / filesToFetch.length) * 60), msg: `${fileName} 가져오는 중...` });
+            const response = await fetch(`${baseUrl}/${fileName}?t=${new Date().getTime()}`);
+            if (!response.ok) throw new Error(`${fileName} 파일을 찾을 수 없습니다.`);
+            zip.file(fileName, await response.text());
+          }
+
+          setExportState({ isExporting: true, progress: 85, msg: "압축 파일 생성 중..." });
+          const blob = await zip.generateAsync({ type: "blob" });
+          const downloadUrl = URL.createObjectURL(blob);
+          const link = document.createElement("a");
+          link.href = downloadUrl; link.download = `btv-campaign-extension-${new Date().toISOString().slice(0,10)}.zip`;
+          document.body.appendChild(link); link.click(); document.body.removeChild(link); URL.revokeObjectURL(downloadUrl);
+          
+          setExportState({ isExporting: true, progress: 100, msg: "✅ 최신 버전 다운로드 완료!" });
+          setTimeout(() => {
+            setExportState({ isExporting: false, progress: 0, msg: '' });
+            alert("확장 프로그램 다운로드가 완료되었습니다.\n기존 버전 삭제 후 새로 등록하시고 키보드 F5를 눌러 새로고침 해주세요!");
+          }, 1500);
+        } catch (e) {
+          console.error("Extension Download Error:", e);
+          setExportState({ isExporting: true, progress: 100, msg: "⚠️ 다운로드 실패" });
+          setTimeout(() => setExportState({ isExporting: false, progress: 0, msg: '' }), 3000);
+          alert("다운로드 중 오류가 발생했습니다: " + e.message);
+        }
+      };
+      
+      const handleExport = async () => {
+        if (!assets || assets.length === 0) {
+          if (campaignMeta.target !== 'TARGET') return alert("전송할 배너 기획안이 없고, 타겟팅 캠페인도 아닙니다.");
+        }
+        
+        const isConfirmed = window.confirm("Jira 일감 전송을 시작하시겠습니까?\n\n확인(OK)을 누르면 화면 캡처가 시작됩니다.\n※ 주의: Jira에 미리 로그인이 되어있어야 정상 작동합니다.");
+        if (!isConfirmed) return;
+
+        const meta = campaignMeta || {};
+        const myJiraId = localStorage.getItem('myJiraId') || '';
+        if (!myJiraId) {
+          alert("🚨 지라 전송을 위해 담당자 ID가 필요합니다!");
+          return handleSettingsClick();
+        }
+        const cleanAssignee = myJiraId.split('@')[0].trim();
+
+        setExportState({ isExporting: true, progress: 10, msg: "이미지 추출 준비 중..." });
+        let capturedImages = {};
+
+        // 🌟 수정: 세트형 배너는 다중 캡처 지원
+        for (let i = 0; i < assets.length; i++) {
+          const asset = assets[i];
+          const currentProgress = 10 + Math.floor((i / assets.length) * 40); 
+          
+          setActiveTabId(asset.id);
+          
+          if (asset.type === 'GENERAL_SET_BANNER') {
+            const colCount = asset.data?.colType === '3단' ? 3 : 2;
+            let setImages = [];
+            
+            for (let c = 0; c < colCount; c++) {
+              setExportState({ isExporting: true, progress: currentProgress, msg: `[${asset.name}] 세트 ${c+1}/${colCount} 캡처 중...` });
+              handleAssetChange(asset.id, 'selectedCardIndex', c);
+              await new Promise(r => setTimeout(r, 1000)); // UI 업데이트 대기
+              
+              const element = document.getElementById('capture-preview-area');
+              if (element) {
+                const rect = element.getBoundingClientRect();
+                const dataUrl = await new Promise((resolve) => {
+                  const timeout = setTimeout(() => resolve(null), 3000);
+                  const listener = (e) => { clearTimeout(timeout); window.removeEventListener('RECEIVE_SCREENSHOT', listener); resolve(e.detail.dataUrl); };
+                  window.addEventListener('RECEIVE_SCREENSHOT', listener);
+                  window.dispatchEvent(new CustomEvent('REQUEST_SCREENSHOT', { detail: { x: rect.left, y: rect.top, width: rect.width, height: rect.height } }));
+                });
+                if (dataUrl) setImages.push(dataUrl);
+              }
+            }
+            capturedImages[asset.id] = setImages;
+          } else {
+            setExportState({ isExporting: true, progress: currentProgress, msg: `[${asset.name}] 캡처 진행 중...` });
+            await new Promise(r => setTimeout(r, 800)); 
+            
+            const element = document.getElementById('capture-preview-area');
+            if (element) {
+              const rect = element.getBoundingClientRect();
+              const dataUrl = await new Promise((resolve) => {
+                const timeout = setTimeout(() => resolve(null), 3000);
+                const listener = (e) => { clearTimeout(timeout); window.removeEventListener('RECEIVE_SCREENSHOT', listener); resolve(e.detail.dataUrl); };
+                window.addEventListener('RECEIVE_SCREENSHOT', listener);
+                window.dispatchEvent(new CustomEvent('REQUEST_SCREENSHOT', { detail: { x: rect.left, y: rect.top, width: rect.width, height: rect.height } }));
+              });
+              if (dataUrl) capturedImages[asset.id] = dataUrl;
+            }
+          }
+        }
+
+        setExportState({ isExporting: true, progress: 60, msg: "워크플로우 플로우차트 생성 중..." });
+
+        let workflowDataUrl = null;
+        const canvasOptions = { backgroundColor: '#0f111a', scale: 2, useCORS: true, allowTaint: true };
+
+        if (mermaidCode && mermaidCode.trim().length > 0) {
+          try {
+            let finalMermaidCode = mermaidCode;
+            assets.forEach(asset => {
+              const tplUrl = TEMPLATE_URLS[asset.type];
+              if (tplUrl) {
+                const targetImg = Array.isArray(capturedImages[asset.id]) ? capturedImages[asset.id][0] : capturedImages[asset.id];
+                if (targetImg) finalMermaidCode = finalMermaidCode.replace(tplUrl, targetImg);
+              }
+            });
+            const mermaidContainer = document.createElement('div');
+            mermaidContainer.style.cssText = 'position:absolute; top:0; left:0; width:1400px; background:#0f111a; padding:50px; border-radius:20px; color:white; z-index:-9999; font-family:Pretendard, sans-serif;';
+            mermaidContainer.innerHTML = `<div style="width:100%; text-align:left; margin-bottom:40px; border-bottom:2px solid #262833; padding-bottom:15px;"><h2 style="color:#7387ff; margin:0; font-size:28px; font-weight:900;">🎯 B tv Campaign Userflow</h2><p style="color:#cbd5e1; margin:8px 0 0 0; font-size:16px;">${meta.campaignName || "신규 캠페인"}</p></div><div id="mermaid-render-target"></div>`;
+            document.body.appendChild(mermaidContainer);
+
+            mermaid.initialize({ startOnLoad: false, theme: 'dark', securityLevel: 'loose', maxTextSize: 50000000 });
+            const { svg } = await mermaid.render('mermaid-export-svg', finalMermaidCode);
+            document.getElementById('mermaid-render-target').innerHTML = svg;
+
+            await new Promise(r => setTimeout(r, 1500));
+            const workflowCanvas = await window.html2canvas(mermaidContainer, canvasOptions);
+            workflowDataUrl = workflowCanvas.toDataURL('image/png');
+            document.body.removeChild(mermaidContainer);
+          } catch (error) { console.error(error); }
+        }
+
+        if (!workflowDataUrl) {
+          const workflowContainer = document.createElement('div');
+          workflowContainer.style.cssText = 'position:absolute; top:0; left:0; width:1400px; background:#0f111a; padding:50px; border-radius:20px; display:flex; flex-direction:column; align-items:center; color:white; font-family:Pretendard, sans-serif; z-index:-9999;';
+          let flowHtml = `<div style="width:100%; text-align:left; margin-bottom:40px; border-bottom:2px solid #262833; padding-bottom:15px;"><h2 style="color:#7387ff; margin:0; font-size:28px; font-weight:900;">🎯 B tv Campaign Userflow</h2><p style="color:#cbd5e1; margin:8px 0 0 0; font-size:16px;">${meta.campaignName || "신규 캠페인"}</p></div><div style="display:flex; align-items:center; justify-content:center; gap:20px; width:100%; flex-wrap:wrap;">`;
+          assets.forEach((asset, idx) => {
+             const imgData = Array.isArray(capturedImages[asset.id]) ? capturedImages[asset.id][0] : capturedImages[asset.id];
+             flowHtml += `<div style="display:flex; flex-direction:column; align-items:center; width:280px;"><div style="width:100%; background:#1a1c26; padding:15px; border-radius:16px; border:1px solid #303340; box-shadow:0 10px 25px rgba(0,0,0,0.5);"><img src="${imgData}" style="width:100%; border-radius:8px; object-fit:contain; display:block;" /></div><div style="margin-top:20px; text-align:center;"><span style="background:#4f3df6; color:white; padding:5px 12px; border-radius:20px; font-size:13px; font-weight:bold;">Step ${idx + 1}</span><p style="margin:10px 0 0 0; font-size:15px; font-weight:bold; color:#e2e8f0; word-break:keep-all;">${asset.name}</p><p style="margin:5px 0 0 0; font-size:12px; color:#7387ff; font-weight:bold;">[${asset.data?.gnb || '미지정'}]</p></div></div>`;
+             if (idx < assets.length - 1) { flowHtml += `<div style="color:#7387ff; font-size:32px; font-weight:bold; margin-bottom:50px;">➔</div>`; }
+          });
+          flowHtml += `</div>`;
+          workflowContainer.innerHTML = flowHtml;
+          document.body.appendChild(workflowContainer);
+          await new Promise(r => setTimeout(r, 1000));
+          const workflowCanvas = await window.html2canvas(workflowContainer, canvasOptions);
+          workflowDataUrl = workflowCanvas.toDataURL('image/png');
+          document.body.removeChild(workflowContainer);
+        }
+
+        setExportState({ isExporting: true, progress: 85, msg: "Jira 최적화 데이터 압축 중..." });
+
+        const compressImageForBody = (dataUrl, maxWidth = 500, quality = 0.4) => {
+          if (!dataUrl) return Promise.resolve('');
+          return new Promise((resolve) => {
+            const img = new Image();
+            img.onload = () => {
+              const canvas = document.createElement('canvas');
+              let width = img.width; let height = img.height;
+              if (width > maxWidth) { height = Math.floor((maxWidth / width) * height); width = maxWidth; }
+              canvas.width = width; canvas.height = height;
+              const ctx = canvas.getContext('2d');
+              ctx.drawImage(img, 0, 0, width, height);
+              resolve(canvas.toDataURL('image/jpeg', quality));
+            };
+            img.src = dataUrl;
+          });
+        };
+
+        let workflowCompressedUrl = '';
+        if (workflowDataUrl) workflowCompressedUrl = await compressImageForBody(workflowDataUrl, 600, 0.4);
+
+        let parentTable = `<table border="1" style="border-collapse: collapse; width: 100%; text-align: center; font-size: 13px;"><tbody><tr style="background-color: #f4f5f7; color: #333;"><td style="padding: 10px; font-weight: bold; width: 5%;">순번</td><td style="padding: 10px; font-weight: bold; width: 25%;">배너명</td><td style="padding: 10px; font-weight: bold; width: 15%;">편성 GNB</td><td style="padding: 10px; font-weight: bold; width: 25%;">랜딩 URL</td><td style="padding: 10px; font-weight: bold; width: 30%;">시안 미리보기</td></tr>`;
+        let parentImagesToUpload = [];
+        if (workflowDataUrl) parentImagesToUpload.push({ filename: 'workflow_summary.png', dataUrl: workflowDataUrl });
+        let uniqueAssignees = new Set();
+
+        const childIssues = await Promise.all(assets.map(async (asset, idx) => {
+          const data = asset?.data || {};
+          let targetGnbs = Array.isArray(data.gnb) ? data.gnb : [data.gnb || '미지정'];
+          if (asset?.type === 'TODAY_BTV') targetGnbs = ['홈'];
+          if (asset?.type === 'SYNOPSIS_BANNER') targetGnbs = ['콘텐츠'];
+          
+          const targetGnbForAssign = targetGnbs[0];
+          const assigneeInfo = configMap[targetGnbForAssign];
+          const mappedAssigneeJiraId = assigneeInfo ? assigneeInfo.jiraId : cleanAssignee; 
+          uniqueAssignees.add(mappedAssigneeJiraId);
+          
+          const dateInfo = data.startDate ? `${data.startDate} ~ ${data.dueDate || ''}` : '미지정';
+          
+          // 🌟 세트형 배너 다중 이미지 및 표 처리
+          if (asset.type === 'GENERAL_SET_BANNER') {
+            const setImagesArr = capturedImages[asset.id] || [];
+            const colCount = data.colType === '3단' ? 3 : 2;
+            let compressedThumbsHTML = '';
+            let compressedBodyHTML = '';
+            let childTableRows = '';
+            
+            for (let c = 0; c < colCount; c++) {
+               const imgUrl = setImagesArr[c] || '';
+               const imgName = `banner_set_${idx + 1}_card_${c + 1}.png`;
+               const cardData = data.cards[c] || {};
+               if (imgUrl) parentImagesToUpload.push({ filename: imgName, dataUrl: imgUrl });
+               
+               const cThumb = await compressImageForBody(imgUrl, 200, 0.3);
+               const cBody = await compressImageForBody(imgUrl, 500, 0.4);
+               if (cThumb) compressedThumbsHTML += `<img src="${cThumb}" style="max-width: 100%; border: 1px solid #ccc; border-radius: 4px; margin-bottom: 5px;" /><br>`;
+               if (cBody) compressedBodyHTML += `<h4>[상태 ${c+1}: ${cardData.heroTitle || '미입력'}]</h4><img src="${cBody}" style="max-width: 100%; border: 1px solid #e2e8f0; border-radius: 8px; margin-bottom: 15px;" /><br>`;
+               
+               childTableRows += `
+                 <tr>
+                   <td style='padding: 8px; font-weight: bold; background-color: #f9f9fb;'>카드 ${c+1}</td>
+                   <td style='padding: 8px;'><b>Hero:</b> ${cardData.heroTitle}<br><b>Card:</b> ${cardData.cardCopy}</td>
+                   <td style='padding: 8px; word-break: break-all;'>${cardData.landingValue || '미지정'}</td>
+                 </tr>
+               `;
+            }
+
+            parentTable += `<tr><td style="padding: 10px;">${idx + 1}</td><td style="padding: 10px; font-weight: bold;">${asset?.name || '미지정'} (세트형)</td><td style="padding: 10px;">${targetGnbs.join(', ')}</td><td style="padding: 10px; word-break: break-all;">복합 랜딩</td><td style="padding: 10px; color: #4f3df6; text-align: center;">` + 
+              compressedThumbsHTML + `<b>(세트 이미지 참조)</b></td></tr>`;
+
+            const childDesc = 
+              "<h3>🖼️ 세트 상세 기획</h3>" +
+              "<table border='1' style='border-collapse: collapse; width: 100%; text-align: left; font-size: 13px;'>" +
+              "<tr><th style='padding: 8px; background-color: #f4f5f7; width: 25%;'>편성 GNB</th><td colspan='2' style='padding: 8px; font-weight: bold;'>" + targetGnbs.join(', ') + "</td></tr>" +
+              "<tr><th style='padding: 8px; background-color: #f4f5f7;'>편성 일정</th><td colspan='2' style='padding: 8px;'>" + dateInfo + "</td></tr>" +
+              "<tr style='background-color: #e2e8f0;'><th style='padding: 8px; text-align: center;'>구분</th><th style='padding: 8px; text-align: center;'>주요 카피</th><th style='padding: 8px; text-align: center;'>랜딩 URL</th></tr>" +
+              childTableRows +
+              "</table><br><h3>🎨 캡처 시안 (상태별)</h3>" + compressedBodyHTML + "<p>※ 고화질 원본은 본문 하단 <b>첨부파일</b>을 확인해 주세요.</p>";
+
+            return {
+              title: `[디자인] ${meta.campaignName || "신규 캠페인"} _ ${asset?.name || '미지정'}`, 
+              desc: childDesc, 
+              assignee: mappedAssigneeJiraId, 
+              imagesDataArr: setImagesArr, // 🌟 세트 이미지는 배열로 넘겨 Background에서 개별 첨부하게 처리
+              startDate: data.startDate, 
+              dueDate: data.dueDate, 
+              gnb: targetGnbs 
+            };
+          } else {
+            // 단일 배너
+            let copyText = data.mainTitle || data.copy || data.bannerCopy || data.previewTitle || '미지정';
+            const imgName = `banner_preview_${idx + 1}.png`;
+            const imgDataUrl = capturedImages[asset.id] || '';
+            const compressedThumb = await compressImageForBody(imgDataUrl, 200, 0.3);
+            const compressedBody = await compressImageForBody(imgDataUrl, 500, 0.4);
+            
+            parentTable += `<tr><td style="padding: 10px;">${idx + 1}</td><td style="padding: 10px; font-weight: bold;">${asset?.name || '미지정'}</td><td style="padding: 10px;">${targetGnbs.join(', ')}</td><td style="padding: 10px; word-break: break-all;">${data.landingValue || '미지정'}</td><td style="padding: 10px; color: #4f3df6; text-align: center;">` + 
+              (compressedThumb ? `<img src="${compressedThumb}" style="max-width: 100%; border: 1px solid #ccc; border-radius: 4px; margin-bottom: 5px;" /><br>` : '') + 
+              `<b>${imgName}</b></td></tr>`;
+              
+            if (imgDataUrl) parentImagesToUpload.push({ filename: imgName, dataUrl: imgDataUrl });
+
+            const childDesc = 
+              "<h3>🖼️ 상세 기획</h3>" +
+              "<table border='1' style='border-collapse: collapse; width: 100%; text-align: left; font-size: 13px;'>" +
+              "<tr><th style='padding: 8px; background-color: #f4f5f7; width: 25%;'>편성 GNB</th><td style='padding: 8px; font-weight: bold;'>" + targetGnbs.join(', ') + "</td></tr>" +
+              "<tr><th style='padding: 8px; background-color: #f4f5f7;'>편성 일정</th><td style='padding: 8px;'>" + dateInfo + "</td></tr>" +
+              "<tr><th style='padding: 8px; background-color: #f4f5f7;'>주요 카피</th><td style='padding: 8px;'>" + copyText.replace(/\n/g, '<br>') + "</td></tr>" +
+              "<tr><th style='padding: 8px; background-color: #f4f5f7;'>랜딩 URL</th><td style='padding: 8px;'>" + (data.landingValue || '미지정') + "</td></tr>" +
+              "<tr><th style='padding: 8px; background-color: #f4f5f7;'>비고</th><td style='padding: 8px;'>" + (data.note || '없음').replace(/\n/g, '<br>') + "</td></tr>" +
+              "</table><br><h3>🎨 시뮬레이터 캡처 시안</h3>" +
+              (compressedBody ? `<img src="${compressedBody}" style="max-width: 100%; border: 1px solid #e2e8f0; border-radius: 8px; margin: 10px 0;" />` : '') +
+              "<p>※ 고화질 원본은 본문 하단 <b>첨부파일(${imgName})</b>을 확인해 주세요.</p>";
+
+            return {
+              title: `[디자인] ${meta.campaignName || "신규 캠페인"} _ ${asset?.name || '미지정'}`, 
+              desc: childDesc, assignee: mappedAssigneeJiraId, imageData: imgDataUrl, 
+              startDate: data.startDate, dueDate: data.dueDate, gnb: targetGnbs 
+            };
+          }
+        }));
+
+        if (assets.length > 0) parentTable += `</tbody></table>`;
+        else parentTable = "<p>등록된 디자인(배너) 에셋이 없습니다. 타겟팅 운영 요청만 진행됩니다.</p>";
+
+        if (meta.target === 'TARGET') {
+          const bannerTypes = assets.length > 0 ? assets.map(a => a.name).join(', ') : '배너 없음 (타겟/푸시 전용)'; 
+          const targetDate = meta.startDate ? `${meta.startDate} ~ ${meta.dueDate || ''}` : '미지정';
+          uniqueAssignees.add(cleanAssignee);
+          const couponTextForTarget = meta.hasCoupon === 'Y' ? `<li><b>지급 혜택:</b> ${meta.couponBenefit || '미지정'}</li>` : '';
+          childIssues.push({
+            title: `[운영] ${meta.campaignName || "신규 캠페인"} 타겟팅 세팅 요청`,
+            desc: `<h3>🎯 타겟팅 캠페인 운영 요청</h3><ul><li><b>노출 배너 유형:</b> ${bannerTypes}</li><li><b>편성 일정:</b> ${targetDate}</li><li><b>예상 타겟 모수:</b> ${meta.targetSize || '미지정'}</li>${couponTextForTarget}</ul><br><p>위 내용으로 타겟팅 배너 세팅을 요청드립니다.</p>`,
+            assignee: '', gnb: ['기타'] 
+          });
+        }
+
+        const safeHasCoupon = (meta.hasCoupon || '').trim().toUpperCase() === 'Y' ? 'Y' : 'N';
+        const parentDescText = 
+          "<h3>📌 캠페인 공통 정보</h3>" +
+          "<ul><li><b>캠페인명:</b> " + (meta.campaignName || "미지정") + "</li><li><b>대상 상품:</b> " + (meta.product || "미지정") + "</li><li><b>타겟 유형:</b> " + (meta.target || "MASS") + "</li><li><b>예상 모수:</b> " + (meta.targetSize ? meta.targetSize + "명" : "미지정") + "</li><li><b>타겟 조건:</b> " + (meta.targetCondition || "미지정") + "</li><li><b>편성 일정:</b> " + (meta.startDate || "미지정") + " ~ " + (meta.dueDate || "미지정") + "</li><li><b>쿠폰 발급:</b> " + (safeHasCoupon === 'Y' ? "포함 (" + (meta.couponBenefit || "혜택 미상") + ")" : "미포함") + "</li><li><b>총 요청 건수:</b> " + assets.length + "건</li></ul><br>" +
+          "<h3>🗺️ 고객 이동 경로 (Userflow)</h3>" +
+          (workflowCompressedUrl ? `<img src="${workflowCompressedUrl}" style="max-width: 100%; border: 1px solid #e2e8f0; border-radius: 8px; margin: 10px 0;" /><p>※ 고화질 원본은 본문 하단 첨부파일(<b>workflow_summary.png</b>)을 확인해 주세요.</p>` : "<p>배너 없는 프로모션</p>") + "<br><br>" +
+          "<h3>📊 배너 편성 종합표</h3>" + parentTable + "<br><hr><br><p>하위 작업(Sub-task)으로 개별 상세 기획안이 첨부되어 있습니다.</p>";
+
+        const mentionString = Array.from(uniqueAssignees).map(id => `[~${id}]`).join(' ');
+        const parentCommentText = `${mentionString}\n담당자님, 신규 캠페인 프로모션이 등록되었습니다. 각 영역별 하위 일감(Sub-task)을 확인하시어 배너 편성 및 세팅을 부탁드립니다.`;
+
+        const finalData = {
+          parent: { title: `[캠페인] ${meta.campaignName || "신규 캠페인"}`, desc: parentDescText, assignee: cleanAssignee, startDate: meta.startDate, dueDate: meta.dueDate, images: parentImagesToUpload, comment: parentCommentText },
+          children: childIssues,
+          rawGasData: { meta: meta, assignee: cleanAssignee, assets: assets }
+        };
+        const event = new CustomEvent('TEST_JIRA_SEND', { detail: finalData });
+        window.dispatchEvent(event);
+        
+        setExportState({ isExporting: true, progress: 100, msg: "🚀 전송 완료! 잠시 후 Jira가 열립니다." });
+        setTimeout(() => setExportState({ isExporting: false, progress: 0, msg: '' }), 4000);
+      };
+
+      const activeAsset = assets.find(a => a.id === activeTabId) || assets[0];
+
+      return (
+        <div className="flex h-screen w-full bg-[#06070a] text-slate-200 overflow-hidden select-none">
+          
+          <nav className="w-[72px] bg-[#0f111a] border-r border-[#262833] flex flex-col items-center py-6 z-30 shrink-0 shadow-lg">
+            <div className="w-11 h-11 bg-white rounded-xl flex items-center justify-center mb-10 shadow-lg shadow-[#4f3df6]/30">
+              <svg id="GA_LOGO_0_IMG_0" xmlns="http://www.w3.org/2000/svg" className="w-8 h-8 text-[#4f3df6] fill-current" viewBox="0 0 64 64">
+                <title>SK Broadband</title>
+                <path id="GA_LOGO_0_IMG_0_1" d="M45.7,30.9L45.7,30.9l0-0.2c2-2.1,3.1-4.9,3.2-7.8c0-0.7,0-1.5-0.2-2.2c-1.1-5.6-6-9.7-11.7-9.7H13v9.7h22.2c2,0,3.6,1.6,3.6,3.6s-1.6,3.6-3.6,3.6H23.1v-5l-10.1,5v25.2h24.7c7,0,12.6-5.6,12.6-12.6C50.2,36.7,48.5,33.3,45.7,30.9 M35.6,43.5H23.1v-7.8h12.5c2.2,0,3.9,1.7,3.9,3.9S37.8,43.5,35.6,43.5" />
+              </svg>
+            </div>
+            <div className="flex flex-col gap-6 w-full px-3 mb-6">
+              <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className={`w-full aspect-square rounded-xl flex items-center justify-center transition-all ${isSidebarOpen ? 'bg-[#1a1c26] text-white border border-[#303340]' : 'text-slate-500 hover:text-white hover:bg-[#1a1c26]'}`}>
+                <Menu size={20} />
+              </button>
+            </div>
+            <div className="mt-auto w-full px-3">
+              <button onClick={handleSettingsClick} className="w-full aspect-square rounded-xl flex items-center justify-center text-slate-500 hover:text-white hover:bg-[#1a1c26] transition-all">
+                <Settings size={22} />
+              </button>
+            </div>
+          </nav>
+
+          {isSidebarOpen && (
+            <aside className="w-[360px] bg-[#0c0d14] border-r border-[#1a1c26] flex flex-col h-full z-10 shrink-0 shadow-[10px_0_30px_rgba(0,0,0,0.5)]">
+              <div className="p-6 pb-4 flex flex-col gap-1 border-b border-[#1a1c26] bg-[#0f111a]">
+                <h1 className="text-lg font-black text-white tracking-tight">프로모션 시안</h1>
+                <p className="text-[12px] text-[#7387ff] font-bold mt-0.5">B tv Campaign Agent</p>
+              </div>
+              
+              <div className="flex-1 overflow-y-auto px-4 py-5 space-y-4 custom-scrollbar">
+                <div className="bg-[#12141c] rounded-xl border border-[#262833] overflow-hidden">
+                  <div className="p-4 flex justify-between items-center cursor-pointer hover:bg-[#1a1c26] transition-colors" onClick={() => setOpenAccordions({...openAccordions, campaign: !openAccordions.campaign})}>
+                    <h3 className="text-sm font-bold text-white flex items-center gap-2"><Layout size={16} className="text-[#4f3df6]"/> 캠페인 메타 정보</h3>
+                    {openAccordions.campaign ? <ChevronUp size={16} className="text-slate-500"/> : <ChevronDown size={16} className="text-slate-500"/>}
+                  </div>
+                  
+                  {openAccordions.campaign && (
+                    <div className="p-4 pt-0 border-t border-[#1a1c26] mt-2 space-y-4 animate-in slide-in-from-top-2">
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="col-span-2"><input type="text" name="campaignName" placeholder="캠페인/프로젝트명" value={campaignMeta.campaignName} onChange={handleMetaChange} className="w-full bg-[#0a0812] border border-[#262833] rounded-lg px-3 py-2.5 text-sm text-white focus:border-[#4f3df6] outline-none transition-all" /></div>
+                        <div>
+                          <select name="target" value={campaignMeta.target} onChange={handleMetaChange} className="w-full bg-[#0a0812] border border-[#262833] rounded-lg px-3 py-2.5 text-xs text-white focus:border-[#4f3df6] outline-none transition-all">
+                            <option value="MASS">MASS 타겟</option>
+                            <option value="TARGET">선별 TARGET</option>
+                          </select>
+                        </div>
+                        <div><input type="text" name="targetSize" placeholder="모수 (예: 5만명)" value={campaignMeta.targetSize || ''} onChange={handleMetaChange} disabled={campaignMeta.target !== 'TARGET'} className="w-full bg-[#0a0812] border border-[#262833] rounded-lg px-3 py-2.5 text-xs text-white focus:border-[#4f3df6] outline-none transition-all disabled:opacity-30 disabled:cursor-not-allowed" /></div>
+                        <div><label className="block text-[10px] text-slate-500 mb-1 ml-1">시작일</label><input type="date" name="startDate" value={campaignMeta.startDate} onChange={handleMetaChange} className="w-full bg-[#0a0812] border border-[#262833] rounded-lg px-3 py-2 text-xs text-slate-300 outline-none focus:border-[#4f3df6] [&::-webkit-calendar-picker-indicator]:filter [&::-webkit-calendar-picker-indicator]:invert" /></div>
+                        <div><label className="block text-[10px] text-slate-500 mb-1 ml-1">종료일</label><input type="date" name="dueDate" value={campaignMeta.dueDate} onChange={handleMetaChange} className="w-full bg-[#0a0812] border border-[#262833] rounded-lg px-3 py-2 text-xs text-slate-300 outline-none focus:border-[#4f3df6] [&::-webkit-calendar-picker-indicator]:filter [&::-webkit-calendar-picker-indicator]:invert" /></div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <div className="bg-[#12141c] rounded-xl border border-[#262833] overflow-hidden ring-1 ring-[#4f3df6]/20">
+                  <div className="p-4 flex justify-between items-center cursor-pointer hover:bg-[#1a1c26] transition-colors" onClick={() => setOpenAccordions({...openAccordions, banner: !openAccordions.banner})}>
+                    <h3 className="text-sm font-bold text-white flex items-center gap-2"><LayoutPanelLeft size={16} className="text-[#4f3df6]"/> [{activeAsset?.name}] 설정</h3>
+                    {openAccordions.banner ? <ChevronUp size={16} className="text-slate-500"/> : <ChevronDown size={16} className="text-slate-500"/>}
+                  </div>
+                  
+                  {openAccordions.banner && (
+                    <div className="p-4 pt-0 border-t border-[#1a1c26] mt-2 space-y-4 animate-in slide-in-from-top-2">
+                      <div className="space-y-2">
+                        <label className="block text-[10px] font-bold text-slate-500 ml-1">편성 GNB (다중 선택)</label>
+                        <div className="flex flex-wrap gap-1">
+                          {GNB_OPTIONS.map(opt => {
+                            const isFixed = activeAsset.type === 'TODAY_BTV' || activeAsset.type === 'SYNOPSIS_BANNER' || activeAsset.type === 'MINI_EPG_BANNER';
+                            let currentGnbs = Array.isArray(activeAsset.data?.gnb) ? activeAsset.data.gnb : [activeAsset.data?.gnb || '홈'];
+                            if (activeAsset.type === 'TODAY_BTV') currentGnbs = ['홈'];
+                            if (activeAsset.type === 'SYNOPSIS_BANNER') currentGnbs = ['콘텐츠'];
+                            if (activeAsset.type === 'MINI_EPG_BANNER') currentGnbs = ['실시간 채널'];
+                            const isSelected = currentGnbs.includes(opt);
+                            const toggleGnb = () => {
+                              if (isFixed) return; 
+                              let newGnbs = [...currentGnbs];
+                              if (isSelected) {
+                                 newGnbs = newGnbs.filter(g => g !== opt);
+                                 if (newGnbs.length === 0) newGnbs = ['홈']; 
+                              } else { newGnbs.push(opt); }
+                              handleAssetChange(activeAsset.id, 'gnb', newGnbs);
+                            };
+                            return (
+                              <button key={opt} onClick={toggleGnb} disabled={isFixed} className={`px-2 py-1 text-[10px] font-bold rounded-md transition-all ${isSelected ? 'bg-[#4f3df6]/20 text-[#7387ff] border border-[#4f3df6]/50' : 'bg-[#0a0812] text-slate-500 border border-[#262833] hover:border-[#7387ff] hover:text-white'} ${isFixed && !isSelected ? 'hidden' : ''}`}>
+                                {opt}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-3 pt-2">
+                        {activeAsset.type === 'TODAY_BTV' && (
+                          <>
+                            <div className="col-span-2"><input type="text" placeholder="상단 문구 (예: Today B tv 역대 최고 히트작)" value={activeAsset.data?.topText || ''} onChange={e => handleAssetChange(activeAsset.id, 'topText', e.target.value)} className="w-full bg-[#0a0812] border border-[#262833] rounded-lg px-3 py-2 text-xs text-white outline-none focus:border-[#4f3df6]" /></div>
+                            <div className="col-span-2"><textarea placeholder="메인 타이틀 입력" rows={1} value={activeAsset.data?.mainTitle || ''} onChange={e => handleAssetChange(activeAsset.id, 'mainTitle', e.target.value)} className="w-full bg-[#0a0812] border border-[#262833] rounded-lg px-3 py-2 text-sm font-bold text-white outline-none focus:border-[#4f3df6] transition-all duration-300 h-9 focus:h-20 resize-none custom-scrollbar leading-snug" /></div>
+                            <div className="col-span-2"><textarea placeholder="서브 텍스트 입력" rows={1} value={activeAsset.data?.subText || ''} onChange={e => handleAssetChange(activeAsset.id, 'subText', e.target.value)} className="w-full bg-[#0a0812] border border-[#262833] rounded-lg px-3 py-2 text-xs text-slate-300 outline-none focus:border-[#4f3df6] transition-all duration-300 h-9 focus:h-16 resize-none custom-scrollbar leading-snug" /></div>
+                            <div className="col-span-2"><input type="text" placeholder="배경 이미지 URL" value={activeAsset.data?.imageUrl || ''} onChange={e => handleAssetChange(activeAsset.id, 'imageUrl', e.target.value)} className="w-full bg-[#0a0812] border border-[#262833] rounded-lg px-3 py-2 text-xs text-white outline-none focus:border-[#4f3df6]" /></div>
+                            <div className="col-span-2"><input type="text" placeholder="랜딩 URL (예: UI_PATH: /synopsis_page)" value={activeAsset.data?.landingValue || ''} onChange={e => handleAssetChange(activeAsset.id, 'landingValue', e.target.value)} className="w-full bg-[#0a0812] border border-[#262833] rounded-lg px-3 py-2 text-xs text-[#7387ff] outline-none focus:border-[#4f3df6]" /></div>
+                          </>
+                        )}
+                        
+                        {/* 🌟 신규 추가: 세트형 일반 배너 폼 */}
+                        {activeAsset.type === 'GENERAL_SET_BANNER' && (
+                          <>
+                            <div className="col-span-2">
+                              <select value={activeAsset.data?.colType || '3단'} onChange={e => {
+                                handleAssetChange(activeAsset.id, 'colType', e.target.value);
+                                if (e.target.value === '2단' && activeAsset.data?.selectedCardIndex === 2) {
+                                  handleAssetChange(activeAsset.id, 'selectedCardIndex', 1); // 인덱스 초과 방지
+                                }
+                              }} className="w-full bg-[#0a0812] border border-[#262833] rounded-lg px-3 py-2 text-xs text-white outline-none focus:border-[#4f3df6]">
+                                <option value="2단">2단 배너 세트 (좌/우 분할형)</option>
+                                <option value="3단">3단 배너 세트 (3등분 와이드형)</option>
+                              </select>
+                            </div>
+                            
+                            {(() => {
+                              const activeIdx = activeAsset.data?.selectedCardIndex || 0;
+                              const cardData = activeAsset.data?.cards?.[activeIdx] || {};
+                              
+                              return (
+                                <>
+                                  <div className="col-span-2 border-t border-[#1a1c26] mt-2 pt-2 flex items-center justify-between">
+                                    <span className="text-[10px] font-bold text-pink-400">현재 포커스: 카드 {activeIdx + 1} 설정</span>
+                                    <span className="text-[9px] text-slate-500 bg-[#262833] px-2 py-0.5 rounded">* 미리보기에서 다른 카드를 클릭해보세요.</span>
+                                  </div>
+                                  <div className="col-span-2"><input type="text" placeholder={`[카드 ${activeIdx + 1}] Hero 좌상단 타이틀`} value={cardData.heroTitle || ''} onChange={e => handleCardChange(activeAsset.id, activeIdx, 'heroTitle', e.target.value)} className="w-full bg-[#12141c] border border-[#303340] rounded-lg px-3 py-2 text-xs font-bold text-white outline-none focus:border-pink-400" /></div>
+                                  <div className="col-span-2"><textarea placeholder={`[카드 ${activeIdx + 1}] Hero 서브글 (2~3줄)`} rows={1} value={cardData.heroSub || ''} onChange={e => handleCardChange(activeAsset.id, activeIdx, 'heroSub', e.target.value)} className="w-full bg-[#12141c] border border-[#303340] rounded-lg px-3 py-2 text-xs text-slate-300 outline-none focus:border-pink-400 transition-all duration-300 h-9 focus:h-20 resize-none custom-scrollbar leading-snug" /></div>
+                                  <div className="col-span-2"><input type="text" placeholder={`[카드 ${activeIdx + 1}] Hero 우상단 이미지 URL`} value={cardData.heroImg || ''} onChange={e => handleCardChange(activeAsset.id, activeIdx, 'heroImg', e.target.value)} className="w-full bg-[#12141c] border border-[#303340] rounded-lg px-3 py-2 text-xs text-white outline-none focus:border-pink-400" /></div>
+                                  
+                                  <div className="col-span-2 border-t border-[#1a1c26] mt-1 pt-2 text-[10px] font-bold text-[#7387ff]">카드 {activeIdx + 1} 내부 설정</div>
+                                  <div className="col-span-2"><textarea placeholder={`[카드 ${activeIdx + 1}] 내 텍스트`} rows={1} value={cardData.cardCopy || ''} onChange={e => handleCardChange(activeAsset.id, activeIdx, 'cardCopy', e.target.value)} className="w-full bg-[#0a0812] border border-[#262833] rounded-lg px-3 py-2 text-xs text-white outline-none focus:border-[#7387ff] transition-all duration-300 h-9 focus:h-16 resize-none custom-scrollbar leading-snug" /></div>
+                                  <div className="col-span-2"><input type="text" placeholder={`[카드 ${activeIdx + 1}] 배경 이미지 URL`} value={cardData.cardImg || ''} onChange={e => handleCardChange(activeAsset.id, activeIdx, 'cardImg', e.target.value)} className="w-full bg-[#0a0812] border border-[#262833] rounded-lg px-3 py-2 text-xs text-white outline-none focus:border-[#7387ff]" /></div>
+                                  <div className="col-span-2"><input type="text" placeholder={`[카드 ${activeIdx + 1}] 랜딩 URL`} value={cardData.landingValue || ''} onChange={e => handleCardChange(activeAsset.id, activeIdx, 'landingValue', e.target.value)} className="w-full bg-[#0a0812] border border-[#262833] rounded-lg px-3 py-2 text-xs text-[#7387ff] outline-none focus:border-[#7387ff]" /></div>
+                                </>
+                              );
+                            })()}
+                          </>
+                        )}
+                        
+                        {activeAsset.type === 'FULL_PROMO_BANNER' && (
+                          <>
+                            <div className="col-span-2"><input type="text" placeholder="상단 로고 타이틀" value={activeAsset.data?.topLogo || ''} onChange={e => handleAssetChange(activeAsset.id, 'topLogo', e.target.value)} className="w-full bg-[#0a0812] border border-[#262833] rounded-lg px-3 py-2 text-xs text-white outline-none focus:border-[#4f3df6]" /></div>
+                            <div className="col-span-2"><textarea placeholder="메인 하이라이트 문구" rows={1} value={activeAsset.data?.mainCopy || ''} onChange={e => handleAssetChange(activeAsset.id, 'mainCopy', e.target.value)} className="w-full bg-[#0a0812] border border-[#262833] rounded-lg px-3 py-2 text-sm font-bold text-cyan-300 outline-none focus:border-[#4f3df6] transition-all duration-300 h-9 focus:h-20 resize-none custom-scrollbar leading-snug" /></div>
+                            <div className="col-span-2"><textarea placeholder="서브 라인 문구" rows={1} value={activeAsset.data?.subCopy || ''} onChange={e => handleAssetChange(activeAsset.id, 'subCopy', e.target.value)} className="w-full bg-[#0a0812] border border-[#262833] rounded-lg px-3 py-2 text-xs text-purple-300 outline-none focus:border-[#4f3df6] transition-all duration-300 h-9 focus:h-16 resize-none custom-scrollbar leading-snug" /></div>
+                            <div className="col-span-2"><input type="text" placeholder="전체 배경 이미지 URL" value={activeAsset.data?.bgImg || ''} onChange={e => handleAssetChange(activeAsset.id, 'bgImg', e.target.value)} className="w-full bg-[#0a0812] border border-[#262833] rounded-lg px-3 py-2 text-xs text-white outline-none focus:border-[#4f3df6]" /></div>
+                            {[1, 2, 3].map(i => (
+                                <React.Fragment key={i}>
+                                  <div className="col-span-2 border-t border-[#1a1c26] mt-2 pt-2 text-[10px] font-bold text-slate-500">카드 {i} 설정</div>
+                                  <div><input type="text" placeholder="카드 타이틀" value={activeAsset.data?.[`card${i}Title`] || ''} onChange={e => handleAssetChange(activeAsset.id, `card${i}Title`, e.target.value)} className="w-full bg-[#0a0812] border border-[#262833] rounded-lg px-3 py-2 text-xs text-white outline-none focus:border-[#4f3df6]" /></div>
+                                  <div><input type="text" placeholder="서브 텍스트" value={activeAsset.data?.[`card${i}Sub`] || ''} onChange={e => handleAssetChange(activeAsset.id, `card${i}Sub`, e.target.value)} className="w-full bg-[#0a0812] border border-[#262833] rounded-lg px-3 py-2 text-xs text-yellow-400 outline-none focus:border-[#4f3df6]" /></div>
+                                  <div className="col-span-2"><input type="text" placeholder="이미지 URL" value={activeAsset.data?.[`card${i}Img`] || ''} onChange={e => handleAssetChange(activeAsset.id, `card${i}Img`, e.target.value)} className="w-full bg-[#0a0812] border border-[#262833] rounded-lg px-3 py-2 text-xs text-white outline-none focus:border-[#4f3df6]" /></div>
+                                  <div className="col-span-2"><input type="text" placeholder="랜딩 URL" value={activeAsset.data?.[`card${i}Landing`] || ''} onChange={e => handleAssetChange(activeAsset.id, `card${i}Landing`, e.target.value)} className="w-full bg-[#0a0812] border border-[#262833] rounded-lg px-3 py-2 text-xs text-[#7387ff] outline-none focus:border-[#4f3df6]" /></div>
+                                </React.Fragment>
+                            ))}
+                          </>
+                        )}
+                        
+                        {activeAsset.type === 'BIG_BANNER' && (
+                          <>
+                            <div className="col-span-2">
+                              <select value={activeAsset.data?.subType === '가입하기형' ? '가입하기형' : '기본형'} onChange={e => handleAssetChange(activeAsset.id, 'subType', e.target.value)} className="w-full bg-[#0a0812] border border-[#262833] rounded-lg px-3 py-2 text-xs text-white outline-none focus:border-[#4f3df6]">
+                                <option value="기본형">기본형 (텍스트 + 우측 이미지)</option>
+                                <option value="가입하기형">가입하기형 (풀배경)</option>
+                              </select>
+                            </div>
+                            <div className="col-span-2"><textarea placeholder="메인 타이틀" rows={1} value={activeAsset.data?.mainTitle || ''} onChange={e => handleAssetChange(activeAsset.id, 'mainTitle', e.target.value)} className="w-full bg-[#0a0812] border border-[#262833] rounded-lg px-3 py-2 text-sm font-bold text-white outline-none focus:border-[#4f3df6] transition-all duration-300 h-9 focus:h-20 resize-none custom-scrollbar leading-snug" /></div>
+                            <div><input type="text" placeholder="서브 타이틀" value={activeAsset.data?.subTitle || ''} onChange={e => handleAssetChange(activeAsset.id, 'subTitle', e.target.value)} className="w-full bg-[#0a0812] border border-[#262833] rounded-lg px-3 py-2 text-xs text-orange-400 outline-none focus:border-[#4f3df6]" /></div>
+                            <div><input type="text" placeholder="상세 설명" value={activeAsset.data?.desc || ''} onChange={e => handleAssetChange(activeAsset.id, 'desc', e.target.value)} className="w-full bg-[#0a0812] border border-[#262833] rounded-lg px-3 py-2 text-xs text-slate-300 outline-none focus:border-[#4f3df6]" /></div>
+                            {activeAsset.data?.subType === '가입하기형' && (
+                              <div className="col-span-2"><input type="text" placeholder="상단 로고 URL (비우면 텍스트)" value={activeAsset.data?.logoImg || ''} onChange={e => handleAssetChange(activeAsset.id, 'logoImg', e.target.value)} className="w-full bg-[#0a0812] border border-[#262833] rounded-lg px-3 py-2 text-xs text-white outline-none focus:border-[#4f3df6]" /></div>
+                            )}
+                            <div className="col-span-2"><input type="text" placeholder="배경/우측 이미지 URL" value={activeAsset.data?.imageUrl || ''} onChange={e => handleAssetChange(activeAsset.id, 'imageUrl', e.target.value)} className="w-full bg-[#0a0812] border border-[#262833] rounded-lg px-3 py-2 text-xs text-white outline-none focus:border-[#4f3df6]" /></div>
+                            <div className="col-span-2"><input type="text" placeholder="랜딩 URL" value={activeAsset.data?.landingValue || ''} onChange={e => handleAssetChange(activeAsset.id, 'landingValue', e.target.value)} className="w-full bg-[#0a0812] border border-[#262833] rounded-lg px-3 py-2 text-xs text-[#7387ff] outline-none focus:border-[#4f3df6]" /></div>
+                          </>
+                        )}
+                        
+                        {activeAsset.type === 'GENERAL_BANNER' && (
+                          <>
+                            <div className="col-span-2">
+                              <select value={activeAsset.data?.colType || '2단'} onChange={e => handleAssetChange(activeAsset.id, 'colType', e.target.value)} className="w-full bg-[#0a0812] border border-[#262833] rounded-lg px-3 py-2 text-xs text-white outline-none focus:border-[#4f3df6]">
+                                <option value="1단">1단 배너 (세로형)</option>
+                                <option value="2단">2단 배너 (가로형)</option>
+                                <option value="3단">3단 배너 (와이드형)</option>
+                              </select>
+                            </div>
+                            <div className="col-span-2 border-t border-[#1a1c26] mt-2 pt-2 text-[10px] font-bold text-pink-400">1. 배경 프리뷰 영역</div>
+                            <div className="col-span-2"><input type="text" placeholder="좌상단 텍스트 (1줄)" value={activeAsset.data?.previewTitle || ''} onChange={e => handleAssetChange(activeAsset.id, 'previewTitle', e.target.value)} className="w-full bg-[#0a0812] border border-[#262833] rounded-lg px-3 py-2 text-xs font-bold text-white outline-none focus:border-[#4f3df6]" /></div>
+                            <div className="col-span-2"><textarea placeholder="좌상단 서브글 (2~3줄)" rows={1} value={activeAsset.data?.previewSub || ''} onChange={e => handleAssetChange(activeAsset.id, 'previewSub', e.target.value)} className="w-full bg-[#0a0812] border border-[#262833] rounded-lg px-3 py-2 text-xs text-slate-300 outline-none focus:border-[#4f3df6] transition-all duration-300 h-9 focus:h-20 resize-none custom-scrollbar leading-snug" /></div>
+                            <div className="col-span-2"><input type="text" placeholder="우상단 이미지 URL" value={activeAsset.data?.previewImg || ''} onChange={e => handleAssetChange(activeAsset.id, 'previewImg', e.target.value)} className="w-full bg-[#0a0812] border border-[#262833] rounded-lg px-3 py-2 text-xs text-white outline-none focus:border-[#4f3df6]" /></div>
+                            <div className="col-span-2 border-t border-[#1a1c26] mt-2 pt-2 text-[10px] font-bold text-[#7387ff]">2. 하단 배너 카드 영역</div>
+                            <div className="col-span-2"><textarea placeholder="배너 내 텍스트" rows={1} value={activeAsset.data?.bannerCopy || ''} onChange={e => handleAssetChange(activeAsset.id, 'bannerCopy', e.target.value)} className="w-full bg-[#0a0812] border border-[#262833] rounded-lg px-3 py-2 text-xs text-white outline-none focus:border-[#4f3df6] transition-all duration-300 h-9 focus:h-16 resize-none custom-scrollbar leading-snug" /></div>
+                            <div className="col-span-2"><input type="text" placeholder="배너 배경 이미지 URL" value={activeAsset.data?.bannerImg || ''} onChange={e => handleAssetChange(activeAsset.id, 'bannerImg', e.target.value)} className="w-full bg-[#0a0812] border border-[#262833] rounded-lg px-3 py-2 text-xs text-white outline-none focus:border-[#4f3df6]" /></div>
+                            <div className="col-span-2"><input type="text" placeholder="랜딩 URL" value={activeAsset.data?.landingValue || ''} onChange={e => handleAssetChange(activeAsset.id, 'landingValue', e.target.value)} className="w-full bg-[#0a0812] border border-[#262833] rounded-lg px-3 py-2 text-xs text-[#7387ff] outline-none focus:border-[#4f3df6]" /></div>
+                          </>
+                        )}
+                        
+                        {['LONG_BANNER', 'STRIP_BANNER'].includes(activeAsset.type) && (
+                          <>
+                            <div className="col-span-2"><textarea placeholder="메인 카피" rows={1} value={activeAsset.data?.mainTitle || activeAsset.data?.copy || ''} onChange={e => handleAssetChange(activeAsset.id, activeAsset.type==='LONG_BANNER'?'copy':'mainTitle', e.target.value)} className="w-full bg-[#0a0812] border border-[#262833] rounded-lg px-3 py-2 text-sm font-bold text-white outline-none focus:border-[#4f3df6] transition-all duration-300 h-9 focus:h-20 resize-none custom-scrollbar leading-snug" /></div>
+                            <div className="col-span-2"><textarea placeholder="서브 카피" rows={1} value={activeAsset.data?.subTitle || ''} onChange={e => handleAssetChange(activeAsset.id, 'subTitle', e.target.value)} className="w-full bg-[#0a0812] border border-[#262833] rounded-lg px-3 py-2 text-xs text-slate-300 outline-none focus:border-[#4f3df6] transition-all duration-300 h-9 focus:h-16 resize-none custom-scrollbar leading-snug" /></div>
+                            <div className="col-span-2"><input type="text" placeholder="이미지 URL" value={activeAsset.data?.imageUrl || ''} onChange={e => handleAssetChange(activeAsset.id, 'imageUrl', e.target.value)} className="w-full bg-[#0a0812] border border-[#262833] rounded-lg px-3 py-2 text-xs text-white outline-none focus:border-[#4f3df6]" /></div>
+                            <div className="col-span-2"><input type="text" placeholder="랜딩 URL" value={activeAsset.data?.landingValue || ''} onChange={e => handleAssetChange(activeAsset.id, 'landingValue', e.target.value)} className="w-full bg-[#0a0812] border border-[#262833] rounded-lg px-3 py-2 text-xs text-[#7387ff] outline-none focus:border-[#4f3df6]" /></div>
+                          </>
+                        )}
+                        
+                        {activeAsset.type === 'SYNOPSIS_BANNER' && (
+                          <>
+                            <div className="col-span-2"><input type="text" placeholder="메인 타이틀" value={activeAsset.data?.mainTitle || ''} onChange={e => handleAssetChange(activeAsset.id, 'mainTitle', e.target.value)} className="w-full bg-[#0a0812] border border-[#262833] rounded-lg px-3 py-2 text-sm font-bold text-white outline-none focus:border-[#4f3df6]" /></div>
+                            <div className="col-span-2"><input type="text" placeholder="고지 문구 (서브)" value={activeAsset.data?.subTitle || ''} onChange={e => handleAssetChange(activeAsset.id, 'subTitle', e.target.value)} className="w-full bg-[#0a0812] border border-[#262833] rounded-lg px-3 py-2 text-xs text-slate-300 outline-none focus:border-[#4f3df6]" /></div>
+                            <div className="col-span-2 grid grid-cols-2 gap-3">
+                              <input type="text" placeholder="우측 뱃지 이미지 URL" value={activeAsset.data?.imageUrl || ''} onChange={e => handleAssetChange(activeAsset.id, 'imageUrl', e.target.value)} className="w-full bg-[#0a0812] border border-[#262833] rounded-lg px-3 py-2 text-xs text-white outline-none focus:border-[#4f3df6]" />
+                              <textarea placeholder="뱃지 텍스트 (이미지 없을때)" rows={1} value={activeAsset.data?.badgeText || ''} onChange={e => handleAssetChange(activeAsset.id, 'badgeText', e.target.value)} className="w-full bg-[#0a0812] border border-[#262833] rounded-lg px-3 py-2 text-xs text-slate-400 outline-none focus:border-[#4f3df6] transition-all duration-300 h-9 focus:h-16 resize-none custom-scrollbar leading-snug" />
+                            </div>
+                            <div className="col-span-2"><input type="text" placeholder="랜딩 URL" value={activeAsset.data?.landingValue || ''} onChange={e => handleAssetChange(activeAsset.id, 'landingValue', e.target.value)} className="w-full bg-[#0a0812] border border-[#262833] rounded-lg px-3 py-2 text-xs text-[#7387ff] outline-none focus:border-[#4f3df6]" /></div>
+                          </>
+                        )}
+                        
+                        {activeAsset.type === 'PROMO_POPUP' && (
+                          <>
+                            <div className="col-span-2"><input type="text" placeholder="중앙 팝업 이미지 URL" value={activeAsset.data?.imageUrl || ''} onChange={e => handleAssetChange(activeAsset.id, 'imageUrl', e.target.value)} className="w-full bg-[#0a0812] border border-[#262833] rounded-lg px-3 py-2 text-xs text-white outline-none focus:border-[#4f3df6]" /></div>
+                            <div><input type="text" placeholder="버튼 문구" value={activeAsset.data?.buttonText || ''} onChange={e => handleAssetChange(activeAsset.id, 'buttonText', e.target.value)} className="w-full bg-[#0a0812] border border-[#262833] rounded-lg px-3 py-2 text-xs text-white outline-none focus:border-[#4f3df6]" /></div>
+                            <div><input type="text" placeholder="닫기 문구" value={activeAsset.data?.closeText || ''} onChange={e => handleAssetChange(activeAsset.id, 'closeText', e.target.value)} className="w-full bg-[#0a0812] border border-[#262833] rounded-lg px-3 py-2 text-xs text-slate-400 outline-none focus:border-[#4f3df6]" /></div>
+                            <div className="col-span-2"><input type="text" placeholder="랜딩 URL" value={activeAsset.data?.landingValue || ''} onChange={e => handleAssetChange(activeAsset.id, 'landingValue', e.target.value)} className="w-full bg-[#0a0812] border border-[#262833] rounded-lg px-3 py-2 text-xs text-[#7387ff] outline-none focus:border-[#4f3df6]" /></div>
+                          </>
+                        )}
+                        
+                        {activeAsset.type === 'MINI_EPG_BANNER' && (
+                          <>
+                            <div className="col-span-2"><input type="text" placeholder="썸네일 이미지 URL" value={activeAsset.data?.imageUrl || ''} onChange={e => handleAssetChange(activeAsset.id, 'imageUrl', e.target.value)} className="w-full bg-[#0a0812] border border-[#262833] rounded-lg px-3 py-2 text-xs text-white outline-none focus:border-[#4f3df6]" /></div>
+                            <div className="col-span-2"><input type="text" placeholder="버튼 문구 (예: 감상하기)" value={activeAsset.data?.buttonText || ''} onChange={e => handleAssetChange(activeAsset.id, 'buttonText', e.target.value)} className="w-full bg-[#0a0812] border border-[#262833] rounded-lg px-3 py-2 text-xs text-white outline-none focus:border-[#4f3df6]" /></div>
+                            <div className="col-span-2"><input type="text" placeholder="랜딩 URL" value={activeAsset.data?.landingValue || ''} onChange={e => handleAssetChange(activeAsset.id, 'landingValue', e.target.value)} className="w-full bg-[#0a0812] border border-[#262833] rounded-lg px-3 py-2 text-xs text-[#7387ff] outline-none focus:border-[#4f3df6]" /></div>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </aside>
+          )}
+
+          <main className="flex-1 flex flex-col min-w-0 bg-[#06070a] relative">
+            
+            <header className="px-8 py-5 flex justify-between items-center z-20 border-b border-[#1a1c26] bg-[#0c0d14]/80 backdrop-blur">
+               <h2 className="text-lg font-bold text-white flex items-center gap-2 tracking-tight">
+                 Preview Layout <span className="text-[#4f3df6] font-black text-xl">·</span> <span className="text-slate-400 text-sm font-medium">{activeAsset?.name}</span>
+               </h2>
+               <div className="flex gap-3">
+                 <button onClick={handleDownloadExtension} className="flex items-center gap-1.5 px-4 py-2 bg-[#1a1c26] text-slate-300 rounded-lg text-xs font-bold border border-[#303340] hover:bg-[#262833] hover:text-white transition-colors">
+                   <Download size={14}/> 익스텐션 다운로드
+                 </button>
+
+                 <button onClick={handleAddMemo} className="flex items-center gap-1.5 px-4 py-2 bg-yellow-500/10 text-yellow-500 border border-yellow-500/30 rounded-lg text-xs font-bold hover:bg-yellow-500/20 transition-colors shadow-lg">
+                   <MessageSquare size={14}/> 메모 추가
+                 </button>
+
+                 {assets.length > 1 && (
+                   <button onClick={(e) => removeAsset(activeAsset.id, e)} className="flex items-center gap-1.5 px-4 py-2 bg-red-500/10 text-red-400 rounded-lg text-xs font-bold border border-red-500/30 hover:bg-red-500/20 hover:text-red-300 transition-colors">
+                     <Trash2 size={14}/> 배너 삭제
+                   </button>
+                 )}
+
+                 <button onClick={() => setIsAddAssetModalOpen(true)} className="flex items-center gap-1.5 px-4 py-2 bg-[#1a1c26] text-white rounded-lg text-xs font-bold border border-[#303340] hover:bg-[#262833] transition-colors"><Plus size={14} className="text-[#7387ff]"/> 배너 추가</button>
+                 
+                 {exportState.isExporting ? (
+                   <div className="w-[200px] h-[34px] bg-[#1a1c26] border border-[#4f3df6] rounded-lg overflow-hidden relative flex items-center shadow-[0_0_15px_rgba(79,61,246,0.3)]">
+                     <div className="absolute inset-0 bg-[#4f3df6]/20 progress-stripes pointer-events-none"></div>
+                     <div className="absolute top-0 left-0 h-full bg-gradient-to-r from-[#4f3df6] to-[#7387ff] transition-all duration-300" style={{width: `${exportState.progress}%`}}></div>
+                     <span className="relative z-10 w-full text-center text-[10px] font-bold text-white flex items-center justify-center gap-1.5"><Loader2 size={12} className="animate-spin"/> {exportState.msg}</span>
+                   </div>
+                 ) : (
+                   <button onClick={handleExport} className="flex items-center gap-1.5 px-5 py-2 bg-[#4f3df6] hover:bg-[#6252ff] text-white rounded-lg text-xs font-bold shadow-lg shadow-[#4f3df6]/20 transition-all"><Send size={14}/> Jira 일감 전송</button>
+                 )}
+               </div>
+            </header>
+
+            <div className="flex-1 relative overflow-hidden flex flex-col items-center justify-center p-12 bg-[#06070a]">
+              <div className="w-full max-w-[1000px] aspect-[16/9] bg-[#000000] rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.8)] border-[8px] border-[#1a1c26] relative overflow-hidden flex items-center justify-center">
+                <div id="capture-preview-area" className="w-full h-full relative">
+                   <PreviewDisplay block={activeAsset} onUpdate={handleAssetChange} />
+                   <OverlayMemos block={activeAsset} onUpdate={handleAssetChange} />
+                </div>
+              </div>
+            </div>
+
+            <div className="h-[180px] bg-[#0c0d14] border-t border-[#1a1c26] shrink-0 flex flex-col z-20">
+              <div className="flex px-6 py-2.5 justify-between items-center border-b border-[#1a1c26] bg-[#0f111a]">
+                <h3 className="text-[11px] font-bold text-slate-400 flex items-center gap-1.5"><ImageIcon size={12}/> Variant Assets ({assets.length})</h3>
+              </div>
+              
+              <div className="flex-1 overflow-x-auto custom-scrollbar flex items-center gap-4 px-6 bg-[#06070a]">
+                {assets.map((asset, idx) => (
+                  <div 
+                    key={asset.id} 
+                    className={`relative w-[200px] h-[120px] rounded-xl border-2 transition-all shrink-0 flex flex-col overflow-hidden group cursor-pointer ${activeTabId === asset.id ? 'border-[#4f3df6] shadow-[0_0_15px_rgba(79,61,246,0.3)]' : 'border-[#262833] hover:border-[#4f3df6]/50'}`}
+                    onClick={() => setActiveTabId(asset.id)}
+                  >
+                    <div className="h-[180px] bg-[#0c0d14] border-t border-[#1a1c26] shrink-0 flex flex-col z-20 pointer-events-none">
+                      <div className="absolute top-0 left-0 w-[1000px] origin-top-left transform scale-[0.2]">
+                        <PreviewDisplay block={asset} />
+                      </div>
+                      <div className="absolute inset-0 bg-black/10 group-hover:bg-transparent transition-colors"></div>
+                    </div>
+                    
+                    <div className={`h-[32px] px-3 flex justify-between items-center relative ${activeTabId === asset.id ? 'bg-[#4f3df6]' : 'bg-[#12141c]'}`}>
+                      <span className={`text-[10px] font-bold truncate pr-4 ${activeTabId === asset.id ? 'text-white' : 'text-slate-300'}`}>{asset.name}</span>
+                      {assets.length > 1 && (
+                        <button onClick={(e) => removeAsset(asset.id, e)} className={`absolute right-2 opacity-0 group-hover:opacity-100 p-1 rounded-full transition-all ${activeTabId === asset.id ? 'hover:bg-white/20 text-white' : 'hover:bg-red-500/20 text-red-400'}`}>
+                          <Trash2 size={10}/>
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </main>
+
+          {isSettingsOpen && (
+            <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in zoom-in-95 duration-200">
+              <div className="bg-[#12141c] w-[500px] border border-[#262833] rounded-2xl shadow-2xl flex flex-col overflow-hidden ring-1 ring-white/10">
+                <div className="p-5 border-b border-[#262833] flex justify-between items-center bg-[#0f111a]">
+                  <h3 className="text-base font-black text-white flex items-center gap-2"><Settings size={18} className="text-[#4f3df6]"/> 시스템 설정 (Admin)</h3>
+                  <button onClick={() => setIsSettingsOpen(false)} className="p-1.5 hover:bg-[#262833] rounded-full text-slate-400 hover:text-white transition-colors"><X size={16}/></button>
+                </div>
+                
+                <div className="p-6 space-y-6 bg-[#0a0812] max-h-[70vh] overflow-y-auto custom-scrollbar">
+                  
+                  <div className="space-y-3">
+                    <h4 className="text-xs font-bold text-[#7387ff] flex items-center gap-1.5"><User size={14}/> 내 계정 연동</h4>
+                    <div className="bg-[#1a1c26] p-4 rounded-xl border border-[#262833]">
+                      <label className="block text-[10px] text-slate-400 mb-1.5">기본 담당자 Jira ID (이메일)</label>
+                      <input type="text" defaultValue={localStorage.getItem('myJiraId') || ''} onBlur={(e) => localStorage.setItem('myJiraId', e.target.value.trim())} className="w-full bg-[#0a0812] border border-[#303340] rounded-lg px-3 py-2 text-xs text-white focus:border-[#4f3df6] outline-none" placeholder="example@sk.com" />
+                      <p className="text-[9px] text-slate-500 mt-2">* 상위/하위 일감 생성 시 기본 담당자(Assignee)로 할당됩니다.</p>
+                    </div>
+                  </div>
+
+                  <div className="space-y-3">
+                    <h4 className="text-xs font-bold text-pink-400 flex items-center gap-1.5"><Users size={14}/> GNB별 자동 멘션 (편집 가능)</h4>
+                    <p className="text-[10px] text-slate-400 leading-snug">
+                      현재 Config 시트에서 불러온 담당자 매핑 정보입니다. 내용을 수정하면 이번 세션의 하위 일감(Sub-task) 담당자 할당에 즉시 반영됩니다.
+                    </p>
+                    
+                    <div className="bg-[#1a1c26] rounded-xl border border-[#262833] overflow-hidden">
+                      <div className="grid grid-cols-3 gap-0 text-[10px] bg-[#262833] text-slate-300 font-bold">
+                        <div className="p-2.5 text-center border-r border-[#1a1c26]">GNB 명칭</div>
+                        <div className="col-span-2 grid grid-cols-2 gap-2 p-2.5 text-center">
+                          <div>담당자 이름</div>
+                          <div>Jira ID</div>
+                        </div>
+                      </div>
+                      
                       {Object.entries(configMap).map(([gnbName, info], i) => (
                         <div key={i} className="grid grid-cols-3 gap-0 text-xs border-t border-[#262833] items-center">
                           <div className="p-2.5 text-center border-r border-[#262833] text-slate-400 font-bold">
