@@ -331,7 +331,7 @@
                   <div 
                     key={i} 
                     onClick={() => onUpdate && onUpdate(block.id, 'selectedCardIndex', i)}
-                    className={`relative rounded-xl overflow-hidden shadow-[0_10px_30px_rgba(0,0,0,0.8)] flex bg-[#1a1c26] shrink-0 h-full cursor-pointer transition-all duration-200 ${colType === '3단' ? 'aspect-[196/89]' : 'aspect-[129/89]'} ${isSelected ? 'border-[3px] border-[#7387FF] ring-4 ring-[#7387FF]/30 transform -translate-y-1' : 'border border-white/20 hover:border-white/50 opacity-60 hover:opacity-100'}`}
+                    className={`relative rounded-xl overflow-hidden shadow-[0_10px_30px_rgba(0,0,0,0.8)] flex bg-[#1a1c26] shrink-0 h-full cursor-pointer transition-all duration-200 ${colType === '3단' ? 'aspect-[196/89]' : 'aspect-[129/89]'} ${isSelected ? 'border-[3px] border-[#7387FF]' : 'border border-white/20 hover:border-white/50 opacity-60 hover:opacity-100'}`}
                   >
                     {cardData.cardCopy && <div className="w-[70%] h-full flex flex-col justify-center items-start p-6 z-20 bg-gradient-to-r from-[#1a1c26] via-[#1a1c26]/90 to-transparent pointer-events-none"><p className="text-white font-extrabold text-xl leading-[1.2] tracking-tighter whitespace-pre-wrap drop-shadow-md">{cardData.cardCopy}</p></div>}
                     <div className="absolute inset-0 w-full h-full bg-cover bg-center z-10 bg-[#0a0a0f] pointer-events-none" style={{ backgroundImage: checkIsUrl(cardData.cardImg) ? `url(${cardData.cardImg})` : 'none' }}>
@@ -1196,7 +1196,6 @@
                                 <option value="2단">2단 배너 폭 (총 3개 카드 구성)</option>
                                 <option value="3단">3단 배너 폭 (총 2개 와이드 구성)</option>
                               </select>
-                            </div>
                             </div>
                             
                             {(() => {
