@@ -9,6 +9,8 @@
   <script src="https://unpkg.com/@babel/standalone@7.23.0/babel.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/mermaid@10.6.1/dist/mermaid.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   
   <script type="importmap">
     {
@@ -577,6 +579,119 @@
           </div>
         );
       }
+    };
+
+    // ====================================================================================
+    // 🌟 [신규 추가 코드] AI 프로모션 기획 2단 레이아웃 (채팅 + 현황판) 컴포넌트
+    // ====================================================================================
+    const AiPlannerView = ({ campaignMeta, setCampaignMeta, assets, setAssets, onMoveToEditor }) => {
+      const [inputValue, setInputValue] = useState('');
+      const [isLoading, setIsLoading] = useState(false);
+      const [chatHistory, setChatHistory] = useState([
+        {
+          id: 'msg-init',
+          sender: 'ai',
+          text: '매니저님, 환영합니다.\n어떤 프로모션을 기획할 예정이신가요? 목적과 타겟, 일정 등을 편하게 말씀해 주세요.'
+        }
+      ]);
+      const [collectedInfo, setCollectedInfo] = useState('아직 수집된 기획 정보가 없습니다.');
+      const [mermaidCode, setMermaidCode] = useState('');
+      const mermaidRef = useRef(null);
+      const chatEndRef = useRef(null);
+
+      useEffect(() => {
+        chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      }, [chatHistory, isLoading]);
+
+      useEffect(() => {
+        if (mermaidCode && mermaidRef.current) {
+          try {
+            mermaidRef.current.innerHTML = '';
+            mermaid.render(`mermaid-svg-${Date.now()}`, mermaidCode).then(({ svg }) => {
+              if (mermaidRef.current) mermaidRef.current.innerHTML = svg;
+            });
+          } catch (error) { console.error("Mermaid 렌더링 에러:", error); }
+        }
+      }, [mermaidCode]);
+
+      const handleSendMessage = () => {
+        if (!inputValue.trim()) return;
+        const userMessage = inputValue.trim();
+        setInputValue('');
+        setChatHistory(prev => [...prev, { id: `msg-${Date.now()}`, sender: 'user', text: userMessage }]);
+        setIsLoading(true);
+
+        // TODO: 향후 GAS API 호출로 연동할 부분 (현재는 2초 뒤 가짜 데이터 응답 시뮬레이션)
+        setTimeout(() => {
+          const mockAiResponse = "매니저님, 말씀하신 내용 기반으로 기획안 초안을 구성했습니다. 유저 플로우를 확인해 주시고, 텍스트가 맞는지 점검해 주세요.\n\n```json\n{ \"status\": \"기획 완료\" }\n```";
+          const mockCollectedInfo = "**[현재까지 수집된 정보]**\n- 캠페인명: 신규 영화 론칭\n- 대상 상품명: 해리포터\n- 시작/종료일: 2026-06-12 ~ 2026-06-25\n- 타겟 여부: MASS";
+          const mockMermaid = "graph TD\n  A[\"Today B tv 배너\"] --> B[\"시놉시스 랜딩\"]\n  B --> C[\"구매 완료\"]";
+
+          setChatHistory(prev => [...prev, { id: `msg-${Date.now()}`, sender: 'ai', text: mockAiResponse }]);
+          setCollectedInfo(mockCollectedInfo);
+          setMermaidCode(mockMermaid);
+          setIsLoading(false);
+        }, 2000);
+      };
+
+      const handleKeyDown = (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendMessage(); }
+      };
+
+      return (
+        <div className="flex h-full w-full bg-[#06070a] overflow-hidden gap-6 p-6">
+          {/* 좌측 챗봇 */}
+          <div className="w-[45%] flex flex-col bg-[#0f111a] border border-[#262833] rounded-2xl shadow-xl overflow-hidden shrink-0">
+            <div className="px-6 py-4 border-b border-[#262833] bg-[#12141c] flex items-center gap-3">
+              <div className="w-8 h-8 rounded-full bg-[#4f3df6]/20 flex items-center justify-center"><Bot size={18} className="text-[#7387ff]" /></div>
+              <h2 className="text-white font-bold text-lg tracking-tight">캠페인 오케스트레이터</h2>
+            </div>
+            <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar">
+              {chatHistory.map((msg) => (
+                <div key={msg.id} className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
+                  {msg.sender === 'ai' && <div className="w-8 h-8 rounded-full bg-[#262833] flex items-center justify-center mr-3 shrink-0"><Bot size={16} className="text-slate-300" /></div>}
+                  <div className={`max-w-[80%] rounded-2xl px-5 py-3.5 text-[15px] leading-relaxed whitespace-pre-wrap ${msg.sender === 'user' ? 'bg-[#4f3df6] text-white rounded-br-none shadow-[0_4px_15px_rgba(79,61,246,0.3)]' : 'bg-[#1a1c26] text-slate-200 border border-[#303340] rounded-bl-none shadow-md'}`}>
+                    {msg.text}
+                  </div>
+                </div>
+              ))}
+              {isLoading && (
+                <div className="flex justify-start items-center gap-3">
+                  <div className="w-8 h-8 rounded-full bg-[#262833] flex items-center justify-center shrink-0"><Bot size={16} className="text-slate-300" /></div>
+                  <div className="bg-[#1a1c26] border border-[#303340] rounded-2xl rounded-bl-none px-5 py-4 flex items-center gap-2">
+                    <Loader2 size={16} className="text-[#7387ff] animate-spin" />
+                    <span className="text-sm text-slate-400 font-medium">정보를 분석하고 기획을 구성 중입니다...</span>
+                  </div>
+                </div>
+              )}
+              <div ref={chatEndRef} />
+            </div>
+            <div className="p-4 bg-[#12141c] border-t border-[#262833]">
+              <div className="relative flex items-end bg-[#0a0812] border border-[#303340] rounded-xl overflow-hidden focus-within:border-[#4f3df6] transition-colors shadow-inner">
+                <textarea value={inputValue} onChange={(e) => setInputValue(e.target.value)} onKeyDown={handleKeyDown} placeholder="프로모션 목적, 일정, 타겟 등을 자유롭게 입력하세요. (Shift+Enter로 줄바꿈)" className="flex-1 max-h-[150px] min-h-[56px] bg-transparent text-white placeholder-slate-500 p-4 outline-none resize-none custom-scrollbar text-sm" rows={1} />
+                <button onClick={handleSendMessage} disabled={!inputValue.trim() || isLoading} className="mb-2 mr-2 p-2.5 rounded-lg bg-[#4f3df6] text-white hover:bg-[#6252ff] disabled:bg-[#262833] disabled:text-slate-500 transition-colors shrink-0"><Send size={18} /></button>
+              </div>
+            </div>
+          </div>
+
+          {/* 우측 현황판 */}
+          <div className="flex-1 flex flex-col gap-6 min-w-0">
+            <div className="bg-[#0f111a] border border-[#262833] rounded-2xl flex flex-col shadow-xl overflow-hidden shrink-0 h-[40%]">
+              <div className="px-5 py-3.5 border-b border-[#262833] bg-[#12141c] flex items-center gap-2"><FileText size={16} className="text-pink-400" /><h3 className="text-white font-bold text-[15px] tracking-tight">수집된 기획 정보</h3></div>
+              <div className="p-5 overflow-y-auto custom-scrollbar text-sm text-slate-300 leading-relaxed" dangerouslySetInnerHTML={{ __html: window.marked ? window.marked.parse(collectedInfo) : collectedInfo }} />
+            </div>
+            <div className="bg-[#0f111a] border border-[#262833] rounded-2xl flex flex-col shadow-xl overflow-hidden flex-1 min-h-0">
+              <div className="px-5 py-3.5 border-b border-[#262833] bg-[#12141c] flex items-center"><LayoutTemplate size={16} className="text-[#4f3df6] mr-2" /><h3 className="text-white font-bold text-[15px] tracking-tight">고객 Userflow 설계</h3></div>
+              <div className="flex-1 overflow-auto p-5 bg-[#0a0812] custom-scrollbar flex items-center justify-center">
+                {mermaidCode ? <div ref={mermaidRef} className="w-full flex justify-center mermaid-render-target" /> : <p className="text-slate-500 text-sm font-medium">대화를 진행하면 유저 플로우가 시각화됩니다.</p>}
+              </div>
+            </div>
+            <div className="flex justify-end mt-auto shrink-0">
+              <button onClick={onMoveToEditor} className="flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-[#4f3df6] to-[#7387ff] hover:from-[#6252ff] hover:to-[#8aa0ff] text-white rounded-xl font-black text-[16px] shadow-[0_10px_25px_rgba(79,61,246,0.4)] transition-all transform hover:-translate-y-1">기획안 확정 및 시안 작업 이동 <ChevronRight size={20} /></button>
+            </div>
+          </div>
+        </div>
+      );
     };
     
     function App() {
@@ -2077,6 +2192,7 @@
     };
     
     function App() {
+      const [currentView, setCurrentView] = useState('PLANNER');
       const [isSidebarOpen, setIsSidebarOpen] = useState(true);
       const [mermaidCode, setMermaidCode] = useState(''); 
       const [campaignMeta, setCampaignMeta] = useState({ campaignName: '신규 캠페인', target: 'MASS', targetSize: '', toneAndManner: '', startDate: '2026-06-12', dueDate: '2026-06-25' });
@@ -2578,6 +2694,9 @@
 
       const activeAsset = assets.find(a => a.id === activeTabId) || assets[0];
 
+      // ============================================================================
+      // 🌟 [3단계: 렌더링 분기 처리] 기존 return ( ... ); 전체를 아래 코드로 덮어씌웁니다.
+      // ============================================================================
       return (
         <div className="flex h-screen w-full bg-[#06070a] text-slate-200 overflow-hidden select-none">
           
@@ -2592,6 +2711,14 @@
               <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className={`w-full aspect-square rounded-xl flex items-center justify-center transition-all ${isSidebarOpen ? 'bg-[#1a1c26] text-white border border-[#303340]' : 'text-slate-500 hover:text-white hover:bg-[#1a1c26]'}`}>
                 <Menu size={20} />
               </button>
+
+              {/* 🌟 [수정됨] 뷰 전환 네비게이션 버튼 추가 */}
+              <button onClick={() => setCurrentView('PLANNER')} className={`w-full aspect-square rounded-xl flex items-center justify-center transition-all ${currentView === 'PLANNER' ? 'bg-[#4f3df6] text-white shadow-lg shadow-[#4f3df6]/30' : 'text-slate-500 hover:text-white hover:bg-[#1a1c26]'}`} title="AI 프로모션 기획">
+                <Bot size={22} />
+              </button>
+              <button onClick={() => setCurrentView('EDITOR')} className={`w-full aspect-square rounded-xl flex items-center justify-center transition-all ${currentView === 'EDITOR' ? 'bg-[#4f3df6] text-white shadow-lg shadow-[#4f3df6]/30' : 'text-slate-500 hover:text-white hover:bg-[#1a1c26]'}`} title="배너 시안 편집">
+                <LayoutTemplate size={22} />
+              </button>
             </div>
             <div className="mt-auto w-full px-3">
               <button onClick={handleSettingsClick} className="w-full aspect-square rounded-xl flex items-center justify-center text-slate-500 hover:text-white hover:bg-[#1a1c26] transition-all">
@@ -2600,7 +2727,8 @@
             </div>
           </nav>
 
-          {isSidebarOpen && (
+          {/* 🌟 [수정됨] 사이드바는 currentView === 'EDITOR' 일 때만 표시되도록 조건 추가 */}
+          {isSidebarOpen && currentView === 'EDITOR' && (
             <aside className="w-[360px] bg-[#0c0d14] border-r border-[#1a1c26] flex flex-col h-full z-10 shrink-0 shadow-[10px_0_30px_rgba(0,0,0,0.5)]">
               <div className="p-6 pb-4 flex flex-col gap-1 border-b border-[#1a1c26] bg-[#0f111a]">
                 <h1 className="text-lg font-black text-white tracking-tight">프로모션 시안</h1>
@@ -2679,13 +2807,11 @@
                           </>
                         )}
                         
-                        {/* 🌟 신규 추가: 세트형 일반 배너 폼 */}
                         {activeAsset.type === 'GENERAL_SET_BANNER' && (
                           <>
                             <div className="col-span-2">
                               <select value={activeAsset.data?.colType || '2단'} onChange={e => {
                                 handleAssetChange(activeAsset.id, 'colType', e.target.value);
-                                // 🌟 3단 폭(총 2개 배치)으로 변경 시, 포커스가 세번째 카드에 머물러 있으면 두번째 카드로 초기화
                                 if (e.target.value === '3단' && activeAsset.data?.selectedCardIndex === 2) {
                                   handleAssetChange(activeAsset.id, 'selectedCardIndex', 1);
                                 }
@@ -2823,79 +2949,96 @@
 
           <main className="flex-1 flex flex-col min-w-0 bg-[#06070a] relative">
             
-            <header className="px-8 py-5 flex justify-between items-center z-20 border-b border-[#1a1c26] bg-[#0c0d14]/80 backdrop-blur">
-               <h2 className="text-lg font-bold text-white flex items-center gap-2 tracking-tight">
-                 Preview Layout <span className="text-[#4f3df6] font-black text-xl">·</span> <span className="text-slate-400 text-sm font-medium">{activeAsset?.name}</span>
-               </h2>
-               <div className="flex gap-3">
-                 <button onClick={handleDownloadExtension} className="flex items-center gap-1.5 px-4 py-2 bg-[#1a1c26] text-slate-300 rounded-lg text-xs font-bold border border-[#303340] hover:bg-[#262833] hover:text-white transition-colors">
-                   <Download size={14}/> 익스텐션 다운로드
-                 </button>
+            {/* 🌟 [신규 추가됨] PLANNER 뷰 (AI 기획 메뉴) 렌더링 */}
+            {currentView === 'PLANNER' && (
+              <AiPlannerView 
+                campaignMeta={campaignMeta}
+                setCampaignMeta={setCampaignMeta}
+                assets={assets}
+                setAssets={setAssets}
+                onMoveToEditor={() => setCurrentView('EDITOR')}
+              />
+            )}
 
-                 <button onClick={handleAddMemo} className="flex items-center gap-1.5 px-4 py-2 bg-yellow-500/10 text-yellow-500 border border-yellow-500/30 rounded-lg text-xs font-bold hover:bg-yellow-500/20 transition-colors shadow-lg">
-                   <MessageSquare size={14}/> 메모 추가
-                 </button>
+            {/* 🌟 [조건부 렌더링 추가됨] 기존 화면은 EDITOR 뷰일 때만 렌더링 */}
+            {currentView === 'EDITOR' && (
+              <>
+                <header className="px-8 py-5 flex justify-between items-center z-20 border-b border-[#1a1c26] bg-[#0c0d14]/80 backdrop-blur">
+                  <h2 className="text-lg font-bold text-white flex items-center gap-2 tracking-tight">
+                    Preview Layout <span className="text-[#4f3df6] font-black text-xl">·</span> <span className="text-slate-400 text-sm font-medium">{activeAsset?.name}</span>
+                  </h2>
+                  <div className="flex gap-3">
+                    <button onClick={handleDownloadExtension} className="flex items-center gap-1.5 px-4 py-2 bg-[#1a1c26] text-slate-300 rounded-lg text-xs font-bold border border-[#303340] hover:bg-[#262833] hover:text-white transition-colors">
+                      <Download size={14}/> 익스텐션 다운로드
+                    </button>
 
-                 {assets.length > 1 && (
-                   <button onClick={(e) => removeAsset(activeAsset.id, e)} className="flex items-center gap-1.5 px-4 py-2 bg-red-500/10 text-red-400 rounded-lg text-xs font-bold border border-red-500/30 hover:bg-red-500/20 hover:text-red-300 transition-colors">
-                     <Trash2 size={14}/> 배너 삭제
-                   </button>
-                 )}
+                    <button onClick={handleAddMemo} className="flex items-center gap-1.5 px-4 py-2 bg-yellow-500/10 text-yellow-500 border border-yellow-500/30 rounded-lg text-xs font-bold hover:bg-yellow-500/20 transition-colors shadow-lg">
+                      <MessageSquare size={14}/> 메모 추가
+                    </button>
 
-                 <button onClick={() => setIsAddAssetModalOpen(true)} className="flex items-center gap-1.5 px-4 py-2 bg-[#1a1c26] text-white rounded-lg text-xs font-bold border border-[#303340] hover:bg-[#262833] transition-colors"><Plus size={14} className="text-[#7387ff]"/> 배너 추가</button>
-                 
-                 {exportState.isExporting ? (
-                   <div className="w-[200px] h-[34px] bg-[#1a1c26] border border-[#4f3df6] rounded-lg overflow-hidden relative flex items-center shadow-[0_0_15px_rgba(79,61,246,0.3)]">
-                     <div className="absolute inset-0 bg-[#4f3df6]/20 progress-stripes pointer-events-none"></div>
-                     <div className="absolute top-0 left-0 h-full bg-gradient-to-r from-[#4f3df6] to-[#7387ff] transition-all duration-300" style={{width: `${exportState.progress}%`}}></div>
-                     <span className="relative z-10 w-full text-center text-[10px] font-bold text-white flex items-center justify-center gap-1.5"><Loader2 size={12} className="animate-spin"/> {exportState.msg}</span>
-                   </div>
-                 ) : (
-                   <button onClick={handleExport} className="flex items-center gap-1.5 px-5 py-2 bg-[#4f3df6] hover:bg-[#6252ff] text-white rounded-lg text-xs font-bold shadow-lg shadow-[#4f3df6]/20 transition-all"><Send size={14}/> Jira 일감 전송</button>
-                 )}
-               </div>
-            </header>
+                    {assets.length > 1 && (
+                      <button onClick={(e) => removeAsset(activeAsset.id, e)} className="flex items-center gap-1.5 px-4 py-2 bg-red-500/10 text-red-400 rounded-lg text-xs font-bold border border-red-500/30 hover:bg-red-500/20 hover:text-red-300 transition-colors">
+                        <Trash2 size={14}/> 배너 삭제
+                      </button>
+                    )}
 
-            <div className="flex-1 relative overflow-hidden flex flex-col items-center justify-center p-12 bg-[#06070a]">
-              <div className="w-full max-w-[1000px] aspect-[16/9] bg-[#000000] rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.8)] border-[8px] border-[#1a1c26] relative overflow-hidden flex items-center justify-center">
-                <div id="capture-preview-area" className="w-full h-full relative">
-                   <PreviewDisplay block={activeAsset} onUpdate={handleAssetChange} />
-                   <OverlayMemos block={activeAsset} onUpdate={handleAssetChange} />
-                </div>
-              </div>
-            </div>
-
-            <div className="h-[180px] bg-[#0c0d14] border-t border-[#1a1c26] shrink-0 flex flex-col z-20">
-              <div className="flex px-6 py-2.5 justify-between items-center border-b border-[#1a1c26] bg-[#0f111a]">
-                <h3 className="text-[11px] font-bold text-slate-400 flex items-center gap-1.5"><ImageIcon size={12}/> Variant Assets ({assets.length})</h3>
-              </div>
-              
-              <div className="flex-1 overflow-x-auto custom-scrollbar flex items-center gap-4 px-6 bg-[#06070a]">
-                {assets.map((asset, idx) => (
-                  <div 
-                    key={asset.id} 
-                    className={`relative w-[200px] h-[120px] rounded-xl border-2 transition-all shrink-0 flex flex-col overflow-hidden group cursor-pointer ${activeTabId === asset.id ? 'border-[#4f3df6] shadow-[0_0_15px_rgba(79,61,246,0.3)]' : 'border-[#262833] hover:border-[#4f3df6]/50'}`}
-                    onClick={() => setActiveTabId(asset.id)}
-                  >
-                    <div className="h-[180px] bg-[#0c0d14] border-t border-[#1a1c26] shrink-0 flex flex-col z-20 pointer-events-none">
-                      <div className="absolute top-0 left-0 w-[1000px] origin-top-left transform scale-[0.2]">
-                        <PreviewDisplay block={asset} />
-                      </div>
-                      <div className="absolute inset-0 bg-black/10 group-hover:bg-transparent transition-colors"></div>
-                    </div>
+                    <button onClick={() => setIsAddAssetModalOpen(true)} className="flex items-center gap-1.5 px-4 py-2 bg-[#1a1c26] text-white rounded-lg text-xs font-bold border border-[#303340] hover:bg-[#262833] transition-colors"><Plus size={14} className="text-[#7387ff]"/> 배너 추가</button>
                     
-                    <div className={`h-[32px] px-3 flex justify-between items-center relative ${activeTabId === asset.id ? 'bg-[#4f3df6]' : 'bg-[#12141c]'}`}>
-                      <span className={`text-[10px] font-bold truncate pr-4 ${activeTabId === asset.id ? 'text-white' : 'text-slate-300'}`}>{asset.name}</span>
-                      {assets.length > 1 && (
-                        <button onClick={(e) => removeAsset(asset.id, e)} className={`absolute right-2 opacity-0 group-hover:opacity-100 p-1 rounded-full transition-all ${activeTabId === asset.id ? 'hover:bg-white/20 text-white' : 'hover:bg-red-500/20 text-red-400'}`}>
-                          <Trash2 size={10}/>
-                        </button>
-                      )}
+                    {exportState.isExporting ? (
+                      <div className="w-[200px] h-[34px] bg-[#1a1c26] border border-[#4f3df6] rounded-lg overflow-hidden relative flex items-center shadow-[0_0_15px_rgba(79,61,246,0.3)]">
+                        <div className="absolute inset-0 bg-[#4f3df6]/20 progress-stripes pointer-events-none"></div>
+                        <div className="absolute top-0 left-0 h-full bg-gradient-to-r from-[#4f3df6] to-[#7387ff] transition-all duration-300" style={{width: `${exportState.progress}%`}}></div>
+                        <span className="relative z-10 w-full text-center text-[10px] font-bold text-white flex items-center justify-center gap-1.5"><Loader2 size={12} className="animate-spin"/> {exportState.msg}</span>
+                      </div>
+                    ) : (
+                      <button onClick={handleExport} className="flex items-center gap-1.5 px-5 py-2 bg-[#4f3df6] hover:bg-[#6252ff] text-white rounded-lg text-xs font-bold shadow-lg shadow-[#4f3df6]/20 transition-all"><Send size={14}/> Jira 일감 전송</button>
+                    )}
+                  </div>
+                </header>
+
+                <div className="flex-1 relative overflow-hidden flex flex-col items-center justify-center p-12 bg-[#06070a]">
+                  <div className="w-full max-w-[1000px] aspect-[16/9] bg-[#000000] rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.8)] border-[8px] border-[#1a1c26] relative overflow-hidden flex items-center justify-center">
+                    <div id="capture-preview-area" className="w-full h-full relative">
+                      <PreviewDisplay block={activeAsset} onUpdate={handleAssetChange} />
+                      <OverlayMemos block={activeAsset} onUpdate={handleAssetChange} />
                     </div>
                   </div>
-                ))}
-              </div>
-            </div>
+                </div>
+
+                <div className="h-[180px] bg-[#0c0d14] border-t border-[#1a1c26] shrink-0 flex flex-col z-20">
+                  <div className="flex px-6 py-2.5 justify-between items-center border-b border-[#1a1c26] bg-[#0f111a]">
+                    <h3 className="text-[11px] font-bold text-slate-400 flex items-center gap-1.5"><ImageIcon size={12}/> Variant Assets ({assets.length})</h3>
+                  </div>
+                  
+                  <div className="flex-1 overflow-x-auto custom-scrollbar flex items-center gap-4 px-6 bg-[#06070a]">
+                    {assets.map((asset, idx) => (
+                      <div 
+                        key={asset.id} 
+                        className={`relative w-[200px] h-[120px] rounded-xl border-2 transition-all shrink-0 flex flex-col overflow-hidden group cursor-pointer ${activeTabId === asset.id ? 'border-[#4f3df6] shadow-[0_0_15px_rgba(79,61,246,0.3)]' : 'border-[#262833] hover:border-[#4f3df6]/50'}`}
+                        onClick={() => setActiveTabId(asset.id)}
+                      >
+                        <div className="h-[180px] bg-[#0c0d14] border-t border-[#1a1c26] shrink-0 flex flex-col z-20 pointer-events-none">
+                          <div className="absolute top-0 left-0 w-[1000px] origin-top-left transform scale-[0.2]">
+                            <PreviewDisplay block={asset} />
+                          </div>
+                          <div className="absolute inset-0 bg-black/10 group-hover:bg-transparent transition-colors"></div>
+                        </div>
+                        
+                        <div className={`h-[32px] px-3 flex justify-between items-center relative ${activeTabId === asset.id ? 'bg-[#4f3df6]' : 'bg-[#12141c]'}`}>
+                          <span className={`text-[10px] font-bold truncate pr-4 ${activeTabId === asset.id ? 'text-white' : 'text-slate-300'}`}>{asset.name}</span>
+                          {assets.length > 1 && (
+                            <button onClick={(e) => removeAsset(asset.id, e)} className={`absolute right-2 opacity-0 group-hover:opacity-100 p-1 rounded-full transition-all ${activeTabId === asset.id ? 'hover:bg-white/20 text-white' : 'hover:bg-red-500/20 text-red-400'}`}>
+                              <Trash2 size={10}/>
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </>
+            )}
+
           </main>
 
           {isSettingsOpen && (
@@ -2989,7 +3132,7 @@
 
         </div>
       );
-    } 
+    }
     const root = createRoot(document.getElementById('root'));
     root.render(<App />);
   </script>
