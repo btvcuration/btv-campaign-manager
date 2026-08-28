@@ -28,6 +28,15 @@
     .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #44464f; }
     .progress-stripes { background-image: linear-gradient(45deg, rgba(255, 255, 255, 0.15) 25%, transparent 25%, transparent 50%, rgba(255, 255, 255, 0.15) 50%, rgba(255, 255, 255, 0.15) 75%, transparent 75%, transparent); background-size: 1rem 1rem; animation: progress-stripes 1s linear infinite; }
     @keyframes progress-stripes { from { background-position: 1rem 0; } to { background-position: 0 0; } }
+    
+    /* 🌟 [신규 추가] 챗봇 마크다운 렌더링 스타일 */
+    .ai-chat-body h3 { font-size: 1.1em; font-weight: 900; color: #7387ff; margin-top: 12px; margin-bottom: 6px; }
+    .ai-chat-body h4 { font-size: 1em; font-weight: bold; color: #cbd5e1; margin-top: 10px; margin-bottom: 4px;}
+    .ai-chat-body ul { list-style-type: disc; padding-left: 20px; margin-top: 4px; margin-bottom: 8px; }
+    .ai-chat-body li { margin-bottom: 4px; }
+    .ai-chat-body p { margin-bottom: 8px; }
+    .ai-chat-body strong { color: #ffffff; font-weight: 900; }
+    .ai-chat-body hr { border-color: #303340; margin: 16px 0; }
   </style>
 </head>
 <body>
@@ -578,7 +587,7 @@
     };
     
     // ====================================================================================
-    // 🌟 [신규 추가 코드] AI 프로모션 기획 2단 레이아웃 (채팅 + 현황판) 컴포넌트
+    // 🌟 [전면 개편] AI 프로모션 기획 (양방향 폼 동기화 & 페이로드 최적화 반영)
     // ====================================================================================
     const AiPlannerView = ({ campaignMeta, setCampaignMeta, assets, setAssets, onMoveToEditor }) => {
       const [inputValue, setInputValue] = useState('');
@@ -587,91 +596,89 @@
         {
           id: 'msg-init',
           sender: 'ai',
-          text: '매니저님, 환영합니다.\n어떤 프로모션을 기획할 예정이신가요? 목적과 타겟, 일정 등을 편하게 말씀해 주세요.'
+          text: '매니저님, 환영합니다.\n어떤 프로모션을 기획하실 예정인가요? 우측 폼에 아시는 만큼 먼저 적어주셔도 좋고, 저와 대화하며 하나씩 채워가도 좋습니다!'
         }
       ]);
-      const [collectedInfo, setCollectedInfo] = useState('아직 수집된 기획 정보가 없습니다.');
-      const [mermaidCode, setMermaidCode] = useState('');
-      const mermaidRef = useRef(null);
       const chatEndRef = useRef(null);
+
+      // 우측 폼 수동 변경 핸들러
+      const handleMetaChange = (e) => {
+        setCampaignMeta(prev => ({ ...prev, [e.target.name]: e.target.value }));
+      };
 
       useEffect(() => {
         chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
       }, [chatHistory, isLoading]);
 
-      useEffect(() => {
-        if (mermaidCode && mermaidRef.current) {
-          try {
-            mermaidRef.current.innerHTML = '';
-            mermaid.render(`mermaid-svg-${Date.now()}`, mermaidCode).then(({ svg }) => {
-              if (mermaidRef.current) mermaidRef.current.innerHTML = svg;
-            });
-          } catch (error) { console.error("Mermaid 렌더링 에러:", error); }
-        }
-      }, [mermaidCode]);
-
-      // 🌟 [수정] 진짜 Gemini API 통신 로직으로 교체
       const handleSendMessage = async () => {
         if (!inputValue.trim()) return;
         
         const userMessage = inputValue.trim();
         setInputValue('');
         
-        // 1. 사용자 메시지 화면에 즉시 띄우기
         const newHistory = [...chatHistory, { id: `msg-${Date.now()}`, sender: 'user', text: userMessage }];
         setChatHistory(newHistory);
         setIsLoading(true);
 
         try {
-          // CF Proxy URL (매니저님의 백엔드 라우터)
           const proxyUrl = "https://btv-proxy.alcheminos.workers.dev";
           
+          // 🌟 페이로드 다이어트: 과거 대화 내역 중 무거운 JSON 블록은 텍스트로 치환하여 서버 부담 완화
+          const cleanHistory = newHistory.map(msg => ({
+            sender: msg.sender,
+            text: msg.text.replace(/```json[\s\S]*?```/g, '\n[JSON 처리 완료]\n')
+          }));
+
           const response = await fetch(proxyUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              action: 'chatWithGemini',
-              history: newHistory // 지금까지의 대화 내역 전체를 전송 (State Tracking)
+            body: JSON.stringify({ 
+              action: 'chatWithGemini', 
+              history: cleanHistory,
+              currentState: campaignMeta // 🌟 양방향 동기화: 현재 폼의 상태를 AI에게 전달
             })
           });
 
           if (!response.ok) throw new Error("서버 통신에 실패했습니다.");
           const resData = await response.json();
-          if (resData.status !== 'success') throw new Error(resData.message || "알 수 없는 에러가 발생했습니다.");
+          if (resData.status !== 'success') throw new Error(resData.message || "알 수 없는 에러");
 
-          const aiText = resData.text;
+          let displayAiText = resData.text;
 
-          // 2. [현재까지 수집된 정보] 추출하여 우측 패널 업데이트
-          const collectedMatch = aiText.match(/\*\*\[현재까지 수집된 정보\]\*\*[\s\S]*?(?=\n\n|$)/);
-          if (collectedMatch) {
-            setCollectedInfo(collectedMatch[0]);
-          }
+          // (만약 AI가 과거 프롬프트 습관으로 마크다운이나 Mermaid를 뱉는다면 화면에서 안 보이게 삭제)
+          const collectedMatch = displayAiText.match(/\*\*\[현재까지 수집된 정보\]\*\*[\s\S]*?(?=\n\n|$)/);
+          if (collectedMatch) displayAiText = displayAiText.replace(collectedMatch[0], '').trim();
 
-          // 3. Mermaid 코드 블록 추출하여 우측 플로우차트 업데이트
           const mermaidRegex = /```(?:mermaid)?\s*(graph TD|flowchart TD)[\s\S]*?```/;
-          const mMatch = aiText.match(mermaidRegex);
-          if (mMatch) {
-            const cleanMermaid = mMatch[0].replace(/```mermaid/g, '').replace(/```/g, '').trim();
-            setMermaidCode(cleanMermaid);
-          }
+          const mMatch = displayAiText.match(mermaidRegex);
+          if (mMatch) displayAiText = displayAiText.replace(mMatch[0], '').trim();
 
-          // 4. JSON 코드 블록 추출 (4단계 달성 시 작동 -> 메인 편집 화면으로 데이터 토스)
-          const jsonRegex = /```json\n([\s\S]*?)```/;
-          const jMatch = aiText.match(jsonRegex);
-          if (jMatch) {
+          // 🌟 JSON 블록 추출 및 로직 처리 (폼 채우기 OR 에셋 생성 후 넘어가기)
+          const jsonRegex = /```json\n([\s\S]*?)```/g;
+          let match;
+          while ((match = jsonRegex.exec(resData.text)) !== null) {
             try {
-              const parsedJson = JSON.parse(jMatch[1]);
-              if (parsedJson.action === "CREATE_CAMPAIGN_ASSETS") {
+              const parsedJson = JSON.parse(match[1]);
+              
+              // 1. AI가 누락된 정보를 파악해 폼 업데이트를 요청할 때
+              if (parsedJson.action === "UPDATE_STATE" && parsedJson.data) {
+                setCampaignMeta(prev => ({ ...prev, ...parsedJson.data }));
+              } 
+              // 2. 기획이 확정되어 최종 에셋 데이터를 뱉어낼 때
+              else if (parsedJson.action === "CREATE_CAMPAIGN_ASSETS") {
                 const event = new CustomEvent('RECEIVE_AI_DATA', { detail: parsedJson });
                 window.dispatchEvent(event);
+                // 어드민 시안 편집 화면(EDITOR)으로 자동 전환
+                setTimeout(() => onMoveToEditor(), 1500); 
               }
-            } catch (e) {
-              console.error("JSON 파싱 에러", e);
-            }
+              
+              // 채팅창이 지저분해지지 않도록 JSON 블록은 텍스트에서 삭제
+              displayAiText = displayAiText.replace(match[0], '').trim();
+            } catch (e) { console.error("JSON 파싱 에러", e); }
           }
 
-          // 5. 챗봇 화면에 AI가 보낸 진짜 응답 텍스트 추가
-          setChatHistory(prev => [...prev, { id: `msg-${Date.now()}`, sender: 'ai', text: aiText }]);
+          if (!displayAiText) displayAiText = "우측 기획 정보가 업데이트되었습니다!";
+          setChatHistory(prev => [...prev, { id: `msg-${Date.now()}`, sender: 'ai', text: displayAiText }]);
 
         } catch (error) {
           setChatHistory(prev => [...prev, { id: `msg-${Date.now()}`, sender: 'ai', text: "🚨 통신 에러 발생: " + error.message }]);
@@ -686,18 +693,22 @@
 
       return (
         <div className="flex h-full w-full bg-[#06070a] overflow-hidden gap-6 p-6">
-          {/* 좌측 챗봇 */}
-          <div className="w-[45%] flex flex-col bg-[#0f111a] border border-[#262833] rounded-2xl shadow-xl overflow-hidden shrink-0">
+          {/* 좌측 챗봇 (크기 소폭 확대, 다이어그램 영역 삭제에 따른 레이아웃 최적화) */}
+          <div className="w-[50%] flex flex-col bg-[#0f111a] border border-[#262833] rounded-2xl shadow-xl overflow-hidden shrink-0">
             <div className="px-6 py-4 border-b border-[#262833] bg-[#12141c] flex items-center gap-3">
               <div className="w-8 h-8 rounded-full bg-[#4f3df6]/20 flex items-center justify-center"><Bot size={18} className="text-[#7387ff]" /></div>
-              <h2 className="text-white font-bold text-lg tracking-tight">캠페인 오케스트레이터</h2>
+              <h2 className="text-white font-bold text-lg tracking-tight">AI 캠페인 오케스트레이터</h2>
             </div>
             <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar">
               {chatHistory.map((msg) => (
                 <div key={msg.id} className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
                   {msg.sender === 'ai' && <div className="w-8 h-8 rounded-full bg-[#262833] flex items-center justify-center mr-3 shrink-0"><Bot size={16} className="text-slate-300" /></div>}
-                  <div className={`max-w-[80%] rounded-2xl px-5 py-3.5 text-[15px] leading-relaxed whitespace-pre-wrap ${msg.sender === 'user' ? 'bg-[#4f3df6] text-white rounded-br-none shadow-[0_4px_15px_rgba(79,61,246,0.3)]' : 'bg-[#1a1c26] text-slate-200 border border-[#303340] rounded-bl-none shadow-md'}`}>
-                    {msg.text}
+                  {/* 🌟 마크다운 파서 및 CSS 클래스(ai-chat-body) 적용 */}
+                  <div 
+                    className={`max-w-[85%] rounded-2xl px-5 py-3.5 text-[15px] leading-relaxed ${msg.sender === 'user' ? 'bg-[#4f3df6] text-white rounded-br-none shadow-[0_4px_15px_rgba(79,61,246,0.3)] whitespace-pre-wrap' : 'bg-[#1a1c26] text-slate-200 border border-[#303340] rounded-bl-none shadow-md ai-chat-body'}`}
+                    dangerouslySetInnerHTML={msg.sender === 'ai' ? { __html: window.marked ? window.marked.parse(msg.text) : msg.text } : undefined}
+                  >
+                    {msg.sender === 'user' && msg.text}
                   </div>
                 </div>
               ))}
@@ -706,7 +717,7 @@
                   <div className="w-8 h-8 rounded-full bg-[#262833] flex items-center justify-center shrink-0"><Bot size={16} className="text-slate-300" /></div>
                   <div className="bg-[#1a1c26] border border-[#303340] rounded-2xl rounded-bl-none px-5 py-4 flex items-center gap-2">
                     <Loader2 size={16} className="text-[#7387ff] animate-spin" />
-                    <span className="text-sm text-slate-400 font-medium">정보를 분석하고 기획을 구성 중입니다...</span>
+                    <span className="text-sm text-slate-400 font-medium">대화를 분석하고 정보를 업데이트 중입니다...</span>
                   </div>
                 </div>
               )}
@@ -714,26 +725,76 @@
             </div>
             <div className="p-4 bg-[#12141c] border-t border-[#262833]">
               <div className="relative flex items-end bg-[#0a0812] border border-[#303340] rounded-xl overflow-hidden focus-within:border-[#4f3df6] transition-colors shadow-inner">
-                <textarea value={inputValue} onChange={(e) => setInputValue(e.target.value)} onKeyDown={handleKeyDown} placeholder="프로모션 목적, 일정, 타겟 등을 자유롭게 입력하세요. (Shift+Enter로 줄바꿈)" className="flex-1 max-h-[150px] min-h-[56px] bg-transparent text-white placeholder-slate-500 p-4 outline-none resize-none custom-scrollbar text-sm" rows={1} />
+                <textarea value={inputValue} onChange={(e) => setInputValue(e.target.value)} onKeyDown={handleKeyDown} placeholder="비어있는 폼 정보를 채우기 위해 자유롭게 대화하세요. (Shift+Enter로 줄바꿈)" className="flex-1 max-h-[150px] min-h-[56px] bg-transparent text-white placeholder-slate-500 p-4 outline-none resize-none custom-scrollbar text-sm" rows={1} />
                 <button onClick={handleSendMessage} disabled={!inputValue.trim() || isLoading} className="mb-2 mr-2 p-2.5 rounded-lg bg-[#4f3df6] text-white hover:bg-[#6252ff] disabled:bg-[#262833] disabled:text-slate-500 transition-colors shrink-0"><Send size={18} /></button>
               </div>
             </div>
           </div>
 
-          {/* 우측 현황판 */}
-          <div className="flex-1 flex flex-col gap-6 min-w-0">
-            <div className="bg-[#0f111a] border border-[#262833] rounded-2xl flex flex-col shadow-xl overflow-hidden shrink-0 h-[40%]">
-              <div className="px-5 py-3.5 border-b border-[#262833] bg-[#12141c] flex items-center gap-2"><FileText size={16} className="text-pink-400" /><h3 className="text-white font-bold text-[15px] tracking-tight">수집된 기획 정보</h3></div>
-              <div className="p-5 overflow-y-auto custom-scrollbar text-sm text-slate-300 leading-relaxed" dangerouslySetInnerHTML={{ __html: window.marked ? window.marked.parse(collectedInfo) : collectedInfo }} />
-            </div>
-            <div className="bg-[#0f111a] border border-[#262833] rounded-2xl flex flex-col shadow-xl overflow-hidden flex-1 min-h-0">
-              <div className="px-5 py-3.5 border-b border-[#262833] bg-[#12141c] flex items-center"><LayoutTemplate size={16} className="text-[#4f3df6] mr-2" /><h3 className="text-white font-bold text-[15px] tracking-tight">고객 Userflow 설계</h3></div>
-              <div className="flex-1 overflow-auto p-5 bg-[#0a0812] custom-scrollbar flex items-center justify-center">
-                {mermaidCode ? <div ref={mermaidRef} className="w-full flex justify-center mermaid-render-target" /> : <p className="text-slate-500 text-sm font-medium">대화를 진행하면 유저 플로우가 시각화됩니다.</p>}
+          {/* 우측 현황판: 실시간 연동 폼 */}
+          <div className="flex-1 flex flex-col gap-5 min-w-0">
+            <div className="bg-[#0f111a] border border-[#262833] rounded-2xl flex flex-col shadow-xl overflow-hidden flex-1">
+              <div className="px-6 py-4 border-b border-[#262833] bg-[#12141c] flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Settings size={18} className="text-pink-400" />
+                  <h3 className="text-white font-bold text-[16px] tracking-tight">실시간 캠페인 기획 폼</h3>
+                </div>
+                <span className="text-[10px] text-slate-400 font-bold bg-[#1a1c26] px-2 py-1 rounded-md border border-[#303340]">AI 자동 동기화 ⚡</span>
+              </div>
+              
+              <div className="p-6 overflow-y-auto custom-scrollbar space-y-6">
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-400 mb-1.5 ml-1">캠페인 / 프로젝트명</label>
+                    <input type="text" name="campaignName" value={campaignMeta.campaignName || ''} onChange={handleMetaChange} placeholder="대화를 통해 자동으로 채워집니다." className="w-full bg-[#0a0812] border border-[#303340] rounded-xl px-4 py-3 text-sm text-white focus:border-[#4f3df6] outline-none transition-all shadow-inner" />
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-bold text-slate-400 mb-1.5 ml-1">타겟 유형</label>
+                      <select name="target" value={campaignMeta.target || 'MASS'} onChange={handleMetaChange} className="w-full bg-[#0a0812] border border-[#303340] rounded-xl px-4 py-3 text-sm text-white focus:border-[#4f3df6] outline-none transition-all">
+                        <option value="MASS">MASS 타겟</option>
+                        <option value="TARGET">선별 TARGET</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-slate-400 mb-1.5 ml-1">타겟 모수</label>
+                      <input type="text" name="targetSize" value={campaignMeta.targetSize || ''} onChange={handleMetaChange} disabled={campaignMeta.target !== 'TARGET'} placeholder="모수 (예: 5만)" className="w-full bg-[#0a0812] border border-[#303340] rounded-xl px-4 py-3 text-sm text-white focus:border-[#4f3df6] outline-none transition-all disabled:opacity-30" />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-bold text-slate-400 mb-1.5 ml-1">시작일</label>
+                      <input type="date" name="startDate" value={campaignMeta.startDate || ''} onChange={handleMetaChange} className="w-full bg-[#0a0812] border border-[#303340] rounded-xl px-4 py-3 text-sm text-slate-200 outline-none focus:border-[#4f3df6] [&::-webkit-calendar-picker-indicator]:filter [&::-webkit-calendar-picker-indicator]:invert" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-slate-400 mb-1.5 ml-1">종료일</label>
+                      <input type="date" name="dueDate" value={campaignMeta.dueDate || ''} onChange={handleMetaChange} className="w-full bg-[#0a0812] border border-[#303340] rounded-xl px-4 py-3 text-sm text-slate-200 outline-none focus:border-[#4f3df6] [&::-webkit-calendar-picker-indicator]:filter [&::-webkit-calendar-picker-indicator]:invert" />
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-bold text-slate-400 mb-1.5 ml-1">쿠폰 발급 여부</label>
+                      <select name="hasCoupon" value={campaignMeta.hasCoupon || 'N'} onChange={handleMetaChange} className="w-full bg-[#0a0812] border border-[#303340] rounded-xl px-4 py-3 text-sm text-white focus:border-[#4f3df6] outline-none transition-all">
+                        <option value="N">미포함 (N)</option>
+                        <option value="Y">포함 (Y)</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-slate-400 mb-1.5 ml-1">쿠폰 혜택 (선택)</label>
+                      <input type="text" name="couponBenefit" value={campaignMeta.couponBenefit || ''} onChange={handleMetaChange} disabled={campaignMeta.hasCoupon === 'N'} placeholder="예: 2,000원 할인" className="w-full bg-[#0a0812] border border-[#303340] rounded-xl px-4 py-3 text-sm text-white focus:border-[#4f3df6] outline-none transition-all disabled:opacity-30" />
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
-            <div className="flex justify-end mt-auto shrink-0">
-              <button onClick={onMoveToEditor} className="flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-[#4f3df6] to-[#7387ff] hover:from-[#6252ff] hover:to-[#8aa0ff] text-white rounded-xl font-black text-[16px] shadow-[0_10px_25px_rgba(79,61,246,0.4)] transition-all transform hover:-translate-y-1">기획안 확정 및 시안 작업 이동 <ChevronRight size={20} /></button>
+
+            <div className="flex justify-end shrink-0">
+              <button onClick={() => onMoveToEditor()} className="flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-[#1a1c26] to-[#262833] hover:from-[#303340] hover:to-[#44464f] text-slate-300 hover:text-white border border-[#303340] rounded-xl font-bold text-[14px] transition-all shadow-md">
+                건너뛰고 수동으로 시안 편집 <ChevronRight size={18} />
+              </button>
             </div>
           </div>
         </div>
@@ -1036,7 +1097,7 @@
         setExportState({ isExporting: true, progress: 10, msg: "최신 확장프로그램 패킹 준비 중..." });
         try {
           const zip = new window.JSZip();
-          const filesToFetch = ["manifest.json", "background.js", "content.js", "content_gemini.js", "mermaid.min.js"];
+          const filesToFetch = ["manifest.json", "background.js", "content.js"];
           const baseUrl = "https://raw.githubusercontent.com/btvcuration/campaign/main/Tool";
 
           for (let i = 0; i < filesToFetch.length; i++) {
