@@ -1210,13 +1210,20 @@
               <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className={`w-full aspect-square rounded-xl flex items-center justify-center transition-all ${isSidebarOpen ? 'bg-[#1a1c26] text-white border border-[#303340]' : 'text-slate-500 hover:text-white hover:bg-[#1a1c26]'}`}>
                 <Menu size={20} />
               </button>
-            </div>
-            <div className="mt-auto w-full px-3">
-              <button onClick={handleSettingsClick} className="w-full aspect-square rounded-xl flex items-center justify-center text-slate-500 hover:text-white hover:bg-[#1a1c26] transition-all">
-                <Settings size={22} />
+
+              {/* 🌟 [수정됨] 뷰 전환 네비게이션 버튼 3개 (리스트, 기획, 시안) */}
+              <button onClick={() => setCurrentView('LIST')} className={`w-full aspect-square rounded-xl flex items-center justify-center transition-all ${currentView === 'LIST' ? 'bg-[#4f3df6] text-white shadow-lg shadow-[#4f3df6]/30' : 'text-slate-500 hover:text-white hover:bg-[#1a1c26]'}`} title="프로모션 현황 리스트">
+                <ListTodo size={22} />
+              </button>
+
+              <button onClick={() => setCurrentView('PLANNER')} className={`w-full aspect-square rounded-xl flex items-center justify-center transition-all ${currentView === 'PLANNER' ? 'bg-[#4f3df6] text-white shadow-lg shadow-[#4f3df6]/30' : 'text-slate-500 hover:text-white hover:bg-[#1a1c26]'}`} title="AI 프로모션 기획">
+                <Bot size={22} />
+              </button>
+              
+              <button onClick={() => setCurrentView('EDITOR')} className={`w-full aspect-square rounded-xl flex items-center justify-center transition-all ${currentView === 'EDITOR' ? 'bg-[#4f3df6] text-white shadow-lg shadow-[#4f3df6]/30' : 'text-slate-500 hover:text-white hover:bg-[#1a1c26]'}`} title="배너 시안 편집">
+                <LayoutTemplate size={22} />
               </button>
             </div>
-          </nav>
 
           {isSidebarOpen && (
             <aside className="w-[360px] bg-[#0c0d14] border-r border-[#1a1c26] flex flex-col h-full z-10 shrink-0 shadow-[10px_0_30px_rgba(0,0,0,0.5)]">
