@@ -702,14 +702,24 @@
             <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar">
               {chatHistory.map((msg) => (
                 <div key={msg.id} className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
-                  {msg.sender === 'ai' && <div className="w-8 h-8 rounded-full bg-[#262833] flex items-center justify-center mr-3 shrink-0"><Bot size={16} className="text-slate-300" /></div>}
-                  {/* 🌟 마크다운 파서 및 CSS 클래스(ai-chat-body) 적용 */}
-                  <div 
-                    className={`max-w-[85%] rounded-2xl px-5 py-3.5 text-[15px] leading-relaxed ${msg.sender === 'user' ? 'bg-[#4f3df6] text-white rounded-br-none shadow-[0_4px_15px_rgba(79,61,246,0.3)] whitespace-pre-wrap' : 'bg-[#1a1c26] text-slate-200 border border-[#303340] rounded-bl-none shadow-md ai-chat-body'}`}
-                    dangerouslySetInnerHTML={msg.sender === 'ai' ? { __html: window.marked ? window.marked.parse(msg.text) : msg.text } : undefined}
-                  >
-                    {msg.sender === 'user' && msg.text}
-                  </div>
+                  {msg.sender === 'ai' && (
+                    <div className="w-8 h-8 rounded-full bg-[#262833] flex items-center justify-center mr-3 shrink-0">
+                      <Bot size={16} className="text-slate-300" />
+                    </div>
+                  )}
+                  
+                  {/* 🌟 [수정됨] React Error #60 해결: 유저 말풍선과 AI 말풍선을 완전히 분리하여 렌더링 */}
+                  {msg.sender === 'user' ? (
+                    <div className="max-w-[85%] rounded-2xl px-5 py-3.5 text-[15px] leading-relaxed bg-[#4f3df6] text-white rounded-br-none shadow-[0_4px_15px_rgba(79,61,246,0.3)] whitespace-pre-wrap">
+                      {msg.text}
+                    </div>
+                  ) : (
+                    <div 
+                      className="max-w-[85%] rounded-2xl px-5 py-3.5 text-[15px] leading-relaxed bg-[#1a1c26] text-slate-200 border border-[#303340] rounded-bl-none shadow-md ai-chat-body"
+                      dangerouslySetInnerHTML={{ __html: window.marked ? window.marked.parse(msg.text) : msg.text }}
+                    />
+                  )}
+
                 </div>
               ))}
               {isLoading && (
