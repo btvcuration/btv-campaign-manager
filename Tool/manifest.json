@@ -1,0 +1,28 @@
+{
+  "name": "B tv Campaign to Jira",
+  "version": "1.2",
+  "manifest_version": 3,
+  "permissions": [
+    "scripting",
+    "tabs",
+    "activeTab"
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://btvcuration.github.io/*", 
+        "http://localhost:*/*"
+      ],
+      "js": ["content.js"]
+    }
+  ],
+  "action": {
+    "default_title": "Open Campaign Manager"
+  }
+}
