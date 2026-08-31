@@ -292,8 +292,35 @@ async function createJiraHierarchy(data, sourceTabId) {
       // 💡 [수정] 모아서 한 번에 쏠 빈 배열(바구니) 생성
       let bulkPayload = [];
 
-      // 🌟 [background.js 수정]
-      // 분할된 청크(Chunks) 단위로 루프를 돌며 데이터 수집
+      // 🌟 [추가됨] 1. 가장 먼저 '모일감(Parent)' 전용 마스터 행을 추가합니다!
+      // 이 행이 Code.gs에서 idx === 0 이 되어 U열에 전체 JSON(에셋, 메타, 머메이드)이 저장됩니다.
+      bulkPayload.push({
+        parentJira: `${baseUrl}/browse/${parentKey}`,
+        childJira: `${baseUrl}/browse/${parentKey}`, // 모일감이므로 자기 자신 링크
+        campaignName: meta.campaignName || '신규 캠페인',
+        product: meta.product || '',
+        targetType: meta.target || 'MASS',
+        channel: '캠페인 전체', 
+        hasBanner: assets.length > 0 ? 'Y' : 'N',
+        taskType: '캠페인 모일감', // 구분하기 쉽도록 명시
+        startDate: meta.startDate || '',
+        endDate: meta.dueDate || '',
+        assignee: assignee || '',
+        targetSize: parseInt(meta.targetSize) || 0,
+        targetCondition: meta.targetCondition || '',
+        notiChannel: '',
+        mainCopy: meta.conceptCopy || '캠페인 마스터',
+        landingUrl: '',
+        designLink: meta.mainImageUrl || '',
+        hasCoupon: (meta.hasCoupon || '').trim().toUpperCase() === 'Y' ? 'Y' : 'N',
+        
+        // 🌟 Code.gs가 파싱해서 U열에 넣을 마스터 데이터 객체들
+        assets: assets,
+        mermaidCode: data.rawGasData.mermaidCode || "",
+        meta: meta
+      });
+
+      // 🌟 2. 그 다음 기존처럼 자식 일감(배너 에셋)들을 루프 돌며 추가합니다.
       for (let c = 0; c < chunks.length; c++) {
         const chunkSize = chunks[c];
         const suffix = chunks.length > 1 ? `_${c + 1}` : '';
