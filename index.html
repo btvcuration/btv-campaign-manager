@@ -1447,14 +1447,30 @@
 
       const activeAsset = assets.find(a => a.id === activeTabId) || assets[0];
 
-      // 🌟 프로모션 관리 화면에서 "불러와서 수정"을 눌렀을 때: 상태를 채우고 편집 화면으로 전환
-      const handleLoadCampaign = (meta, loadedAssets) => {
+      // 🌟 [최종 개편] 과거 캠페인 불러오기 & 복제 시 완벽 복원 및 기획 탭 이동
+      const handleLoadCampaign = (meta, loadedAssets, loadedMermaid) => {
+        // 1. 에디터용 메타와 AI 기획 폼용 메타를 동시에 채워줍니다!
         setCampaignMeta(prev => ({ ...prev, ...meta }));
+        setAiCampaignMeta(prev => ({ ...prev, ...meta }));
+        
+        // 2. 에셋(배너) 복구
         if (loadedAssets && loadedAssets.length > 0) {
           setAssets(loadedAssets);
           setActiveTabId(loadedAssets[0].id);
+        } else {
+          setAssets([]);
+          setActiveTabId(null);
         }
-        setCurrentView('EDITOR');
+
+        // 3. 머메이드 코드(유저플로우) 복구
+        if (loadedMermaid) {
+          setMermaidCode(loadedMermaid);
+        } else {
+          setMermaidCode('');
+        }
+        
+        // 4. 에디터가 아닌 'AI 프로모션 기획(PLANNER)' 화면으로 즉시 이동합니다!
+        setCurrentView('PLANNER');
         setIsSidebarOpen(true);
       };
 
