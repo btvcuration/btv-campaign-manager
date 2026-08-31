@@ -1475,7 +1475,8 @@
         const finalData = {
           parent: { title: `[캠페인] ${meta.campaignName || "신규 캠페인"}`, desc: parentDescText, assignee: cleanAssignee, startDate: meta.startDate, dueDate: meta.dueDate, images: parentImagesToUpload, comment: parentCommentText },
           children: childIssues,
-          rawGasData: { meta: meta, assignee: cleanAssignee, assets: assets }
+          // 🌟 [추가됨] 백엔드(U열)에 저장할 머메이드 코드를 패키징에 포함시킵니다.
+          rawGasData: { meta: meta, assignee: cleanAssignee, assets: assets, mermaidCode: mermaidCode } 
         };
         const event = new CustomEvent('TEST_JIRA_SEND', { detail: finalData });
         window.dispatchEvent(event);
