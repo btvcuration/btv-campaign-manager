@@ -1,3 +1,13 @@
+// 🌟 [추가됨] 프론트엔드가 확장앱 설치 여부와 버전을 즉시 인식할 수 있도록 DOM에 마커 삽입
+if (!document.getElementById('btv-campaign-extension-installed')) {
+  const checkNode = document.createElement('div');
+  checkNode.id = 'btv-campaign-extension-installed';
+  checkNode.style.display = 'none';
+  // manifest.json의 버전에 맞춰 1.2.0으로 수정했습니다.
+  checkNode.setAttribute('data-version', '1.2.0'); 
+  document.body.appendChild(checkNode);
+}
+
 // 1. 기존 Jira 전송 신호 중계 (React -> Extension -> Jira)
 window.addEventListener('TEST_JIRA_SEND', (e) => {
   chrome.runtime.sendMessage({
