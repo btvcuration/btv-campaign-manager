@@ -53,6 +53,23 @@
       Image as ImageIcon, ListTodo, Smartphone, LayoutPanelLeft, MonitorPlay, Sparkles, Bot, 
       X, User, ExternalLink, Monitor, Layout, Type, RectangleHorizontal, FileText, CalendarDays, MessageSquare, Loader2, Lock, Users, Download, RefreshCw, Inbox, FolderOpen, PanelLeftOpen, PanelLeftClose
     } from 'lucide-react';
+    
+    // 🌟 [신규 추가] 3단 유저플로우 시뮬레이터 렌더링용 컴포넌트
+    const MermaidViewer = ({ code }) => {
+      const containerRef = useRef(null);
+      useEffect(() => {
+        if (code && containerRef.current && window.mermaid) {
+          containerRef.current.innerHTML = ''; 
+          window.mermaid.initialize({ startOnLoad: false, theme: 'dark', securityLevel: 'loose' });
+          window.mermaid.render(`mermaid-${Date.now()}`, code).then(({svg}) => {
+            if(containerRef.current) containerRef.current.innerHTML = svg;
+          }).catch(e => console.error("Mermaid Render Error:", e));
+        }
+      }, [code]);
+      
+      if (!code) return null;
+      return <div ref={containerRef} className="w-full flex justify-center items-center overflow-auto custom-scrollbar p-4" />;
+    };
 
     const GNB_OPTIONS = ['홈', 'Btv+', '영화시리즈', 'TV 방송', '무료', '애니메이션', '해피시니어', '키즈', 'OTT홈', '실시간 채널', '광고 홈', '콘텐츠', '기타'];
 
@@ -535,21 +552,19 @@
     };
     
     // ====================================================================================
-    // 🌟 [최종 개편] AI 프로모션 기획 뷰 (대기열 상태 추가 및 명시적 버튼 이동)
+    // 🌟 [최종 개편] AI 프로모션 기획 뷰 (폼 확장, 팝업 제어, 머메이드 렌더링)
     // ====================================================================================
-    const AiPlannerView = ({ campaignMeta, setCampaignMeta, chatHistory, setChatHistory, assets, onMoveToEditor }) => {
+    const AiPlannerView = ({ campaignMeta, setCampaignMeta, chatHistory, setChatHistory, mermaidCode, onMoveToEditor }) => {
       const [inputValue, setInputValue] = useState('');
       const [isLoading, setIsLoading] = useState(false);
-      const [pendingAiPayload, setPendingAiPayload] = useState(null); // 🌟 추가: AI가 던져준 에셋을 적용하지 않고 임시로만 쥐고 있는 상태
+      const [pendingAiPayload, setPendingAiPayload] = useState(null); 
       const chatEndRef = useRef(null);
 
       const handleMetaChange = (e) => {
         setCampaignMeta(prev => ({ ...prev, [e.target.name]: e.target.value }));
       };
 
-      useEffect(() => {
-        chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-      }, [chatHistory, isLoading]);
+      useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [chatHistory, isLoading]);
 
       const handleSendMessage = async () => {
         if (!inputValue.trim()) return;
@@ -579,6 +594,8 @@
           let displayAiText = resData.text;
           const collectedMatch = displayAiText.match(/\*\*\[현재까지 수집된 정보\]\*\*[\s\S]*?(?=\n\n|$)/);
           if (collectedMatch) displayAiText = displayAiText.replace(collectedMatch[0], '').trim();
+
+          // 화면에 출력되는 머메이드 코드 제거
           const mermaidRegex = /```(?:mermaid)?\s*(graph TD|flowchart TD)[\s\S]*?```/;
           const mMatch = displayAiText.match(mermaidRegex);
           if (mMatch) displayAiText = displayAiText.replace(mMatch[0], '').trim();
@@ -589,17 +606,18 @@
             try {
               const parsedJson = JSON.parse(match[1]);
               if (parsedJson.action === "UPDATE_STATE" && parsedJson.data) {
-                // 🌟 [수정 3번 반영] 어떤 컨셉 키값이 들어오든 유연하게 캐치해서 폼에 뿌려줌
                 const d = parsedJson.data;
-                if (!d.conceptCopy && (d.concept || d.mainCopy || d.keyConcept)) {
-                  d.conceptCopy = d.concept || d.mainCopy || d.keyConcept;
-                }
+                // AI가 옛날 Key값으로 보내도 유연하게 수용, 배열은 텍스트로 변환
+                if (!d.conceptCopy && (d.concept || d.mainCopy || d.keyConcept)) d.conceptCopy = d.concept || d.mainCopy || d.keyConcept;
+                if (Array.isArray(d.bannerTypes)) d.bannerTypes = d.bannerTypes.join(', ');
+                if (Array.isArray(d.gnbLocations)) d.gnbLocations = d.gnbLocations.join(', ');
+                
                 setCampaignMeta(prev => ({ ...prev, ...d }));
               } 
               else if (parsedJson.action === "CREATE_CAMPAIGN_ASSETS") {
-                // 🌟 [수정 4번 반영] 에셋을 강제로 덮어씌우지 않고 상태에 조용히 저장만 함
+                // 🌟 임시 저장소(대기열)에만 두고 화면 전환은 안 함
                 setPendingAiPayload(parsedJson);
-                displayAiText = "매니저님, 기획안 데이터가 준비되었습니다! 추가로 수정할 부분이 없다면, 하단의 **[완성된 기획안으로 시안 편집 이동]** 버튼을 눌러 디자인 작업을 시작해 주세요.";
+                displayAiText = "매니저님, 우측 **'비주얼 유저플로우 시뮬레이터'**에 플로우차트가 렌더링되었습니다! 확인해 보시고, 마음에 드신다면 하단의 **[완성된 기획안으로 시안 편집 이동]** 버튼을 눌러 디자인 작업을 시작해 주세요.";
               }
               displayAiText = displayAiText.replace(match[0], '').trim();
             } catch (e) { console.error("JSON 파싱 에러", e); }
@@ -615,9 +633,10 @@
         }
       };
 
-      const handleKeyDown = (e) => {
-        if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendMessage(); }
-      };
+      const handleKeyDown = (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendMessage(); } };
+
+      // 우측 시뮬레이터에 그릴 머메이드 코드 (대기열 우선)
+      const displayMermaid = pendingAiPayload?.mermaidCode || pendingAiPayload?.rawGasData?.mermaidCode || mermaidCode;
 
       return (
         <div className="flex h-full w-full bg-[#06070a] overflow-hidden p-6 gap-6">
@@ -626,11 +645,8 @@
             <div className="px-5 py-4 border-b border-[#262833] bg-[#12141c] flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="w-7 h-7 rounded-full bg-[#4f3df6]/20 flex items-center justify-center"><Bot size={16} className="text-[#7387ff]" /></div>
-                <h2 className="text-white font-bold text-[15px] tracking-tight">AI 기획</h2>
+                <h2 className="text-white font-bold text-[15px] tracking-tight">AI 오케스트레이터</h2>
               </div>
-              <a href="https://docs.google.com/spreadsheets/d/1DdmCQd8jPuWp3Z6NmM3yRHGx4Cc7XhxXEhnpJUD6hpE/edit?usp=sharing" target="_blank" rel="noreferrer" className="flex items-center gap-1.5 px-2.5 py-1.5 bg-[#1a1c26] hover:bg-[#262833] text-slate-400 hover:text-white rounded border border-[#303340] text-[10px] font-bold transition-colors">
-                <ExternalLink size={12}/> 통합일정 DB 원본
-              </a>
             </div>
             
             <div className="flex-1 overflow-y-auto p-5 space-y-6 custom-scrollbar">
@@ -657,7 +673,6 @@
               )}
               <div ref={chatEndRef} />
             </div>
-            
             <div className="p-3 bg-[#12141c] border-t border-[#262833]">
               <div className="relative flex items-end bg-[#0a0812] border border-[#303340] rounded-xl overflow-hidden focus-within:border-[#4f3df6] transition-colors">
                 <textarea value={inputValue} onChange={(e) => setInputValue(e.target.value)} onKeyDown={handleKeyDown} placeholder="프로모션 목적이나 타겟을 편하게 말씀해 주세요." className="flex-1 max-h-[120px] min-h-[48px] bg-transparent text-white placeholder-slate-500 px-4 py-3 outline-none resize-none custom-scrollbar text-xs" rows={1} />
@@ -678,7 +693,6 @@
                 <label className="block text-[11px] font-bold text-slate-400 mb-1 ml-1">캠페인 / 프로젝트명</label>
                 <input type="text" name="campaignName" value={campaignMeta.campaignName || ''} onChange={handleMetaChange} placeholder="자동 채움 또는 직접 입력" className="w-full bg-[#0a0812] border border-[#303340] rounded-lg px-3 py-2.5 text-xs text-white focus:border-[#4f3df6] outline-none transition-all" />
               </div>
-
               <div>
                 <label className="block text-[11px] font-bold text-slate-400 mb-1 ml-1">대상 상품 (VOD / 월정액 등)</label>
                 <input type="text" name="product" value={campaignMeta.product || ''} onChange={handleMetaChange} placeholder="예: 악마는 프라다를 입는다 2" className="w-full bg-[#0a0812] border border-[#303340] rounded-lg px-3 py-2.5 text-xs text-white focus:border-[#4f3df6] outline-none transition-all" />
@@ -688,25 +702,29 @@
                 <div>
                   <label className="block text-[11px] font-bold text-slate-400 mb-1 ml-1">타겟 유형</label>
                   <select name="target" value={campaignMeta.target || ''} onChange={handleMetaChange} className="w-full bg-[#0a0812] border border-[#303340] rounded-lg px-3 py-2.5 text-xs text-white focus:border-[#4f3df6] outline-none transition-all">
-                    <option value="" disabled>선택</option>
-                    <option value="MASS">MASS</option>
-                    <option value="TARGET">TARGET</option>
+                    <option value="" disabled>선택</option><option value="MASS">MASS</option><option value="TARGET">TARGET</option>
                   </select>
                 </div>
                 <div>
                   <label className="block text-[11px] font-bold text-slate-400 mb-1 ml-1">타겟 모수</label>
                   <input type="text" name="targetSize" value={campaignMeta.targetSize || ''} onChange={handleMetaChange} disabled={campaignMeta.target !== 'TARGET'} placeholder="예: 5만명" className="w-full bg-[#0a0812] border border-[#303340] rounded-lg px-3 py-2.5 text-xs text-white focus:border-[#4f3df6] outline-none transition-all disabled:opacity-30" />
+                  
+                  {/* 🌟 타겟 Capa 검증 UI 추가 */}
+                  <label className={`flex items-center gap-1.5 mt-2 ml-1 cursor-pointer transition-opacity ${campaignMeta.target === 'TARGET' ? 'opacity-100' : 'opacity-30 pointer-events-none'}`}>
+                    <input type="checkbox" checked={campaignMeta.isCapaChecked || false} onChange={(e) => setCampaignMeta(prev => ({...prev, isCapaChecked: e.target.checked}))} className="w-3 h-3 accent-pink-500" />
+                    <span className="text-[10px] text-pink-400 font-bold">타겟 Capa 검증 완료</span>
+                  </label>
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-[11px] font-bold text-slate-400 mb-1 ml-1">시작일</label>
-                  <input type="date" name="startDate" min={new Date(new Date().getTime() - (new Date().getTimezoneOffset() * 60000)).toISOString().split('T')[0]} value={campaignMeta.startDate || ''} onChange={handleMetaChange} className="w-full bg-[#0a0812] border border-[#303340] rounded-lg px-3 py-2 text-xs text-slate-200 outline-none focus:border-[#4f3df6] [&::-webkit-calendar-picker-indicator]:filter [&::-webkit-calendar-picker-indicator]:invert" />
+                  <input type="date" name="startDate" value={campaignMeta.startDate || ''} onChange={handleMetaChange} className="w-full bg-[#0a0812] border border-[#303340] rounded-lg px-3 py-2 text-xs text-slate-200 outline-none focus:border-[#4f3df6] [&::-webkit-calendar-picker-indicator]:filter [&::-webkit-calendar-picker-indicator]:invert" />
                 </div>
                 <div>
                   <label className="block text-[11px] font-bold text-slate-400 mb-1 ml-1">종료일</label>
-                  <input type="date" name="dueDate" min={new Date(new Date().getTime() - (new Date().getTimezoneOffset() * 60000)).toISOString().split('T')[0]} value={campaignMeta.dueDate || ''} onChange={handleMetaChange} className="w-full bg-[#0a0812] border border-[#303340] rounded-lg px-3 py-2 text-xs text-slate-200 outline-none focus:border-[#4f3df6] [&::-webkit-calendar-picker-indicator]:filter [&::-webkit-calendar-picker-indicator]:invert" />
+                  <input type="date" name="dueDate" value={campaignMeta.dueDate || ''} onChange={handleMetaChange} className="w-full bg-[#0a0812] border border-[#303340] rounded-lg px-3 py-2 text-xs text-slate-200 outline-none focus:border-[#4f3df6] [&::-webkit-calendar-picker-indicator]:filter [&::-webkit-calendar-picker-indicator]:invert" />
                 </div>
               </div>
 
@@ -714,9 +732,7 @@
                 <div>
                   <label className="block text-[11px] font-bold text-slate-400 mb-1 ml-1">쿠폰 발급 여부</label>
                   <select name="hasCoupon" value={campaignMeta.hasCoupon || ''} onChange={handleMetaChange} className="w-full bg-[#0a0812] border border-[#303340] rounded-lg px-3 py-2.5 text-xs text-white focus:border-[#4f3df6] outline-none transition-all">
-                    <option value="" disabled>선택</option>
-                    <option value="N">미포함 (N)</option>
-                    <option value="Y">포함 (Y)</option>
+                    <option value="" disabled>선택</option><option value="N">미포함 (N)</option><option value="Y">포함 (Y)</option>
                   </select>
                 </div>
                 <div>
@@ -725,14 +741,24 @@
                 </div>
               </div>
 
+              {/* 🌟 확장 필드: 배너 유형 및 GNB 위치 추가 */}
+              <div className="grid grid-cols-2 gap-3 pt-2 border-t border-[#1a1c26]">
+                <div className="col-span-2">
+                  <label className="block text-[11px] font-bold text-slate-400 mb-1 ml-1">제작 배너 유형</label>
+                  <input type="text" name="bannerTypes" value={campaignMeta.bannerTypes || ''} onChange={handleMetaChange} placeholder="예: 빅배너, 띠배너 (직접 수정 가능)" className="w-full bg-[#0a0812] border border-[#303340] rounded-lg px-3 py-2 text-xs text-white focus:border-[#4f3df6] outline-none transition-all" />
+                </div>
+                <div className="col-span-2">
+                  <label className="block text-[11px] font-bold text-slate-400 mb-1 ml-1">편성 GNB 위치</label>
+                  <input type="text" name="gnbLocations" value={campaignMeta.gnbLocations || ''} onChange={handleMetaChange} placeholder="예: 영화시리즈, TV 방송" className="w-full bg-[#0a0812] border border-[#303340] rounded-lg px-3 py-2 text-xs text-white focus:border-[#4f3df6] outline-none transition-all" />
+                </div>
+              </div>
+
               <div className="pt-2 border-t border-[#1a1c26]">
                 <label className="block text-[11px] font-bold text-slate-400 mb-1 ml-1 flex justify-between">
                   <span>Key 컨셉 & 대표 문구</span>
-                  <span className="text-[#7387ff] text-[9px] font-normal">AI가 배너에 맞게 변형합니다.</span>
                 </label>
                 <textarea name="conceptCopy" value={campaignMeta.conceptCopy || ''} onChange={handleMetaChange} placeholder="프로모션의 핵심 카피나 톤앤매너를 입력하세요." className="w-full bg-[#0a0812] border border-[#303340] rounded-lg px-3 py-2.5 text-xs text-white focus:border-[#4f3df6] outline-none transition-all h-20 resize-none custom-scrollbar" />
               </div>
-
               <div>
                 <label className="block text-[11px] font-bold text-slate-400 mb-1 ml-1 flex items-center gap-1"><ImageIcon size={10}/> 메인 키비주얼 URL</label>
                 <input type="text" name="mainImageUrl" value={campaignMeta.mainImageUrl || ''} onChange={handleMetaChange} placeholder="https://... (입력 시 모든 시안에 자동 적용)" className="w-full bg-[#0a0812] border border-[#303340] rounded-lg px-3 py-2.5 text-xs text-[#7387ff] focus:border-[#4f3df6] outline-none transition-all" />
@@ -740,12 +766,9 @@
             </div>
             
             <div className="p-3 bg-[#12141c] border-t border-[#262833]">
-              {/* 🌟 [수정 4번 반영] 버튼을 눌렀을 때만 부모의 함수(onMoveToEditor)로 대기 중인 에셋 데이터를 발사! */}
+              {/* 🌟 팝업 없이 부모 함수로 데이터만 넘기고 에디터 뷰로 이동시킴 */}
               <button 
-                onClick={() => { 
-                  onMoveToEditor(pendingAiPayload); 
-                  setPendingAiPayload(null); 
-                }} 
+                onClick={() => { onMoveToEditor(pendingAiPayload); setPendingAiPayload(null); }} 
                 className="w-full flex items-center justify-center gap-1.5 px-4 py-3 bg-gradient-to-r from-[#4f3df6] to-[#7387ff] text-white rounded-lg font-black text-[13px] shadow-[0_0_15px_rgba(79,61,246,0.3)] hover:shadow-[0_0_25px_rgba(79,61,246,0.5)] hover:-translate-y-0.5 transition-all"
               >
                 완성된 기획안으로 시안 편집 이동 <ChevronRight size={16} />
@@ -753,63 +776,20 @@
             </div>
           </div>
 
-          {/* 3단: 우측 안내 영역 (33%) */}
+          {/* 3단: 우측 머메이드 시뮬레이터 (33%) */}
           <div className="flex-1 flex flex-col bg-[#0f111a] border border-[#262833] rounded-2xl shadow-xl overflow-hidden min-w-[320px]">
             <div className="px-5 py-4 border-b border-[#262833] bg-[#12141c] flex items-center justify-between">
               <h3 className="text-white font-bold text-[15px] tracking-tight flex items-center gap-2"><LayoutTemplate size={16} className="text-cyan-400" /> 비주얼 유저플로우 시뮬레이터</h3>
             </div>
-            <div className="flex-1 p-5 overflow-y-auto custom-scrollbar bg-[#0a0812] flex flex-col items-center">
-              
-              {(() => {
-                // 🌟 [핵심 로직] AI가 방금 만든 대기열 데이터가 있으면 그걸 쓰고, 없으면 기존 에셋 사용
-                const displayAssets = pendingAiPayload?.rawGasData?.assets || pendingAiPayload?.assets || assets || [];
-
-                if (!displayAssets || displayAssets.length === 0) {
-                  return (
-                    <div className="m-auto flex flex-col items-center gap-3 text-slate-500 opacity-50 justify-center h-full">
-                      <LayoutTemplate size={32} />
-                      <p className="text-xs font-bold text-center">AI와 대화를 통해 기획안이 확정되면<br/>이곳에서 시뮬레이션 됩니다.</p>
-                    </div>
-                  );
-                }
-
-                return (
-                  <div className="flex flex-col gap-4 w-full max-w-[280px]">
-                    {displayAssets.map((asset, idx) => {
-                      const templateImg = TEMPLATE_URLS[asset.type] || 'https://raw.githubusercontent.com/btvcuration/campaign/main/assets/images/ui-templates/general_banner_2col.png';
-                      const gnbs = Array.isArray(asset.data?.gnb) ? asset.data.gnb : [asset.data?.gnb || '홈'];
-
-                      return (
-                        <React.Fragment key={asset.id || idx}>
-                          <div className="w-full bg-[#12141c] border border-[#262833] rounded-xl overflow-hidden shadow-lg group hover:border-cyan-500 transition-colors">
-                            <div className="relative w-full aspect-[16/9] bg-[#000] overflow-hidden">
-                              <div className="absolute inset-0 bg-cover bg-top transition-transform duration-500 group-hover:scale-105" style={{ backgroundImage: `url(${campaignMeta.mainImageUrl || templateImg})`, opacity: campaignMeta.mainImageUrl ? 0.6 : 1 }}></div>
-                              <div className="absolute top-2 left-2 bg-cyan-500 text-[#000] font-black text-[10px] px-2 py-0.5 rounded shadow">
-                                STEP {idx + 1}
-                              </div>
-                              <div className="absolute top-2 right-2 bg-black/70 backdrop-blur-sm text-white font-bold text-[9px] px-2 py-0.5 rounded border border-white/20">
-                                {gnbs[0]}
-                              </div>
-                            </div>
-                            <div className="p-3">
-                              <h4 className="text-white font-bold text-[13px] mb-1">{asset.name || asset.type}</h4>
-                              <p className="text-slate-400 text-[10px] line-clamp-2 leading-snug">{asset.data?.mainTitle || asset.data?.bannerCopy || campaignMeta.conceptCopy || '카피 미입력'}</p>
-                              <div className="mt-2 text-[9px] text-[#7387ff] font-mono bg-[#0a0812] px-2 py-1 rounded border border-[#262833] truncate">
-                                {asset.data?.landingValue || 'UI_PATH: 미정'}
-                              </div>
-                            </div>
-                          </div>
-                          {idx < displayAssets.length - 1 && <div className="text-cyan-500 font-bold text-xl text-center animate-bounce">↓</div>}
-                        </React.Fragment>
-                      );
-                    })}
-                    <div className="text-cyan-500 font-bold text-xl text-center animate-bounce">↓</div>
-                    <div className="w-full py-3 bg-gradient-to-r from-cyan-900/40 to-blue-900/40 border border-cyan-500/30 rounded-xl text-center text-cyan-300 font-bold text-xs shadow-[0_0_15px_rgba(6,182,212,0.2)]">
-                      🏁 최종 목적지 랜딩
-                    </div>
-                  </div>
-                );
-              })()}
+            <div className="flex-1 overflow-y-auto custom-scrollbar bg-[#0a0812] flex flex-col items-center justify-center relative">
+              {displayMermaid ? (
+                <MermaidViewer code={displayMermaid} />
+              ) : (
+                <div className="flex flex-col items-center justify-center text-slate-500 opacity-50 absolute inset-0">
+                  <LayoutTemplate size={32} className="mb-3" />
+                  <p className="text-xs font-bold text-center">AI와 대화를 통해 기획안이 확정되면<br/>이곳에 유저플로우가 그려집니다.</p>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -846,23 +826,27 @@
 
       useEffect(() => { fetchCampaigns(); }, []);
 
+      // 🌟 [수정됨] 폼의 신규 확장 필드 및 머메이드 코드까지 완벽 복원
       const handleLoad = (item) => {
         const meta = item.meta || {
           campaignName: item.campaignName, target: item.target, targetSize: item.targetSize,
-          startDate: item.startDate, dueDate: item.dueDate, hasCoupon: item.hasCoupon, couponBenefit: item.couponBenefit
+          startDate: item.startDate, dueDate: item.dueDate, hasCoupon: item.hasCoupon, 
+          couponBenefit: item.couponBenefit, conceptCopy: item.conceptCopy, mainImageUrl: item.mainImageUrl,
+          product: item.product, bannerTypes: item.bannerTypes, gnbLocations: item.gnbLocations
         };
-        onLoadCampaign(meta, item.assets || []);
+        // onLoadCampaign에 mermaidCode 전달 추가
+        onLoadCampaign(meta, item.assets || [], item.mermaidCode || "");
       };
 
-      // 🌟 신규: '복제' (Jira ID 등 고유 식별값 초기화 후 불러오기)
       const handleDuplicate = (item) => {
         const meta = item.meta || {
           campaignName: `${item.campaignName} (복제본)`, target: item.target, targetSize: item.targetSize,
-          startDate: '', dueDate: '', hasCoupon: item.hasCoupon, couponBenefit: item.couponBenefit
+          startDate: '', dueDate: '', hasCoupon: item.hasCoupon, couponBenefit: item.couponBenefit,
+          conceptCopy: item.conceptCopy, mainImageUrl: item.mainImageUrl,
+          product: item.product, bannerTypes: item.bannerTypes, gnbLocations: item.gnbLocations
         };
-        // Jira ID 등 연동 고유값(id)을 싹 새로 발급
         const duplicatedAssets = (item.assets || []).map((a, idx) => ({ ...a, id: `asset-dup-${Date.now()}-${idx}` }));
-        onLoadCampaign(meta, duplicatedAssets);
+        onLoadCampaign(meta, duplicatedAssets, item.mermaidCode || "");
       };
 
       // 🌟 신규: 오늘 날짜 기준 과거 여부 판별 함수
@@ -954,29 +938,37 @@
       const [currentView, setCurrentView] = useState('PLANNER');
       const [isSidebarOpen, setIsSidebarOpen] = useState(true);
       const [isNavExpanded, setIsNavExpanded] = useState(false); 
-      const [isExtensionInstalled, setIsExtensionInstalled] = useState(false);
+      // 🌟 [수정됨] 설치 여부뿐만 아니라 버전(Version) 정보까지 가져옵니다.
+      const [extensionVersion, setExtensionVersion] = useState(null);
       
       useEffect(() => {
-        // 확장프로그램(content.js)이 주입하는 더미 엘리먼트를 체크
-        if (document.getElementById('btv-campaign-extension-installed')) {
-          setIsExtensionInstalled(true);
-        }
+        const checkExtension = () => {
+          const extNode = document.getElementById('btv-campaign-extension-installed');
+          if (extNode) {
+            // content.js가 심어둔 data-version 속성을 읽어옵니다. 없으면 기본값 1.0.0
+            setExtensionVersion(extNode.getAttribute('data-version') || '1.0.0');
+          }
+        };
+        checkExtension();
+        // 페이지 로딩 직후 익스텐션 주입이 미세하게 늦을 경우를 대비해 한 번 더 체크
+        setTimeout(checkExtension, 800); 
       }, []);
 
       const today = new Date();
       const todayStr = new Date(today.getTime() - (today.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
 
-      // 🌟 [수정 4/5번] Editor(시안 편집) 전용 상태
+      // EDITOR 전용 상태
       const [campaignMeta, setCampaignMeta] = useState({ 
-        campaignName: '', product: '', target: '', targetSize: '', startDate: '', dueDate: '',
-        hasCoupon: '', couponBenefit: '', conceptCopy: '', mainImageUrl: ''
+        campaignName: '', product: '', target: 'MASS', targetSize: '', startDate: '', dueDate: '',
+        hasCoupon: 'N', couponBenefit: '', conceptCopy: '', mainImageUrl: '', bannerTypes: '', gnbLocations: '', isCapaChecked: false
       });
       const [assets, setAssets] = useState([]); 
+      const [mermaidCode, setMermaidCode] = useState(''); // 🌟 App 레벨에 머메이드 저장소 추가
 
-      // 🌟 [수정 4/5번] AI 기획(PLANNER) 전용 독립 상태 (뷰를 전환해도 대화 및 폼 유지)
+      // AI 기획 폼 전용 상태
       const [aiCampaignMeta, setAiCampaignMeta] = useState({ 
-        campaignName: '', product: '', target: '', targetSize: '', startDate: '', dueDate: '',
-        hasCoupon: '', couponBenefit: '', conceptCopy: '', mainImageUrl: ''
+        campaignName: '', product: '', target: 'MASS', targetSize: '', startDate: '', dueDate: '',
+        hasCoupon: 'N', couponBenefit: '', conceptCopy: '', mainImageUrl: '', bannerTypes: '', gnbLocations: '', isCapaChecked: false
       });
       const [aiChatHistory, setAiChatHistory] = useState([
         { id: 'msg-init', sender: 'ai', text: '매니저님, 환영합니다.\n어떤 프로모션을 기획하실 예정인가요? 우측 폼에 아시는 만큼 먼저 적어주셔도 좋고, 저와 대화하며 하나씩 채워가도 좋습니다!' }
@@ -987,46 +979,46 @@
       const [openAccordions, setOpenAccordions] = useState({ campaign: true, banner: true });
 
       const handleSettingsClick = () => setIsSettingsOpen(true);
-      const handleConfigChange = (gnbName, field, value) => {
-        setConfigMap(prev => ({ ...prev, [gnbName]: { ...prev[gnbName], [field]: value } }));
-      };
-      
-      const handleSaveConfig = async () => { /* 유지 */ setIsSettingsOpen(false); };
+      const handleConfigChange = (gnbName, field, value) => setConfigMap(prev => ({ ...prev, [gnbName]: { ...prev[gnbName], [field]: value } }));
+      const handleSaveConfig = async () => { setIsSettingsOpen(false); };
 
-      const lastPayloadStr = useRef("");
-
-      // 🌟 [기존 useEffect 완전 삭제 및 신규 함수 추가]
-      // AI가 보낸 데이터를 무시하고 있다가, 사용자가 "시안 편집 이동" 버튼을 눌렀을 때만 실행됩니다.
+      // 🌟 [핵심] AI 뷰에서 매니저님이 명시적으로 '시안 편집 이동'을 눌렀을 때만 작동!
       const handleMoveToEditor = (payload) => {
-        // 페이로드가 없거나 빈 상태면 그냥 화면만 전환합니다.
+        // 1. 매니저님이 직접 수정한 AI 기획 폼(aiCampaignMeta)을 에디터 폼(campaignMeta)으로 넘깁니다.
+        setCampaignMeta({ ...aiCampaignMeta });
+
+        // 2. 전달된 데이터가 없으면 화면만 쓱 넘깁니다.
         if (!payload || payload.action !== "CREATE_CAMPAIGN_ASSETS") {
           setCurrentView('EDITOR');
           return;
         }
         
-        // 사용자가 버튼을 눌렀을 때 이미 그려진 배너가 있다면, 그때서야 비로소 덮어쓸지 묻습니다.
+        // 3. 기존에 그려진 배너가 있을 때만 덮어쓸지 경고합니다. (버튼 눌렀을 때만 뜸!)
         if (assets.length > 0) {
           const confirmOverwrite = window.confirm("⚠️ 이미 시안 편집 화면에 작업 중인 배너가 존재합니다.\n새로운 AI 기획안으로 덮어씌우시겠습니까?");
           if (!confirmOverwrite) {
-            setCurrentView('EDITOR'); // 취소하더라도 화면은 넘어가되, 기존 에셋은 유지합니다.
+            setCurrentView('EDITOR'); // 취소하면 기존 에셋 유지하고 넘어가기만 함
             return; 
           }
         }
 
+        // 4. 승인되었거나 빈 화면이면 AI 에셋을 에디터에 쫙 깔아줍니다.
         const aiMeta = payload.rawGasData?.meta || payload.campaignMeta;
         const aiAssets = payload.rawGasData?.assets || payload.assets;
         const aiMermaid = payload.mermaidCode || payload.rawGasData?.mermaidCode;
+        
         if (aiMermaid) setMermaidCode(aiMermaid);
         
         if (aiMeta) {
-          // 백엔드 키값이 달라도 유연하게 수용
           if (!aiMeta.conceptCopy && (aiMeta.concept || aiMeta.mainCopy || aiMeta.keyConcept)) {
              aiMeta.conceptCopy = aiMeta.concept || aiMeta.mainCopy || aiMeta.keyConcept;
           }
+          if (Array.isArray(aiMeta.bannerTypes)) aiMeta.bannerTypes = aiMeta.bannerTypes.join(', ');
+          if (Array.isArray(aiMeta.gnbLocations)) aiMeta.gnbLocations = aiMeta.gnbLocations.join(', ');
+          
           setCampaignMeta(prev => ({ ...prev, ...aiMeta }));
         }
 
-        // 에셋 렌더링 적용 (팝업 승인 후 또는 기존 에셋이 없을 때만 도달)
         if (aiAssets && Array.isArray(aiAssets)) {
           if (aiAssets.length === 0) {
             setAssets([]);
@@ -1056,9 +1048,7 @@
               });
 
               return {
-                id: `ai-asset-${index}-${timestamp}`,
-                type: aiAsset.type,
-                name: aiAsset.name || `${aiAsset.type.replace('_', ' ')} (AI)`, 
+                id: `ai-asset-${index}-${timestamp}`, type: aiAsset.type, name: aiAsset.name || `${aiAsset.type.replace('_', ' ')} (AI)`, 
                 data: { ...baseData, ...aiAsset.data, gnb: cleanedGnb, startDate: aiMeta?.startDate || baseData.startDate, dueDate: aiMeta?.dueDate || baseData.dueDate } 
               };
             });
@@ -1067,8 +1057,6 @@
             setActiveTabId(newAssets[0].id); 
           }
         }
-        
-        // 최종적으로 화면을 전환합니다.
         setCurrentView('EDITOR');
       };
 
@@ -1099,7 +1087,6 @@
         setAssets(prevAssets => prevAssets.map(asset => asset.id === id ? { ...asset, data: { ...asset.data, [field]: value } } : asset));
       };
       
-      // 🌟 배열 형태의 데이터를 업데이트 하기 위한 핸들러
       const handleCardChange = (id, cardIndex, field, value) => {
         setAssets(prevAssets => prevAssets.map(asset => {
           if (asset.id !== id) return asset;
@@ -1138,20 +1125,13 @@
         setOpenAccordions({ ...openAccordions, banner: true }); 
       };
 
-      // 🌟 [수정됨] 1개 남은 에셋도 삭제할 수 있도록 제한 해제 및 빈 화면 처리
       const removeAsset = (id, e) => {
         e.stopPropagation();
         const filteredAssets = assets.filter(a => a.id !== id);
-        setAssets(filteredAssets); // 에셋을 지운 배열로 업데이트
+        setAssets(filteredAssets); 
         
-        // 지우고 나서 남은 에셋이 하나도 없으면 탭 ID를 비움 (빈 화면 렌더링 트리거)
-        if (filteredAssets.length === 0) {
-          setActiveTabId(null);
-        } 
-        // 여러 개 중 활성화된 탭을 지운 경우, 남아있는 첫 번째 탭으로 포커스 이동
-        else if (activeTabId === id) {
-          setActiveTabId(filteredAssets[0].id);
-        }
+        if (filteredAssets.length === 0) setActiveTabId(null);
+        else if (activeTabId === id) setActiveTabId(filteredAssets[0].id);
       };
 
       const handleDownloadExtension = async () => {
@@ -1521,11 +1501,11 @@
               
               {/* 하단 제어 메뉴 */}
               <div className="mt-auto flex flex-col gap-3 w-full px-3">
-                {/* 🌟 확장프로그램 다운로드 버튼 추가 */}
-                <button onClick={handleDownloadExtension} className={`w-[48px] overflow-hidden flex items-center justify-start px-3 py-3 rounded-xl transition-all duration-300 border ${isExtensionInstalled ? 'border-[#32d782]/30 text-[#32d782] bg-[#32d782]/10' : 'border-[#303340] text-slate-400 bg-[#1a1c26] hover:bg-[#262833]'} ${isNavExpanded ? 'w-[196px]' : ''}`}>
-                  {isExtensionInstalled ? <CheckCircle size={20} className="shrink-0" /> : <Download size={20} className="shrink-0" />}
-                  <span className={`font-bold text-xs ml-4 whitespace-nowrap transition-opacity duration-300 ${isNavExpanded ? 'opacity-100' : 'opacity-0'}`}>
-                    {isExtensionInstalled ? '확장앱 설치됨' : '확장앱 설치/업데이트'}
+                {/* 🌟 [수정됨] 버튼에 extensionVersion 변수를 출력하도록 변경 */}
+                <button onClick={handleDownloadExtension} className={`h-[48px] w-full flex items-center px-3.5 rounded-xl transition-colors border border-transparent ${extensionVersion ? 'text-[#32d782] bg-[#32d782]/10 border-[#32d782]/20' : 'text-slate-400 bg-[#1a1c26] hover:bg-[#262833] hover:text-white'}`}>
+                  {extensionVersion ? <CheckCircle size={20} className="shrink-0" /> : <Download size={20} className="shrink-0" />}
+                  <span className={`text-[11px] ml-4 whitespace-nowrap transition-opacity duration-300 font-bold ${isNavExpanded ? 'opacity-100' : 'opacity-0'}`}>
+                    {extensionVersion ? `확장앱 v${extensionVersion}` : '확장앱 다운로드'}
                   </span>
                 </button>
 
