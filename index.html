@@ -537,7 +537,7 @@
     // ====================================================================================
     // 🌟 [최종 개편] AI 프로모션 기획 뷰 (대기열 상태 추가 및 명시적 버튼 이동)
     // ====================================================================================
-    const AiPlannerView = ({ campaignMeta, setCampaignMeta, chatHistory, setChatHistory, onMoveToEditor }) => {
+    const AiPlannerView = ({ campaignMeta, setCampaignMeta, chatHistory, setChatHistory, assets, onMoveToEditor }) => {
       const [inputValue, setInputValue] = useState('');
       const [isLoading, setIsLoading] = useState(false);
       const [pendingAiPayload, setPendingAiPayload] = useState(null); // 🌟 추가: AI가 던져준 에셋을 적용하지 않고 임시로만 쥐고 있는 상태
@@ -758,9 +758,58 @@
             <div className="px-5 py-4 border-b border-[#262833] bg-[#12141c] flex items-center justify-between">
               <h3 className="text-white font-bold text-[15px] tracking-tight flex items-center gap-2"><LayoutTemplate size={16} className="text-cyan-400" /> 비주얼 유저플로우 시뮬레이터</h3>
             </div>
-            <div className="flex-1 p-5 overflow-y-auto custom-scrollbar bg-[#0a0812] flex flex-col items-center justify-center text-slate-500 text-center">
-              <LayoutTemplate size={32} className="mb-3 opacity-30 text-cyan-400" />
-              <p className="text-xs font-bold">AI와 대화를 통해 기획안이 확정되면<br/>에디터 화면에서 배너가 생성됩니다.</p>
+            <div className="flex-1 p-5 overflow-y-auto custom-scrollbar bg-[#0a0812] flex flex-col items-center">
+              
+              {(() => {
+                // 🌟 [핵심 로직] AI가 방금 만든 대기열 데이터가 있으면 그걸 쓰고, 없으면 기존 에셋 사용
+                const displayAssets = pendingAiPayload?.rawGasData?.assets || pendingAiPayload?.assets || assets || [];
+
+                if (!displayAssets || displayAssets.length === 0) {
+                  return (
+                    <div className="m-auto flex flex-col items-center gap-3 text-slate-500 opacity-50 justify-center h-full">
+                      <LayoutTemplate size={32} />
+                      <p className="text-xs font-bold text-center">AI와 대화를 통해 기획안이 확정되면<br/>이곳에서 시뮬레이션 됩니다.</p>
+                    </div>
+                  );
+                }
+
+                return (
+                  <div className="flex flex-col gap-4 w-full max-w-[280px]">
+                    {displayAssets.map((asset, idx) => {
+                      const templateImg = TEMPLATE_URLS[asset.type] || 'https://raw.githubusercontent.com/btvcuration/campaign/main/assets/images/ui-templates/general_banner_2col.png';
+                      const gnbs = Array.isArray(asset.data?.gnb) ? asset.data.gnb : [asset.data?.gnb || '홈'];
+
+                      return (
+                        <React.Fragment key={asset.id || idx}>
+                          <div className="w-full bg-[#12141c] border border-[#262833] rounded-xl overflow-hidden shadow-lg group hover:border-cyan-500 transition-colors">
+                            <div className="relative w-full aspect-[16/9] bg-[#000] overflow-hidden">
+                              <div className="absolute inset-0 bg-cover bg-top transition-transform duration-500 group-hover:scale-105" style={{ backgroundImage: `url(${campaignMeta.mainImageUrl || templateImg})`, opacity: campaignMeta.mainImageUrl ? 0.6 : 1 }}></div>
+                              <div className="absolute top-2 left-2 bg-cyan-500 text-[#000] font-black text-[10px] px-2 py-0.5 rounded shadow">
+                                STEP {idx + 1}
+                              </div>
+                              <div className="absolute top-2 right-2 bg-black/70 backdrop-blur-sm text-white font-bold text-[9px] px-2 py-0.5 rounded border border-white/20">
+                                {gnbs[0]}
+                              </div>
+                            </div>
+                            <div className="p-3">
+                              <h4 className="text-white font-bold text-[13px] mb-1">{asset.name || asset.type}</h4>
+                              <p className="text-slate-400 text-[10px] line-clamp-2 leading-snug">{asset.data?.mainTitle || asset.data?.bannerCopy || campaignMeta.conceptCopy || '카피 미입력'}</p>
+                              <div className="mt-2 text-[9px] text-[#7387ff] font-mono bg-[#0a0812] px-2 py-1 rounded border border-[#262833] truncate">
+                                {asset.data?.landingValue || 'UI_PATH: 미정'}
+                              </div>
+                            </div>
+                          </div>
+                          {idx < displayAssets.length - 1 && <div className="text-cyan-500 font-bold text-xl text-center animate-bounce">↓</div>}
+                        </React.Fragment>
+                      );
+                    })}
+                    <div className="text-cyan-500 font-bold text-xl text-center animate-bounce">↓</div>
+                    <div className="w-full py-3 bg-gradient-to-r from-cyan-900/40 to-blue-900/40 border border-cyan-500/30 rounded-xl text-center text-cyan-300 font-bold text-xs shadow-[0_0_15px_rgba(6,182,212,0.2)]">
+                      🏁 최종 목적지 랜딩
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
           </div>
         </div>
@@ -1725,7 +1774,8 @@
                 setCampaignMeta={setAiCampaignMeta}
                 chatHistory={aiChatHistory}
                 setChatHistory={setAiChatHistory}
-                onMoveToEditor={() => setCurrentView('EDITOR')} 
+                assets={assets} /* 🌟 프롭스 연결 추가 */
+                onMoveToEditor={handleMoveToEditor} /* 🌟 [핵심] 기존 익명함수를 지우고 완성된 함수 연결 */
               />
             )}
 
