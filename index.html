@@ -1060,7 +1060,23 @@
               else if (aiAsset.type === 'PROMO_POPUP') baseData = { ...DEFAULT_PROMO_POPUP };
               else if (aiAsset.type === 'MINI_EPG_BANNER') baseData = { ...DEFAULT_MINI_EPG_BANNER };
 
-              let rawGnb = aiAsset.data?.gnb || baseData.gnb;
+              // 🌟 [추가됨] AI가 키값을 혼동했을 때를 대비한 자동 매핑 (방어 로직)
+              let aiData = aiAsset.data || {};
+              
+              if (aiAsset.type === 'TODAY_BTV') {
+                if (aiData.subTitle && !aiData.subText) aiData.subText = aiData.subTitle;
+              } 
+              else if (aiAsset.type === 'GENERAL_BANNER') {
+                if (aiData.subTitle && !aiData.previewSub) aiData.previewSub = aiData.subTitle;
+                if (aiData.mainTitle && !aiData.previewTitle) aiData.previewTitle = aiData.mainTitle;
+                if (aiData.mainTitle && !aiData.bannerCopy) aiData.bannerCopy = aiData.mainTitle;
+              }
+              else if (aiAsset.type === 'FULL_PROMO_BANNER') {
+                if (aiData.mainTitle && !aiData.mainCopy) aiData.mainCopy = aiData.mainTitle;
+                if (aiData.subTitle && !aiData.subCopy) aiData.subCopy = aiData.subTitle;
+              }
+
+              let rawGnb = aiData.gnb || baseData.gnb;
               let gnbArray = Array.isArray(rawGnb) ? rawGnb : [rawGnb];
               let cleanedGnb = gnbArray.map(g => {
                 if (g.includes('영화') && g.includes('시리즈')) return '영화시리즈';
@@ -1071,7 +1087,8 @@
 
               return {
                 id: `ai-asset-${index}-${timestamp}`, type: aiAsset.type, name: aiAsset.name || `${aiAsset.type.replace('_', ' ')} (AI)`, 
-                data: { ...baseData, ...aiAsset.data, gnb: cleanedGnb, startDate: aiMeta?.startDate || baseData.startDate, dueDate: aiMeta?.dueDate || baseData.dueDate } 
+                // aiAsset.data 대신 보정된 aiData를 병합합니다.
+                data: { ...baseData, ...aiData, gnb: cleanedGnb, startDate: aiMeta?.startDate || baseData.startDate, dueDate: aiMeta?.dueDate || baseData.dueDate } 
               };
             });
 
