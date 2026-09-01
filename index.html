@@ -638,14 +638,10 @@
                 displayAiText = "매니저님, 우측 **'비주얼 유저플로우 시뮬레이터'**에 플로우차트가 렌더링되었습니다! 확인해 보시고, 마음에 드신다면 하단의 **[완성된 기획안으로 시안 편집 이동]** 버튼을 눌러 디자인 작업을 시작해 주세요.";
               }
               
-              }
-              
               // 🌟 [최종 방어선] 화면에 출력할 텍스트에서 JSON의 흔적을 영구 제초(Obliterate)합니다.
-              // 1. 1차적으로 파싱된 원본 텍스트 날림
+              // (문제의 불필요한 괄호를 삭제하고 try 블록 안쪽으로 정상 편입했습니다.)
               displayAiText = displayAiText.replace(matchJsonStr, '');
-              // 2. 마크다운 백틱 잔해 완전 소각
               displayAiText = displayAiText.replace(/```(json)?/gi, '');
-              // 3. 텍스트 중간에 섞여서 노출된 JSON 형태('{ "action"' 시작점)가 있다면 그 뒤로 남은 텍스트를 통째로 강제 절단!
               displayAiText = displayAiText.replace(/\{\s*"action"[\s\S]*/, '');
               displayAiText = displayAiText.trim();
 
