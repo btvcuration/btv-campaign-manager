@@ -943,9 +943,9 @@
                   const isPast = isPastCampaign(item.startDate);
     
                   return (
-                    <div key={item.id} className="bg-[#12141c] border border-[#262833] rounded-xl p-4 hover:border-[#4f3df6] hover:shadow-lg transition-all group">
+                    // 🌟 [수정 1] 카드 전체 오버레이(hover) 효과를 지워 혼선 완벽 제거
+                    <div key={item.id} className="bg-[#12141c] border border-[#262833] rounded-xl p-4 transition-all">
                       
-                      {/* 🌟 1열 넓이를 33%로 줄이고, 3열 버튼 영역을 보호하여 줄바꿈 방지 */}
                       <div className="flex items-center w-full">
                         
                         {/* 1열: 기본 캠페인 정보 (w-[33%]로 축소) */}
@@ -976,10 +976,17 @@
                           </p>
                         </div>
     
-                        {/* 3열: 액션 버튼들 (🌟 w-[250px] 확보 및 버튼 내 텍스트 줄바꿈 금지) */}
+                        {/* 3열: 액션 버튼들 (w-[250px] 확보 및 버튼 내 텍스트 줄바꿈 금지) */}
                         <div className="w-[250px] shrink-0 pl-4 border-l border-[#262833] flex items-center justify-end gap-1.5">
-                          {item.jiraKey && (
-                            <button onClick={() => window.open(`https://jira.skbroadband.com/browse/${item.jiraKey}`, '_blank')} className="px-3 py-1.5 bg-[#262833] text-slate-300 rounded text-xs font-medium hover:bg-[#303340] hover:text-white transition-colors flex items-center gap-1.5 whitespace-nowrap">
+                          
+                          {/* 🌟 [수정 2] Jira 주소가 이미 http로 시작하면 중복 부착 방지 */}
+                          {item.jiraKey && item.jiraKey !== "-" && (
+                            <button 
+                              onClick={() => {
+                                const url = item.jiraKey.startsWith('http') ? item.jiraKey : `https://jira.skbroadband.com/browse/${item.jiraKey}`;
+                                window.open(url, '_blank');
+                              }} 
+                              className="px-3 py-1.5 bg-[#262833] text-slate-300 rounded text-xs font-medium hover:bg-[#303340] hover:text-white transition-colors flex items-center gap-1.5 whitespace-nowrap">
                               <ExternalLink size={12} /> Jira
                             </button>
                           )}
