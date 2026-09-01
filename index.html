@@ -821,29 +821,29 @@
     // ====================================================================================
     // 🌟 [신규 추가] 프로모션 관리(과거 캠페인 목록 조회/불러오기) 뷰
     // ====================================================================================
-    // 🌟 프롭스에 onDuplicateCampaign 추가
-    // 🌟 프롭스에 onDuplicateCampaign 추가
     const PromotionListView = ({ onLoadCampaign, onDuplicateCampaign }) => {
       const [campaigns, setCampaigns] = useState([]);
       const [isLoading, setIsLoading] = useState(true);
-      const [error, setError] = useState(null); // 🌟 [추가됨] 화면 먹통의 원인이었던 에러 상태 변수 선언!
+      const [error, setError] = useState(null);
+
+      // 🌟 [핵심 수정] fetchCampaigns 함수를 useEffect 밖으로 빼내어 '새로고침' 버튼에서도 호출할 수 있게 만듭니다.
+      const fetchCampaigns = async () => {
+        setIsLoading(true);
+        setError(null);
+        try {
+          const response = await fetch("https://btv-proxy.alcheminos.workers.dev?action=getCampaigns");
+          if (!response.ok) throw new Error("서버와 통신할 수 없습니다.");
+          const data = await response.json();
+          setCampaigns(data);
+        } catch (err) { 
+          console.error("캠페인 로드 실패", err); 
+          setError(err.message || "목록을 불러오는 중 문제가 발생했습니다."); 
+        } finally { 
+          setIsLoading(false); 
+        }
+      };
 
       useEffect(() => {
-        const fetchCampaigns = async () => {
-          setIsLoading(true);
-          setError(null); // 요청 전 에러 초기화
-          try {
-            const response = await fetch("https://btv-proxy.alcheminos.workers.dev?action=getCampaigns");
-            if (!response.ok) throw new Error("서버와 통신할 수 없습니다.");
-            const data = await response.json();
-            setCampaigns(data);
-          } catch (err) { 
-            console.error("캠페인 로드 실패", err); 
-            setError(err.message || "목록을 불러오는 중 문제가 발생했습니다."); // 🌟 [추가됨] 에러 발생 시 상태에 저장
-          } finally { 
-            setIsLoading(false); 
-          }
-        };
         fetchCampaigns();
       }, []);
 
@@ -866,13 +866,6 @@
         };
         const duplicatedAssets = (item.assets || []).map((a, idx) => ({ ...a, id: `asset-dup-${Date.now()}-${idx}` }));
         onDuplicateCampaign(meta, duplicatedAssets, item.mermaidCode || "");
-      };
-
-      // 🌟 신규: 오늘 날짜 기준 과거 여부 판별 함수
-      const isPastCampaign = (startDateStr) => {
-        if (!startDateStr) return false;
-        const todayStr = new Date(new Date().getTime() - (new Date().getTimezoneOffset() * 60000)).toISOString().split('T')[0];
-        return startDateStr < todayStr;
       };
 
       return (
@@ -980,7 +973,7 @@
         </div>
       );
     };
-
+    
     function App() {
       const [currentView, setCurrentView] = useState('PLANNER');
       const [isSidebarOpen, setIsSidebarOpen] = useState(true);
