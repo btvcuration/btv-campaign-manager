@@ -61,11 +61,9 @@ chrome.action.onClicked.addListener((tab) => {
   chrome.tabs.create({ url: "https://btvcuration.github.io/campaign/" });
 });
 
-
-// 🌟 [NEW] Content Script의 요청을 받아 Capa CSV 데이터를 Fetch 해오는 리스너
+// 🌟 Content Script의 요청을 받아 Capa CSV 데이터를 Fetch 해오는 리스너
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === 'fetchCapaCsv') {
-    // 매니저님이 구축해두신 Cloudflare 프록시 URL
     const CSV_URL = 'https://btv-proxy.alcheminos.workers.dev/?action=getCapaCsv';
     
     fetch(CSV_URL)
@@ -78,7 +76,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         sendResponse({ success: false, error: error.message });
       });
       
-    // 비동기 응답(fetch 후 sendResponse)을 위해 반드시 true 반환
     return true; 
   }
 });
@@ -114,150 +111,162 @@ async function createJiraHierarchy(data, sourceTabId) {
   const START_DATE_FIELD = "customfield_10134"; 
   const FINISH_DATE_FIELD = "customfield_10135";
 
+  let parentKey = "";
+  let createdIssues = [];
+
   try {
-    const uniqueLabels = Array.from(new Set(data.children.flatMap(c => c.gnb.map(formatLabel))));
+    // 🌟 [추가됨] Jira 패스 모드 분기 처리
+    if (!data.skipJira) {
+      const uniqueLabels = Array.from(new Set(data.children.flatMap(c => c.gnb.map(formatLabel))));
 
-    // 1️⃣ 상위 일감 생성
-    const parentFields = {
-      project: { key: projectKey },
-      summary: data.parent.title,
-      description: data.parent.desc,
-      issuetype: { name: PARENT_ISSUE_TYPE },
-      reporter: { name: targetUserId },
-      assignee: { name: targetUserId },
-      labels: uniqueLabels
-    };
-    
-    if (data.parent.startDate) parentFields[START_DATE_FIELD] = data.parent.startDate;
-    if (data.parent.dueDate) parentFields[FINISH_DATE_FIELD] = data.parent.dueDate;
+      // 1️⃣ 상위 일감 생성
+      const parentFields = {
+        project: { key: projectKey },
+        summary: data.parent.title,
+        description: data.parent.desc,
+        issuetype: { name: PARENT_ISSUE_TYPE },
+        reporter: { name: targetUserId },
+        assignee: { name: targetUserId },
+        labels: uniqueLabels
+      };
+      
+      if (data.parent.startDate) parentFields[START_DATE_FIELD] = data.parent.startDate;
+      if (data.parent.dueDate) parentFields[FINISH_DATE_FIELD] = data.parent.dueDate;
 
-    console.log("🚀 부모 일감 생성 요청 중...");
-    const parentRes = await fetchWithRetry(`${baseUrl}/rest/api/2/issue`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-Atlassian-Token': 'no-check' },
-      credentials: 'include',
-      body: JSON.stringify({ fields: parentFields })
-    });
-    
-    const parentResult = await parentRes.json();
-    const parentKey = parentResult.key; 
-    console.log("✅ 부모 일감 생성 완료:", parentKey);
+      console.log("🚀 부모 일감 생성 요청 중...");
+      const parentRes = await fetchWithRetry(`${baseUrl}/rest/api/2/issue`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Atlassian-Token': 'no-check' },
+        credentials: 'include',
+        body: JSON.stringify({ fields: parentFields })
+      });
+      
+      const parentResult = await parentRes.json();
+      parentKey = parentResult.key; 
+      console.log("✅ 부모 일감 생성 완료:", parentKey);
 
-    await sleep(1000); 
+      await sleep(1000); 
 
-    if (data.parent.images && data.parent.images.length > 0) {
-      console.log(`📸 부모 일감(${parentKey}) 이미지 첨부 시작 (${data.parent.images.length}장)`);
-      for (const imgObj of data.parent.images) {
-        if (imgObj.dataUrl) {
-          const imageBlob = dataURLtoBlob(imgObj.dataUrl);
+      if (data.parent.images && data.parent.images.length > 0) {
+        console.log(`📸 부모 일감(${parentKey}) 이미지 첨부 시작 (${data.parent.images.length}장)`);
+        for (const imgObj of data.parent.images) {
+          if (imgObj.dataUrl) {
+            const imageBlob = dataURLtoBlob(imgObj.dataUrl);
+            const formData = new FormData();
+            formData.append("file", imageBlob, imgObj.filename);
+
+            await fetchWithRetry(`${baseUrl}/rest/api/2/issue/${parentKey}/attachments`, {
+              method: 'POST',
+              headers: { 'X-Atlassian-Token': 'no-check' }, 
+              credentials: 'include',
+              body: formData
+            });
+            console.log(`✅ 부모 첨부 완료: ${imgObj.filename}`);
+            await sleep(500); 
+          }
+        }
+      }
+      
+      // 담당자 멘션(Mention) 댓글 달기
+      if (data.parent.comment) {
+        console.log("💬 상위 일감 담당자 멘션 댓글 작성 시작...");
+        try {
+          await fetchWithRetry(`${baseUrl}/rest/api/2/issue/${parentKey}/comment`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-Atlassian-Token': 'no-check' },
+            credentials: 'include',
+            body: JSON.stringify({ body: data.parent.comment })
+          });
+          console.log(`✅ 부모 댓글 작성 완료: ${parentKey}`);
+          await sleep(500); 
+        } catch (e) {
+          console.error(`❌ 부모 댓글 에러: ${parentKey}`, e);
+        }
+      }
+
+      // 2️⃣ 하위 일감 일괄(Bulk) 생성
+      console.log("🚀 하위 일감 일괄 생성 요청 중...");
+      const childUpdates = data.children.map(child => {
+        const fieldData = {
+          project: { key: projectKey },
+          summary: child.title,
+          description: child.desc, 
+          issuetype: { name: CHILD_ISSUE_TYPE }, 
+          parent: { key: parentKey },
+          reporter: { name: targetUserId },
+          assignee: { name: child.assignee || targetUserId },
+          labels: child.gnb.map(formatLabel)
+        };
+
+        if (child.startDate) fieldData[START_DATE_FIELD] = child.startDate;
+        if (child.dueDate) fieldData[FINISH_DATE_FIELD] = child.dueDate;
+
+        return { fields: fieldData };
+      });
+
+      const childBulkRes = await fetchWithRetry(`${baseUrl}/rest/api/2/issue/bulk`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Atlassian-Token': 'no-check' },
+        credentials: 'include',
+        body: JSON.stringify({ issueUpdates: childUpdates })
+      });
+
+      const childBulkResult = await childBulkRes.json();
+      createdIssues = childBulkResult.issues;
+      console.log("✅ 하위 일감 생성 완료");
+
+      // 3️⃣ 캡처된 이미지를 하위 일감에 첨부
+      console.log("📸 하위 일감 이미지 첨부 시작...");
+      for (let i = 0; i < data.children.length; i++) {
+        const childData = data.children[i];
+        if (!createdIssues || !createdIssues[i]) continue;
+        const issueKey = createdIssues[i].key; 
+
+        if (childData.imageData) {
+          const imageBlob = dataURLtoBlob(childData.imageData);
           const formData = new FormData();
-          formData.append("file", imageBlob, imgObj.filename);
+          formData.append("file", imageBlob, "preview.png");
 
-          await fetchWithRetry(`${baseUrl}/rest/api/2/issue/${parentKey}/attachments`, {
+          await fetchWithRetry(`${baseUrl}/rest/api/2/issue/${issueKey}/attachments`, {
             method: 'POST',
             headers: { 'X-Atlassian-Token': 'no-check' }, 
             credentials: 'include',
             body: formData
           });
-          console.log(`✅ 부모 첨부 완료: ${imgObj.filename}`);
-          await sleep(500); 
+          console.log(`✅ 하위 첨부 완료: ${issueKey}`);
+          await sleep(1000); 
+        }
+
+        // 이미지 첨부 후 담당자 멘션(Mention) 댓글 자동 작성
+        if (childData.assignee) {
+          const commentBody = {
+            body: `담당자 [~${childData.assignee}]님, 신규 캠페인 세팅 및 편성 확인 부탁드립니다.`
+          };
+          try {
+            await fetchWithRetry(`${baseUrl}/rest/api/2/issue/${issueKey}/comment`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'X-Atlassian-Token': 'no-check' },
+              credentials: 'include',
+              body: JSON.stringify(commentBody)
+            });
+            console.log(`✅ 멘션 댓글 작성 완료: ${issueKey}`);
+            await sleep(500); 
+          } catch (e) {
+            console.error(`❌ 댓글 에러: ${issueKey}`, e);
+          }
         }
       }
-    }
-    // 🌟 [NEW] 부모 일감 생성 직후, 담당자 멘션(Mention) 댓글 달기
-    if (data.parent.comment) {
-      console.log("💬 상위 일감 담당자 멘션 댓글 작성 시작...");
-      try {
-        await fetchWithRetry(`${baseUrl}/rest/api/2/issue/${parentKey}/comment`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'X-Atlassian-Token': 'no-check' },
-          credentials: 'include',
-          body: JSON.stringify({ body: data.parent.comment })
-        });
-        console.log(`✅ 부모 댓글 작성 완료: ${parentKey}`);
-        await sleep(500); 
-      } catch (e) {
-        console.error(`❌ 부모 댓글 에러: ${parentKey}`, e);
-      }
+    } else {
+      console.log("🚀 [Jira 패스 모드] Jira 일감 생성 없이 DB 저장만 수행합니다.");
     }
 
-    // 2️⃣ 하위 일감 일괄(Bulk) 생성
-    console.log("🚀 하위 일감 일괄 생성 요청 중...");
-    const childUpdates = data.children.map(child => {
-      const fieldData = {
-        project: { key: projectKey },
-        summary: child.title,
-        description: child.desc, 
-        issuetype: { name: CHILD_ISSUE_TYPE }, 
-        parent: { key: parentKey },
-        reporter: { name: targetUserId },
-        assignee: { name: child.assignee || targetUserId },
-        labels: child.gnb.map(formatLabel)
-      };
-
-      if (child.startDate) fieldData[START_DATE_FIELD] = child.startDate;
-      if (child.dueDate) fieldData[FINISH_DATE_FIELD] = child.dueDate;
-
-      return { fields: fieldData };
-    });
-
-    const childBulkRes = await fetchWithRetry(`${baseUrl}/rest/api/2/issue/bulk`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-Atlassian-Token': 'no-check' },
-      credentials: 'include',
-      body: JSON.stringify({ issueUpdates: childUpdates })
-    });
-
-    const childBulkResult = await childBulkRes.json();
-    const createdIssues = childBulkResult.issues;
-    console.log("✅ 하위 일감 생성 완료");
-
-    // 3️⃣ 캡처된 이미지를 하위 일감에 첨부
-    console.log("📸 하위 일감 이미지 첨부 시작...");
-    for (let i = 0; i < data.children.length; i++) {
-      const childData = data.children[i];
-      if (!createdIssues || !createdIssues[i]) continue;
-      const issueKey = createdIssues[i].key; 
-
-      if (childData.imageData) {
-        const imageBlob = dataURLtoBlob(childData.imageData);
-        const formData = new FormData();
-        formData.append("file", imageBlob, "preview.png");
-
-        await fetchWithRetry(`${baseUrl}/rest/api/2/issue/${issueKey}/attachments`, {
-          method: 'POST',
-          headers: { 'X-Atlassian-Token': 'no-check' }, 
-          credentials: 'include',
-          body: formData
-        });
-        console.log(`✅ 하위 첨부 완료: ${issueKey}`);
-        await sleep(1000); 
-      }
-
-      // 🌟 [추가] 이미지 첨부 후 담당자 멘션(Mention) 댓글 자동 작성
-      if (childData.assignee) {
-        const commentBody = {
-          body: `담당자 [~${childData.assignee}]님, 신규 캠페인 세팅 및 편성 확인 부탁드립니다.`
-        };
-        try {
-          await fetchWithRetry(`${baseUrl}/rest/api/2/issue/${issueKey}/comment`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'X-Atlassian-Token': 'no-check' },
-            credentials: 'include',
-            body: JSON.stringify(commentBody)
-          });
-          console.log(`✅ 멘션 댓글 작성 완료: ${issueKey}`);
-          await sleep(500); // 딜레이 보장
-        } catch (e) {
-          console.error(`❌ 댓글 에러: ${issueKey}`, e);
-        }
-      }
-    }
-
-    // 🌟 4️⃣ [NEW] Cloudflare Worker를 거쳐 Google Sheets에 데이터 적재
+    // 🌟 4️⃣ Cloudflare Worker를 거쳐 Google Sheets에 데이터 적재
     if (data.rawGasData) {
       console.log("🚀 구글 시트(CF Proxy) DB 기록 시작...");
       const { meta, assignee, assets } = data.rawGasData;
+      
+      // 🌟 프론트엔드에서 전달받은 Unique Code 사용
+      const uniqueCode = meta.uniqueCode || `BTV-${Date.now().toString(36).toUpperCase()}`;
       
       const sendToGAS = async (payload) => {
         try {
@@ -289,20 +298,19 @@ async function createJiraHierarchy(data, sourceTabId) {
         chunks.push(totalSize); // 80만 이하면 1개로 처리
       }
 
-      // 💡 [수정] 모아서 한 번에 쏠 빈 배열(바구니) 생성
       let bulkPayload = [];
 
-      // 🌟 [추가됨] 1. 가장 먼저 '모일감(Parent)' 전용 마스터 행을 추가합니다!
-      // 이 행이 Code.gs에서 idx === 0 이 되어 U열에 전체 JSON(에셋, 메타, 머메이드)이 저장됩니다.
+      // 1. 가장 먼저 '모일감(Parent)' 전용 마스터 행 추가
       bulkPayload.push({
-        parentJira: `${baseUrl}/browse/${parentKey}`,
-        childJira: `${baseUrl}/browse/${parentKey}`, // 모일감이므로 자기 자신 링크
+        parentJira: parentKey ? `${baseUrl}/browse/${parentKey}` : "", // 패스 모드일 땐 빈값
+        uniqueCode: uniqueCode, // 🌟 자식 지라 URL 대신 유니크 코드 전송
+        childJira: parentKey ? `${baseUrl}/browse/${parentKey}` : "", 
         campaignName: meta.campaignName || '신규 캠페인',
         product: meta.product || '',
         targetType: meta.target || 'MASS',
         channel: '캠페인 전체', 
         hasBanner: assets.length > 0 ? 'Y' : 'N',
-        taskType: '캠페인 모일감', // 구분하기 쉽도록 명시
+        taskType: data.skipJira ? '쿠폰/사은품 단독' : '캠페인 모일감', // 🌟 Jira 패스 모드일 땐 라벨링 분리
         startDate: meta.startDate || '',
         endDate: meta.dueDate || '',
         assignee: assignee || '',
@@ -313,20 +321,17 @@ async function createJiraHierarchy(data, sourceTabId) {
         landingUrl: '',
         designLink: meta.mainImageUrl || '',
         hasCoupon: (meta.hasCoupon || '').trim().toUpperCase() === 'Y' ? 'Y' : 'N',
-        
-        // 🌟 Code.gs가 파싱해서 U열에 넣을 마스터 데이터 객체들
         assets: assets,
         mermaidCode: data.rawGasData.mermaidCode || "",
         meta: meta
       });
 
-      // 🌟 2. 그 다음 기존처럼 자식 일감(배너 에셋)들을 루프 돌며 추가합니다.
+      // 2. 자식 일감(배너 에셋) 추가
       for (let c = 0; c < chunks.length; c++) {
         const chunkSize = chunks[c];
         const suffix = chunks.length > 1 ? `_${c + 1}` : '';
         const currentCampaignName = (meta.campaignName || '') + suffix;
 
-        // 4-1. 개별 배너 데이터 수집
         for (let i = 0; i < assets.length; i++) {
           const asset = assets[i];
           const assetData = asset.data || {};
@@ -346,17 +351,13 @@ async function createJiraHierarchy(data, sourceTabId) {
           if (assetData.badgeText) textParts.push(assetData.badgeText);
           
           const mainCopy = textParts.length > 0 ? textParts.join(' / ') : '카피 없음';
-          
           const childJiraUrl = createdIssues && createdIssues[i] ? `${baseUrl}/browse/${createdIssues[i].key}` : '';
-          
-          // 💡 [수정 1] TODAY_BTV도 배너로 정상 인식하도록 조건 추가
           const isBannerAsset = asset.type && (asset.type.includes("BANNER") || asset.type.includes("TODAY")) ? "Y" : "N";
-
-          // 💡 [수정 2] 쿠폰 Y/N 여부를 공백이나 대소문자 상관없이 정확히 판별 (안전 장치)
           const safeHasCoupon = (meta.hasCoupon || '').trim().toUpperCase() === 'Y' ? 'Y' : 'N';
 
           bulkPayload.push({
-            parentJira: `${baseUrl}/browse/${parentKey}`,
+            parentJira: parentKey ? `${baseUrl}/browse/${parentKey}` : "",
+            uniqueCode: uniqueCode, // 🌟 유니크 코드 전송
             childJira: childJiraUrl, 
             campaignName: currentCampaignName, 
             product: meta.product || '',
@@ -367,7 +368,6 @@ async function createJiraHierarchy(data, sourceTabId) {
             startDate: assetData.startDate || meta.startDate || '',
             endDate: assetData.dueDate || meta.dueDate || '',
             assignee: assignee || '',
-            // 💡 [수정 3] 배너 행은 모수를 무조건 0으로 고정하여 중복 차감 완벽 방지!
             targetSize: 0, 
             targetCondition: meta.targetCondition || '',
             notiChannel: '',
@@ -378,16 +378,14 @@ async function createJiraHierarchy(data, sourceTabId) {
           });
         }
 
-        // 4-2. 타겟팅 캠페인 마스터 행 수집
         if (isTarget) {
           const bannerTypes = assets.length > 0 ? assets.map(a => a.name).join(', ') : '배너 없음 (타겟 전용)'; 
           const targetChildJiraUrl = createdIssues && createdIssues[assets.length] ? `${baseUrl}/browse/${createdIssues[assets.length].key}` : '';
-          
-          // 💡 마스터 행에도 동일한 안전 장치 적용
           const safeHasCoupon = (meta.hasCoupon || '').trim().toUpperCase() === 'Y' ? 'Y' : 'N';
 
           bulkPayload.push({
-            parentJira: `${baseUrl}/browse/${parentKey}`,
+            parentJira: parentKey ? `${baseUrl}/browse/${parentKey}` : "",
+            uniqueCode: uniqueCode, // 🌟 유니크 코드 전송
             childJira: targetChildJiraUrl,
             campaignName: currentCampaignName,
             product: meta.product || '',
@@ -398,7 +396,6 @@ async function createJiraHierarchy(data, sourceTabId) {
             startDate: meta.startDate || '',
             endDate: meta.dueDate || '',
             assignee: assignee || '',
-            // 💡 마스터 행에만 실제 모수(chunkSize)를 1회 적용!
             targetSize: chunkSize, 
             targetCondition: meta.targetCondition || '',
             notiChannel: '',
@@ -410,26 +407,27 @@ async function createJiraHierarchy(data, sourceTabId) {
         }
       }
 
-      // 수집된 모든 행을 묶어서 단 1번의 요청으로 일괄 전송 (Bulk Insert)
       if (bulkPayload.length > 0) {
-        await sendToGAS({ 
-          action: "bulkInsert", 
-          rows: bulkPayload 
-        });
+        await sendToGAS({ action: "bulkInsert", rows: bulkPayload });
       }
 
-      console.log("✅ 구글 시트(CF Proxy) DB 기록 완료 (Bulk Insert 적용)");
+      console.log("✅ 구글 시트(CF Proxy) DB 기록 완료");
     }
 
-    console.log("🎉 모든 작업 완료! 지라 창을 엽니다.");
-    chrome.tabs.create({ url: `${baseUrl}/browse/${parentKey}` });
+    // 🌟 전송 모드에 따른 처리 결과 (탭 오픈 여부)
+    if (!data.skipJira && parentKey) {
+      console.log("🎉 모든 작업 완료! 지라 창을 엽니다.");
+      chrome.tabs.create({ url: `${baseUrl}/browse/${parentKey}` });
+    } else if (data.skipJira) {
+      console.log("🎉 DB 전용 저장 완료!");
+    }
 
   } catch (error) {
     console.error("API 연동 에러:", error);
     if (sourceTabId) {
       chrome.scripting.executeScript({
         target: { tabId: sourceTabId },
-        func: (errMsg) => alert("🚨 지라 전송 에러!\n\n" + errMsg),
+        func: (errMsg) => alert("🚨 전송 에러!\n\n" + errMsg),
         args: [error.message]
       }).catch(e => console.error(e));
     }
