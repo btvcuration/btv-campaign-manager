@@ -837,7 +837,6 @@
       const [isLoading, setIsLoading] = useState(true);
       const [error, setError] = useState(null);
 
-      // 🌟 [핵심 수정] fetchCampaigns 함수를 useEffect 밖으로 빼내어 '새로고침' 버튼에서도 호출할 수 있게 만듭니다.
       const fetchCampaigns = async () => {
         setIsLoading(true);
         setError(null);
@@ -879,6 +878,13 @@
         onDuplicateCampaign(meta, duplicatedAssets, item.mermaidCode || "");
       };
 
+      // 🌟 [추가됨] 오늘 날짜 기준 과거 캠페인 여부 판별 함수
+      const isPastCampaign = (startDateStr) => {
+        if (!startDateStr) return false;
+        const todayStr = new Date(new Date().getTime() - (new Date().getTimezoneOffset() * 60000)).toISOString().split('T')[0];
+        return startDateStr < todayStr;
+      };
+
       return (
         <div className="flex flex-col h-full w-full bg-[#06070a] overflow-hidden p-6 gap-5">
           <div className="flex items-center justify-between shrink-0">
@@ -911,10 +917,10 @@
             ) : (
               <div className="flex-1 overflow-y-auto custom-scrollbar divide-y divide-[#1a1c26]">
                 {campaigns.map((item) => {
-                  // 🌟 숫자만 추출하여 콤마(,) 포맷팅
+                  // 숫자만 추출하여 콤마(,) 포맷팅
                   const displayTargetSize = item.targetSize ? parseInt(String(item.targetSize).replace(/[^0-9]/g, '')).toLocaleString() : 0;
                   
-                  // 🌟 포함된 배너 텍스트 추출
+                  // 포함된 배너 텍스트 추출
                   let bannerTypesText = "등록된 배너 없음";
                   if (item.meta && item.meta.bannerTypes) {
                     bannerTypesText = item.meta.bannerTypes;
@@ -922,17 +928,17 @@
                     bannerTypesText = item.assets.map(a => a.name || a.type).join(', ');
                   }
 
-                  // 🌟 [추가됨] 과거 캠페인 여부 판별
+                  // 🌟 [추가됨] 시작일이 오늘보다 과거인지 체크
                   const isPast = isPastCampaign(item.startDate);
     
                   return (
                     <div key={item.id} className="bg-[#12141c] border border-[#262833] rounded-xl p-4 hover:border-[#4f3df6] hover:shadow-lg transition-all group">
                       
-                      {/* 🌟 [수정됨] justify-between을 빼고 w-full만 유지하여 고정 비율 적용 */}
+                      {/* 🌟 flex-1 대신 고정 너비와 비율을 사용하여 들쭉날쭉함 방지 */}
                       <div className="flex items-center w-full">
                         
-                        {/* 1열: 기본 캠페인 정보 (좌측) - 🌟 w-[38%] 로 고정하여 선 밀림 방지 */}
-                        <div className="w-[38%] min-w-[280px] shrink-0 pr-4">
+                        {/* 1열: 기본 캠페인 정보 (w-[40%] 고정) */}
+                        <div className="w-[40%] min-w-[280px] shrink-0 pr-4">
                           <div className="flex items-center gap-2 mb-1.5">
                             <h4 className="text-white font-bold text-[14px] truncate" title={item.campaignName}>{item.campaignName}</h4>
                             {item.target === 'TARGET' && (
@@ -951,37 +957,32 @@
                           </div>
                         </div>
     
-                        {/* 2열: 포함 배너 리스트 (중앙) - 🌟 flex-1과 min-w-0 적용으로 텍스트 넘침 억제 */}
+                        {/* 2열: 포함 배너 리스트 (flex-1 할당하여 남은 중앙 공간 차지) */}
                         <div className="flex-1 px-6 text-left hidden md:block border-l border-[#262833] min-w-0 overflow-hidden">
                           <p className="text-[10px] text-slate-500 mb-0.5 font-bold">포함된 배너 에셋</p>
-                          {/* 🌟 line-clamp 대신 truncate 적용으로 딱 1줄만 깔끔하게 유지 */}
                           <p className="text-[12px] text-slate-300 font-medium truncate w-full" title={bannerTypesText}>
                             {bannerTypesText}
                           </p>
                         </div>
     
-                        {/* 3열: 액션 버튼들 (우측) - 🌟 w-[230px] 고정 및 우측 정렬(justify-end) */}
-                        <div className="w-[230px] shrink-0 pl-6 border-l border-[#262833] flex items-center justify-end gap-2">
-                          
-                          {/* 지라 링크 */}
+                        {/* 3열: 액션 버튼들 (w-[210px] 고정) */}
+                        <div className="w-[210px] shrink-0 pl-6 border-l border-[#262833] flex items-center justify-end gap-2">
                           {item.jiraKey && (
                             <button onClick={() => window.open(`https://jira.skbroadband.com/browse/${item.jiraKey}`, '_blank')} className="px-3 py-1.5 bg-[#262833] text-slate-300 rounded text-xs font-medium hover:bg-[#303340] hover:text-white transition-colors flex items-center gap-1.5">
                               <ExternalLink size={12} /> Jira
                             </button>
                           )}
                           
-                          {/* 복제 버튼 (상시 노출) */}
                           <button onClick={() => handleDuplicate(item)} className="px-3 py-1.5 bg-[#d946ef]/10 text-[#e879f9] border border-[#d946ef]/30 rounded text-xs font-bold hover:bg-[#d946ef]/20 transition-colors flex items-center gap-1.5 ml-1">
                             <Copy size={12} /> 복제
                           </button>
                           
-                          {/* 🌟 수정 버튼: 과거 캠페인이 아닐 때(!isPast)만 노출되도록 조건 추가! */}
+                          {/* 🌟 과거 캠페인이 아닐 때만 수정 버튼 렌더링 */}
                           {!isPast && (
                             <button onClick={() => handleLoad(item)} className="px-3 py-1.5 bg-[#4f3df6]/10 text-[#7387ff] border border-[#4f3df6]/30 rounded text-xs font-bold hover:bg-[#4f3df6]/20 transition-colors flex items-center gap-1">
                               수정 <ChevronRight size={12} />
                             </button>
                           )}
-                          
                         </div>
     
                       </div>
