@@ -717,85 +717,100 @@
               <span className="text-[9px] text-slate-400 bg-[#1a1c26] px-2 py-0.5 rounded border border-[#303340] animate-pulse">AI 실시간 동기화</span>
             </div>
             
-            <div className="p-5 overflow-y-auto custom-scrollbar space-y-5 flex-1">
-              <div>
-                <label className="block text-[11px] font-bold text-slate-400 mb-1 ml-1">캠페인 / 프로젝트명</label>
-                <input type="text" name="campaignName" value={campaignMeta.campaignName || ''} onChange={handleMetaChange} placeholder="자동 채움 또는 직접 입력" className="w-full bg-[#0a0812] border border-[#303340] rounded-lg px-3 py-2.5 text-xs text-white focus:border-[#4f3df6] outline-none transition-all" />
-              </div>
-              <div>
-                <label className="block text-[11px] font-bold text-slate-400 mb-1 ml-1">대상 상품 (VOD / 월정액 등)</label>
-                <input type="text" name="product" value={campaignMeta.product || ''} onChange={handleMetaChange} placeholder="예: 악마는 프라다를 입는다 2" className="w-full bg-[#0a0812] border border-[#303340] rounded-lg px-3 py-2.5 text-xs text-white focus:border-[#4f3df6] outline-none transition-all" />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
+            <div className="p-5 overflow-y-auto custom-scrollbar space-y-4 flex-1 bg-[#06070a]">
+              
+              {/* 🌟 카드 1: 캠페인 기본 정보 */}
+              <div className="bg-[#0f111a] border border-[#262833] rounded-xl p-4 shadow-sm space-y-4 relative overflow-hidden">
+                <div className="absolute top-0 left-0 w-1 h-full bg-[#7387ff]"></div>
+                <h4 className="text-xs font-black text-[#7387ff] flex items-center gap-1.5 mb-2">캠페인 기본 정보</h4>
                 <div>
-                  <label className="block text-[11px] font-bold text-slate-400 mb-1 ml-1">타겟 유형</label>
-                  <select name="target" value={campaignMeta.target || ''} onChange={handleMetaChange} className="w-full bg-[#0a0812] border border-[#303340] rounded-lg px-3 py-2.5 text-xs text-white focus:border-[#4f3df6] outline-none transition-all">
-                    <option value="" disabled>선택</option><option value="MASS">MASS</option><option value="TARGET">TARGET</option>
-                  </select>
+                  <label className="block text-[10px] font-bold text-slate-500 mb-1.5 ml-1">캠페인 / 프로젝트명</label>
+                  <input type="text" name="campaignName" value={campaignMeta.campaignName || ''} onChange={handleMetaChange} placeholder="자동 채움 또는 직접 입력" className="w-full bg-[#0a0812] border border-[#303340] rounded-lg px-3 py-2 text-xs text-white focus:border-[#4f3df6] outline-none transition-all" />
                 </div>
                 <div>
-                  <label className="block text-[11px] font-bold text-slate-400 mb-1 ml-1">타겟 모수</label>
-                  <input type="text" name="targetSize" value={campaignMeta.targetSize || ''} onChange={handleMetaChange} disabled={campaignMeta.target !== 'TARGET'} placeholder="예: 5만명" className="w-full bg-[#0a0812] border border-[#303340] rounded-lg px-3 py-2.5 text-xs text-white focus:border-[#4f3df6] outline-none transition-all disabled:opacity-30" />
-                  
-                  {/* 🌟 타겟 Capa 검증 UI 추가 */}
-                  <label className={`flex items-center gap-1.5 mt-2 ml-1 cursor-pointer transition-opacity ${campaignMeta.target === 'TARGET' ? 'opacity-100' : 'opacity-30 pointer-events-none'}`}>
-                    <input type="checkbox" checked={campaignMeta.isCapaChecked || false} onChange={(e) => setCampaignMeta(prev => ({...prev, isCapaChecked: e.target.checked}))} className="w-3 h-3 accent-pink-500" />
-                    <span className="text-[10px] text-pink-400 font-bold">타겟 Capa 검증 완료</span>
+                  <label className="block text-[10px] font-bold text-slate-500 mb-1.5 ml-1">대상 상품 (VOD / 월정액 등)</label>
+                  <input type="text" name="product" value={campaignMeta.product || ''} onChange={handleMetaChange} placeholder="예: 악마는 프라다를 입는다 2" className="w-full bg-[#0a0812] border border-[#303340] rounded-lg px-3 py-2 text-xs text-white focus:border-[#4f3df6] outline-none transition-all" />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-500 mb-1.5 ml-1">타겟 유형</label>
+                    <select name="target" value={campaignMeta.target || ''} onChange={handleMetaChange} className="w-full bg-[#0a0812] border border-[#303340] rounded-lg px-3 py-2.5 text-xs text-white focus:border-[#4f3df6] outline-none transition-all">
+                      <option value="" disabled>선택</option><option value="MASS">MASS</option><option value="TARGET">TARGET</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-500 mb-1.5 ml-1">타겟 모수</label>
+                    <input type="text" name="targetSize" value={campaignMeta.targetSize || ''} onChange={handleMetaChange} disabled={campaignMeta.target !== 'TARGET'} placeholder="예: 5만명" className="w-full bg-[#0a0812] border border-[#303340] rounded-lg px-3 py-2 text-xs text-white focus:border-[#4f3df6] outline-none transition-all disabled:opacity-30" />
+                    <label className={`flex items-center gap-1.5 mt-2 ml-1 cursor-pointer transition-opacity ${campaignMeta.target === 'TARGET' ? 'opacity-100' : 'opacity-30 pointer-events-none'}`}>
+                      <input type="checkbox" checked={campaignMeta.isCapaChecked || false} onChange={(e) => setCampaignMeta(prev => ({...prev, isCapaChecked: e.target.checked}))} className="w-3 h-3 accent-pink-500" />
+                      <span className="text-[10px] text-pink-400 font-bold">타겟 Capa 검증 완료</span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              {/* 🌟 카드 2: 일정 및 고객 혜택 */}
+              <div className="bg-[#0f111a] border border-[#262833] rounded-xl p-4 shadow-sm space-y-4 relative overflow-hidden">
+                <div className="absolute top-0 left-0 w-1 h-full bg-pink-400"></div>
+                <h4 className="text-xs font-black text-pink-400 flex items-center gap-1.5 mb-2">일정 및 고객 혜택</h4>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-500 mb-1.5 ml-1">시작일</label>
+                    <input type="date" name="startDate" value={campaignMeta.startDate || ''} onChange={handleMetaChange} className="w-full bg-[#0a0812] border border-[#303340] rounded-lg px-3 py-2 text-xs text-slate-200 outline-none focus:border-[#4f3df6] [&::-webkit-calendar-picker-indicator]:filter [&::-webkit-calendar-picker-indicator]:invert" />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-500 mb-1.5 ml-1">종료일</label>
+                    <input type="date" name="dueDate" value={campaignMeta.dueDate || ''} onChange={handleMetaChange} className="w-full bg-[#0a0812] border border-[#303340] rounded-lg px-3 py-2 text-xs text-slate-200 outline-none focus:border-[#4f3df6] [&::-webkit-calendar-picker-indicator]:filter [&::-webkit-calendar-picker-indicator]:invert" />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-500 mb-1.5 ml-1">B tv 쿠폰 발급</label>
+                    <select name="hasCoupon" value={campaignMeta.hasCoupon || ''} onChange={handleMetaChange} className="w-full bg-[#0a0812] border border-[#303340] rounded-lg px-3 py-2.5 text-xs text-white focus:border-[#4f3df6] outline-none transition-all">
+                      <option value="" disabled>선택</option><option value="N">미포함 (N)</option><option value="Y">포함 (Y)</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-500 mb-1.5 ml-1">B tv 쿠폰 혜택 명</label>
+                    <input type="text" name="couponBenefit" value={campaignMeta.couponBenefit || ''} onChange={handleMetaChange} disabled={campaignMeta.hasCoupon === 'N'} placeholder="예: 2,000원 할인" className="w-full bg-[#0a0812] border border-[#303340] rounded-lg px-3 py-2 text-xs text-white focus:border-[#4f3df6] outline-none transition-all disabled:opacity-30" />
+                  </div>
+                </div>
+                {/* 🌟 외부 사은품 필드 적용됨 */}
+                <div className="pt-2 border-t border-[#1a1c26]">
+                  <label className="block text-[10px] font-bold text-slate-500 mb-1.5 ml-1">외부 사은품 (기프티콘, 경품 등)</label>
+                  <input type="text" name="externalGift" value={campaignMeta.externalGift || ''} onChange={handleMetaChange} placeholder="예: 스타벅스 아메리카노 기프티콘 100명 추첨" className="w-full bg-[#0a0812] border border-[#303340] rounded-lg px-3 py-2 text-xs text-white focus:border-[#4f3df6] outline-none transition-all" />
+                </div>
+              </div>
+
+              {/* 🌟 카드 3: 편성 및 소재 기획 */}
+              <div className="bg-[#0f111a] border border-[#262833] rounded-xl p-4 shadow-sm space-y-4 relative overflow-hidden">
+                <div className="absolute top-0 left-0 w-1 h-full bg-cyan-400"></div>
+                <h4 className="text-xs font-black text-cyan-400 flex items-center gap-1.5 mb-2">편성 및 소재 기획</h4>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="col-span-2">
+                    <label className="block text-[10px] font-bold text-slate-500 mb-1.5 ml-1">제작 배너 유형</label>
+                    <input type="text" name="bannerTypes" value={campaignMeta.bannerTypes || ''} onChange={handleMetaChange} placeholder="예: 빅배너, 띠배너" className="w-full bg-[#0a0812] border border-[#303340] rounded-lg px-3 py-2 text-xs text-white focus:border-[#4f3df6] outline-none transition-all" />
+                  </div>
+                  <div className="col-span-2">
+                    <label className="block text-[10px] font-bold text-slate-500 mb-1.5 ml-1">편성 GNB 위치</label>
+                    <input type="text" name="gnbLocations" value={campaignMeta.gnbLocations || ''} onChange={handleMetaChange} placeholder="예: 영화시리즈, TV 방송" className="w-full bg-[#0a0812] border border-[#303340] rounded-lg px-3 py-2 text-xs text-white focus:border-[#4f3df6] outline-none transition-all" />
+                  </div>
+                </div>
+                <div className="pt-2 border-t border-[#1a1c26]">
+                  <label className="block text-[10px] font-bold text-slate-500 mb-1.5 ml-1 flex justify-between">
+                    <span>Key 컨셉 & 대표 문구</span>
                   </label>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-400 mb-1 ml-1">시작일</label>
-                  <input type="date" name="startDate" value={campaignMeta.startDate || ''} onChange={handleMetaChange} className="w-full bg-[#0a0812] border border-[#303340] rounded-lg px-3 py-2 text-xs text-slate-200 outline-none focus:border-[#4f3df6] [&::-webkit-calendar-picker-indicator]:filter [&::-webkit-calendar-picker-indicator]:invert" />
+                  <textarea name="conceptCopy" value={campaignMeta.conceptCopy || ''} onChange={handleMetaChange} placeholder="프로모션의 핵심 카피나 톤앤매너를 입력하세요." className="w-full bg-[#0a0812] border border-[#303340] rounded-lg px-3 py-2.5 text-xs text-white focus:border-[#4f3df6] outline-none transition-all h-16 resize-none custom-scrollbar" />
                 </div>
                 <div>
-                  <label className="block text-[11px] font-bold text-slate-400 mb-1 ml-1">종료일</label>
-                  <input type="date" name="dueDate" value={campaignMeta.dueDate || ''} onChange={handleMetaChange} className="w-full bg-[#0a0812] border border-[#303340] rounded-lg px-3 py-2 text-xs text-slate-200 outline-none focus:border-[#4f3df6] [&::-webkit-calendar-picker-indicator]:filter [&::-webkit-calendar-picker-indicator]:invert" />
+                  <label className="block text-[10px] font-bold text-[#7387ff] mb-1.5 ml-1 flex items-center gap-1"><ImageIcon size={10}/> 메인 키비주얼 URL</label>
+                  <input type="text" name="mainImageUrl" value={campaignMeta.mainImageUrl || ''} onChange={handleMetaChange} placeholder="https://... (입력 시 모든 시안에 자동 적용)" className="w-full bg-[#0a0812] border border-[#303340] rounded-lg px-3 py-2 text-xs text-[#7387ff] focus:border-[#4f3df6] outline-none transition-all" />
                 </div>
               </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-400 mb-1 ml-1">쿠폰 발급 여부</label>
-                  <select name="hasCoupon" value={campaignMeta.hasCoupon || ''} onChange={handleMetaChange} className="w-full bg-[#0a0812] border border-[#303340] rounded-lg px-3 py-2.5 text-xs text-white focus:border-[#4f3df6] outline-none transition-all">
-                    <option value="" disabled>선택</option><option value="N">미포함 (N)</option><option value="Y">포함 (Y)</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-400 mb-1 ml-1">쿠폰 혜택</label>
-                  <input type="text" name="couponBenefit" value={campaignMeta.couponBenefit || ''} onChange={handleMetaChange} disabled={campaignMeta.hasCoupon === 'N'} placeholder="예: 2,000원 할인" className="w-full bg-[#0a0812] border border-[#303340] rounded-lg px-3 py-2.5 text-xs text-white focus:border-[#4f3df6] outline-none transition-all disabled:opacity-30" />
-                </div>
-              </div>
-
-              {/* 🌟 확장 필드: 배너 유형 및 GNB 위치 추가 */}
-              <div className="grid grid-cols-2 gap-3 pt-2 border-t border-[#1a1c26]">
-                <div className="col-span-2">
-                  <label className="block text-[11px] font-bold text-slate-400 mb-1 ml-1">제작 배너 유형</label>
-                  <input type="text" name="bannerTypes" value={campaignMeta.bannerTypes || ''} onChange={handleMetaChange} placeholder="예: 빅배너, 띠배너 (직접 수정 가능)" className="w-full bg-[#0a0812] border border-[#303340] rounded-lg px-3 py-2 text-xs text-white focus:border-[#4f3df6] outline-none transition-all" />
-                </div>
-                <div className="col-span-2">
-                  <label className="block text-[11px] font-bold text-slate-400 mb-1 ml-1">편성 GNB 위치</label>
-                  <input type="text" name="gnbLocations" value={campaignMeta.gnbLocations || ''} onChange={handleMetaChange} placeholder="예: 영화시리즈, TV 방송" className="w-full bg-[#0a0812] border border-[#303340] rounded-lg px-3 py-2 text-xs text-white focus:border-[#4f3df6] outline-none transition-all" />
-                </div>
-              </div>
-
-              <div className="pt-2 border-t border-[#1a1c26]">
-                <label className="block text-[11px] font-bold text-slate-400 mb-1 ml-1 flex justify-between">
-                  <span>Key 컨셉 & 대표 문구</span>
-                </label>
-                <textarea name="conceptCopy" value={campaignMeta.conceptCopy || ''} onChange={handleMetaChange} placeholder="프로모션의 핵심 카피나 톤앤매너를 입력하세요." className="w-full bg-[#0a0812] border border-[#303340] rounded-lg px-3 py-2.5 text-xs text-white focus:border-[#4f3df6] outline-none transition-all h-20 resize-none custom-scrollbar" />
-              </div>
-              <div>
-                <label className="block text-[11px] font-bold text-slate-400 mb-1 ml-1 flex items-center gap-1"><ImageIcon size={10}/> 메인 키비주얼 URL</label>
-                <input type="text" name="mainImageUrl" value={campaignMeta.mainImageUrl || ''} onChange={handleMetaChange} placeholder="https://... (입력 시 모든 시안에 자동 적용)" className="w-full bg-[#0a0812] border border-[#303340] rounded-lg px-3 py-2.5 text-xs text-[#7387ff] focus:border-[#4f3df6] outline-none transition-all" />
-              </div>
+              
             </div>
             
             <div className="p-3 bg-[#12141c] border-t border-[#262833]">
-              {/* 🌟 팝업 없이 부모 함수로 데이터만 넘기고 에디터 뷰로 이동시킴 */}
               <button 
                 onClick={() => { onMoveToEditor(pendingAiPayload); setPendingAiPayload(null); }} 
                 className="w-full flex items-center justify-center gap-1.5 px-4 py-3 bg-gradient-to-r from-[#4f3df6] to-[#7387ff] text-white rounded-lg font-black text-[13px] shadow-[0_0_15px_rgba(79,61,246,0.3)] hover:shadow-[0_0_25px_rgba(79,61,246,0.5)] hover:-translate-y-0.5 transition-all"
@@ -804,7 +819,7 @@
               </button>
             </div>
           </div>
-
+          
           {/* 3단: 우측 머메이드 시뮬레이터 (33%) */}
           <div className="flex-1 flex flex-col bg-[#0f111a] border border-[#262833] rounded-2xl shadow-xl overflow-hidden min-w-[320px]">
             <div className="px-5 py-4 border-b border-[#262833] bg-[#12141c] flex items-center justify-between">
@@ -857,7 +872,7 @@
         const meta = item.meta || {
           campaignName: item.campaignName, target: item.target, targetSize: item.targetSize,
           startDate: item.startDate, dueDate: item.dueDate, hasCoupon: item.hasCoupon, 
-          couponBenefit: item.couponBenefit, conceptCopy: item.conceptCopy, mainImageUrl: item.mainImageUrl,
+          couponBenefit: item.couponBenefit, externalGift: item.externalGift || '', conceptCopy: item.conceptCopy, mainImageUrl: item.mainImageUrl, // 🌟 externalGift 추가
           product: item.product, bannerTypes: item.bannerTypes, gnbLocations: item.gnbLocations
         };
         onLoadCampaign(meta, item.assets || [], item.mermaidCode || "");
@@ -867,7 +882,7 @@
         const meta = item.meta || {
           campaignName: `${item.campaignName} (복제본)`, target: item.target, targetSize: item.targetSize,
           startDate: item.startDate, dueDate: item.dueDate, hasCoupon: item.hasCoupon, couponBenefit: item.couponBenefit,
-          conceptCopy: item.conceptCopy, mainImageUrl: item.mainImageUrl,
+          externalGift: item.externalGift || '', conceptCopy: item.conceptCopy, mainImageUrl: item.mainImageUrl, // 🌟 externalGift 추가
           product: item.product, bannerTypes: item.bannerTypes, gnbLocations: item.gnbLocations
         };
         const duplicatedAssets = (item.assets || []).map((a, idx) => ({ ...a, id: `asset-dup-${Date.now()}-${idx}` }));
@@ -930,20 +945,20 @@
                   return (
                     <div key={item.id} className="bg-[#12141c] border border-[#262833] rounded-xl p-4 hover:border-[#4f3df6] hover:shadow-lg transition-all group">
                       
-                      {/* 🌟 flex-1 대신 고정 너비와 비율을 사용하여 들쭉날쭉함 방지 */}
+                      {/* 🌟 1열 넓이를 33%로 줄이고, 3열 버튼 영역을 보호하여 줄바꿈 방지 */}
                       <div className="flex items-center w-full">
                         
-                        {/* 1열: 기본 캠페인 정보 (w-[40%] 고정) */}
-                        <div className="w-[40%] min-w-[280px] shrink-0 pr-4">
+                        {/* 1열: 기본 캠페인 정보 (w-[33%]로 축소) */}
+                        <div className="w-[33%] min-w-[240px] shrink-0 pr-4">
                           <div className="flex items-center gap-2 mb-1.5">
                             <h4 className="text-white font-bold text-[14px] truncate" title={item.campaignName}>{item.campaignName}</h4>
                             {item.target === 'TARGET' && (
-                              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-orange-500/20 text-orange-400 border border-orange-500/30 flex items-center gap-1 shrink-0">
+                              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-orange-500/20 text-orange-400 border border-orange-500/30 flex items-center gap-1 shrink-0 whitespace-nowrap">
                                 TARGET {displayTargetSize !== 0 && <span className="text-orange-300">({displayTargetSize}명)</span>}
                               </span>
                             )}
                             {item.status === '확정 완료' && (
-                              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-400 border border-blue-500/30 shrink-0">확정 완료</span>
+                              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-400 border border-blue-500/30 shrink-0 whitespace-nowrap">확정 완료</span>
                             )}
                           </div>
                           <div className="text-[11px] text-slate-400 flex items-center gap-2">
@@ -953,29 +968,28 @@
                           </div>
                         </div>
     
-                        {/* 2열: 포함 배너 리스트 (flex-1 할당하여 남은 중앙 공간 차지) */}
-                        <div className="flex-1 px-6 text-left hidden md:block border-l border-[#262833] min-w-0 overflow-hidden">
+                        {/* 2열: 포함 배너 리스트 */}
+                        <div className="flex-1 px-5 text-left hidden md:block border-l border-[#262833] min-w-0 overflow-hidden">
                           <p className="text-[10px] text-slate-500 mb-0.5 font-bold">포함된 배너 에셋</p>
                           <p className="text-[12px] text-slate-300 font-medium truncate w-full" title={bannerTypesText}>
                             {bannerTypesText}
                           </p>
                         </div>
     
-                        {/* 3열: 액션 버튼들 (w-[210px] 고정) */}
-                        <div className="w-[210px] shrink-0 pl-6 border-l border-[#262833] flex items-center justify-end gap-2">
+                        {/* 3열: 액션 버튼들 (🌟 w-[250px] 확보 및 버튼 내 텍스트 줄바꿈 금지) */}
+                        <div className="w-[250px] shrink-0 pl-4 border-l border-[#262833] flex items-center justify-end gap-1.5">
                           {item.jiraKey && (
-                            <button onClick={() => window.open(`https://jira.skbroadband.com/browse/${item.jiraKey}`, '_blank')} className="px-3 py-1.5 bg-[#262833] text-slate-300 rounded text-xs font-medium hover:bg-[#303340] hover:text-white transition-colors flex items-center gap-1.5">
+                            <button onClick={() => window.open(`https://jira.skbroadband.com/browse/${item.jiraKey}`, '_blank')} className="px-3 py-1.5 bg-[#262833] text-slate-300 rounded text-xs font-medium hover:bg-[#303340] hover:text-white transition-colors flex items-center gap-1.5 whitespace-nowrap">
                               <ExternalLink size={12} /> Jira
                             </button>
                           )}
                           
-                          <button onClick={() => handleDuplicate(item)} className="px-3 py-1.5 bg-[#d946ef]/10 text-[#e879f9] border border-[#d946ef]/30 rounded text-xs font-bold hover:bg-[#d946ef]/20 transition-colors flex items-center gap-1.5 ml-1">
+                          <button onClick={() => handleDuplicate(item)} className="px-3 py-1.5 bg-[#d946ef]/10 text-[#e879f9] border border-[#d946ef]/30 rounded text-xs font-bold hover:bg-[#d946ef]/20 transition-colors flex items-center gap-1.5 whitespace-nowrap">
                             <Copy size={12} /> 복제
                           </button>
                           
-                          {/* 🌟 과거 캠페인이 아닐 때만 수정 버튼 렌더링 */}
                           {!isPast && (
-                            <button onClick={() => handleLoad(item)} className="px-3 py-1.5 bg-[#4f3df6]/10 text-[#7387ff] border border-[#4f3df6]/30 rounded text-xs font-bold hover:bg-[#4f3df6]/20 transition-colors flex items-center gap-1">
+                            <button onClick={() => handleLoad(item)} className="px-3 py-1.5 bg-[#4f3df6]/10 text-[#7387ff] border border-[#4f3df6]/30 rounded text-xs font-bold hover:bg-[#4f3df6]/20 transition-colors flex items-center gap-1 whitespace-nowrap">
                               수정 <ChevronRight size={12} />
                             </button>
                           )}
@@ -1018,7 +1032,7 @@
       // EDITOR 전용 상태
       const [campaignMeta, setCampaignMeta] = useState({ 
         campaignName: '', product: '', target: 'MASS', targetSize: '', startDate: '', dueDate: '',
-        hasCoupon: 'N', couponBenefit: '', conceptCopy: '', mainImageUrl: '', bannerTypes: '', gnbLocations: '', isCapaChecked: false
+        hasCoupon: 'N', couponBenefit: '', externalGift: '', conceptCopy: '', mainImageUrl: '', bannerTypes: '', gnbLocations: '', isCapaChecked: false
       });
       const [assets, setAssets] = useState([]); 
       const [mermaidCode, setMermaidCode] = useState(''); // 🌟 App 레벨에 머메이드 저장소 추가
@@ -1026,7 +1040,7 @@
       // AI 기획 폼 전용 상태
       const [aiCampaignMeta, setAiCampaignMeta] = useState({ 
         campaignName: '', product: '', target: 'MASS', targetSize: '', startDate: '', dueDate: '',
-        hasCoupon: 'N', couponBenefit: '', conceptCopy: '', mainImageUrl: '', bannerTypes: '', gnbLocations: '', isCapaChecked: false
+        hasCoupon: 'N', couponBenefit: '', externalGift: '', conceptCopy: '', mainImageUrl: '', bannerTypes: '', gnbLocations: '', isCapaChecked: false
       });
       const [aiChatHistory, setAiChatHistory] = useState([
         { id: 'msg-init', sender: 'ai', text: '매니저님, 환영합니다.\n어떤 프로모션을 기획하실 예정인가요? 우측 폼에 아시는 만큼 먼저 적어주셔도 좋고, 저와 대화하며 하나씩 채워가도 좋습니다!' }
@@ -1489,22 +1503,38 @@
           const bannerTypes = assets.length > 0 ? assets.map(a => a.name).join(', ') : '배너 없음 (타겟/푸시 전용)'; 
           const targetDate = meta.startDate ? `${meta.startDate} ~ ${meta.dueDate || ''}` : '미지정';
           uniqueAssignees.add(cleanAssignee);
-          const couponTextForTarget = meta.hasCoupon === 'Y' ? `<li><b>지급 혜택:</b> ${meta.couponBenefit || '미지정'}</li>` : '';
+          
+          const couponTextForTarget = meta.hasCoupon === 'Y' ? `<li><b>B tv 쿠폰:</b> ${meta.couponBenefit || '미지정'}</li>` : '';
+          // 🌟 [추가됨] 타겟 하위일감에 외부 사은품 내용 추가
+          const giftTextForTarget = meta.externalGift ? `<li><b>외부 사은품:</b> ${meta.externalGift}</li>` : '';
+          
           childIssues.push({
             title: `[운영] ${meta.campaignName || "신규 캠페인"} 타겟팅 세팅 요청`,
-            desc: `<h3>🎯 타겟팅 캠페인 운영 요청</h3><ul><li><b>노출 배너 유형:</b> ${bannerTypes}</li><li><b>편성 일정:</b> ${targetDate}</li><li><b>예상 타겟 모수:</b> ${meta.targetSize || '미지정'}</li>${couponTextForTarget}</ul><br><p>위 내용으로 타겟팅 배너 세팅을 요청드립니다.</p>`,
+            desc: `<h3>🎯 타겟팅 캠페인 운영 요청</h3><ul><li><b>노출 배너 유형:</b> ${bannerTypes}</li><li><b>편성 일정:</b> ${targetDate}</li><li><b>예상 타겟 모수:</b> ${meta.targetSize || '미지정'}</li>${couponTextForTarget}${giftTextForTarget}</ul><br><p>위 내용으로 타겟팅 배너 세팅을 요청드립니다.</p>`,
             assignee: '', gnb: ['기타'] 
           });
         }
 
         const safeHasCoupon = (meta.hasCoupon || '').trim().toUpperCase() === 'Y' ? 'Y' : 'N';
+        
+        // 🌟 [추가됨] 모일감 공통 정보에 외부 사은품 내용 추가
         const parentDescText = 
           "<h3>📌 캠페인 공통 정보</h3>" +
-          "<ul><li><b>캠페인명:</b> " + (meta.campaignName || "미지정") + "</li><li><b>대상 상품:</b> " + (meta.product || "미지정") + "</li><li><b>타겟 유형:</b> " + (meta.target || "MASS") + "</li><li><b>예상 모수:</b> " + (meta.targetSize ? meta.targetSize + "명" : "미지정") + "</li><li><b>타겟 조건:</b> " + (meta.targetCondition || "미지정") + "</li><li><b>편성 일정:</b> " + (meta.startDate || "미지정") + " ~ " + (meta.dueDate || "미지정") + "</li><li><b>쿠폰 발급:</b> " + (safeHasCoupon === 'Y' ? "포함 (" + (meta.couponBenefit || "혜택 미상") + ")" : "미포함") + "</li><li><b>총 요청 건수:</b> " + assets.length + "건</li></ul><br>" +
+          "<ul>" +
+            "<li><b>캠페인명:</b> " + (meta.campaignName || "미지정") + "</li>" +
+            "<li><b>대상 상품:</b> " + (meta.product || "미지정") + "</li>" +
+            "<li><b>타겟 유형:</b> " + (meta.target || "MASS") + "</li>" +
+            "<li><b>예상 모수:</b> " + (meta.targetSize ? meta.targetSize + "명" : "미지정") + "</li>" +
+            "<li><b>타겟 조건:</b> " + (meta.targetCondition || "미지정") + "</li>" +
+            "<li><b>편성 일정:</b> " + (meta.startDate || "미지정") + " ~ " + (meta.dueDate || "미지정") + "</li>" +
+            "<li><b>B tv 쿠폰:</b> " + (safeHasCoupon === 'Y' ? "포함 (" + (meta.couponBenefit || "혜택 미상") + ")" : "미포함") + "</li>" +
+            "<li><b>외부 사은품:</b> " + (meta.externalGift || "없음") + "</li>" + // 🌟 여기에 사은품 필드 반영
+            "<li><b>총 요청 건수:</b> " + assets.length + "건</li>" +
+          "</ul><br>" +
           "<h3>🗺️ 고객 이동 경로 (Userflow)</h3>" +
           (workflowCompressedUrl ? `<img src="${workflowCompressedUrl}" style="max-width: 100%; border: 1px solid #e2e8f0; border-radius: 8px; margin: 10px 0;" /><p>※ 고화질 원본은 본문 하단 첨부파일(<b>workflow_summary.png</b>)을 확인해 주세요.</p>` : "<p>배너 없는 프로모션</p>") + "<br><br>" +
           "<h3>📊 배너 편성 종합표</h3>" + parentTable + "<br><hr><br><p>하위 작업(Sub-task)으로 개별 상세 기획안이 첨부되어 있습니다.</p>";
-
+        
         const mentionString = Array.from(uniqueAssignees).map(id => `[~${id}]`).join(' ');
         const parentCommentText = `${mentionString}\n담당자님, 신규 캠페인 프로모션이 등록되었습니다. 각 영역별 하위 일감(Sub-task)을 확인하시어 배너 편성 및 세팅을 부탁드립니다.`;
 
