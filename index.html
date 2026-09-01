@@ -51,7 +51,8 @@
       Tv, LayoutTemplate, Send, ChevronRight, ChevronDown, ChevronUp, Copy, CheckCircle, 
       Search, Mic, Menu, Home, Grid, Settings, Calendar, GitMerge, Plus, PlusCircle, Trash2, 
       Image as ImageIcon, ListTodo, Smartphone, LayoutPanelLeft, MonitorPlay, Sparkles, Bot, 
-      X, User, ExternalLink, Monitor, Layout, Type, RectangleHorizontal, FileText, CalendarDays, MessageSquare, Loader2, Lock, Users, Download, RefreshCw, Inbox, FolderOpen, PanelLeftOpen, PanelLeftClose
+      X, User, ExternalLink, Monitor, Layout, Type, RectangleHorizontal, FileText, CalendarDays, MessageSquare, Loader2, Lock, Users, Download, RefreshCw, Inbox, FolderOpen, PanelLeftOpen, PanelLeftClose,
+      Database // 🌟 추가됨
     } from 'lucide-react';
     
     // 🌟 [신규 추가] 3단 유저플로우 시뮬레이터 렌더링용 컴포넌트
@@ -1264,6 +1265,41 @@
           alert("다운로드 중 오류가 발생했습니다: " + e.message);
         }
       };
+      const handleSaveDBOnly = () => {
+        if (!campaignMeta.campaignName) return alert("캠페인명을 입력해주세요.");
+        if (assets.length > 0) {
+          if(!window.confirm("배너 에셋이 존재합니다.\n디자인 제작이 필요 없는 쿠폰/사은품 단독 프로모션이 맞습니까?\n\n(확인을 누르면 Jira 일감을 생성하지 않고 DB에만 즉시 저장합니다.)")) return;
+        } else {
+          if(!window.confirm("Jira 일감 생성 없이 타겟팅(DB) 정보만 저장하시겠습니까?")) return;
+        }
+
+        const meta = campaignMeta || {};
+        const cleanAssignee = (localStorage.getItem('myJiraId') || '시스템').split('@')[0].trim();
+        // 🌟 유니크 코드 생성 (현재 타임스탬프 + 난수 조합)
+        const uniqueCode = `BTV-${Date.now().toString(36).toUpperCase()}`;
+        const safeTargetSize = String(meta.targetSize || '0').replace(/[^0-9]/g, '');
+        
+        const finalData = {
+          skipJira: true, // 🌟 이 플래그가 백그라운드에게 Jira 패스 명령을 내립니다!
+          parent: { assignee: cleanAssignee }, // 에러 방지용 더미
+          children: [],
+          rawGasData: { 
+            meta: { ...meta, targetSize: safeTargetSize, uniqueCode: uniqueCode }, 
+            assignee: cleanAssignee, 
+            assets: assets, 
+            mermaidCode: mermaidCode 
+          }
+        };
+
+        setExportState({ isExporting: true, progress: 100, msg: "🚀 DB 저장 중..." });
+        window.dispatchEvent(new CustomEvent('TEST_JIRA_SEND', { detail: finalData }));
+        
+        setTimeout(() => {
+          setExportState({ isExporting: false, progress: 0, msg: '' });
+          alert("DB 저장이 완료되었습니다!");
+          setCurrentView('LIST'); // 완료 후 목록으로 쿨하게 이동
+        }, 3000);
+      };
       
       const handleExport = async () => {
         if (!assets || assets.length === 0) {
@@ -1546,6 +1582,7 @@
         const parentCommentText = `${mentionString}\n담당자님, 신규 캠페인 프로모션이 등록되었습니다. 각 영역별 하위 일감(Sub-task)을 확인하시어 배너 편성 및 세팅을 부탁드립니다.`;
 
         // 🌟 타겟 모수 쉼표(,) 파싱 에러 방지 (숫자만 추출)
+        const uniqueCode = `BTV-${Date.now().toString(36).toUpperCase()}`;
         const safeTargetSize = String(meta.targetSize || '0').replace(/[^0-9]/g, '');
 
         const finalData = {
@@ -1938,6 +1975,7 @@
                         </button>
 
                         <button onClick={() => setIsAddAssetModalOpen(true)} className="flex items-center gap-1.5 px-4 py-2 bg-[#1a1c26] text-white rounded-lg text-xs font-bold border border-[#303340] hover:bg-[#262833] transition-colors"><Plus size={14} className="text-[#7387ff]"/> 배너 추가</button>
+                        {/* 🌟 기존 'Jira 일감 전송' 버튼 옆에 'DB 저장' 버튼 나란히 배치 */}
                         {exportState.isExporting ? (
                           <div className="w-[200px] h-[34px] bg-[#1a1c26] border border-[#4f3df6] rounded-lg overflow-hidden relative flex items-center shadow-[0_0_15px_rgba(79,61,246,0.3)]">
                             <div className="absolute inset-0 bg-[#4f3df6]/20 progress-stripes pointer-events-none"></div>
@@ -1945,7 +1983,14 @@
                             <span className="relative z-10 w-full text-center text-[10px] font-bold text-white flex items-center justify-center gap-1.5"><Loader2 size={12} className="animate-spin"/> {exportState.msg}</span>
                           </div>
                         ) : (
-                          <button onClick={handleExport} className="flex items-center gap-1.5 px-5 py-2 bg-[#4f3df6] hover:bg-[#6252ff] text-white rounded-lg text-xs font-bold shadow-lg shadow-[#4f3df6]/20 transition-all"><Send size={14}/> Jira 일감 전송</button>
+                          <div className="flex gap-2">
+                            <button onClick={handleSaveDBOnly} className="flex items-center gap-1.5 px-4 py-2 bg-[#1a1c26] text-slate-300 rounded-lg text-xs font-bold border border-[#303340] hover:bg-[#262833] hover:text-white transition-colors">
+                              <Database size={14} className="text-pink-400"/> Jira 패스 (저장)
+                            </button>
+                            <button onClick={handleExport} className="flex items-center gap-1.5 px-5 py-2 bg-[#4f3df6] hover:bg-[#6252ff] text-white rounded-lg text-xs font-bold shadow-lg shadow-[#4f3df6]/20 transition-all">
+                              <Send size={14}/> Jira 전송
+                            </button>
+                          </div>
                         )}
                       </div>
                     </header>
