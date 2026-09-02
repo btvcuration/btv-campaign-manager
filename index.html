@@ -868,10 +868,20 @@
           const response = await fetch("https://btv-proxy.alcheminos.workers.dev?action=getCampaigns");
           if (!response.ok) throw new Error("서버와 통신할 수 없습니다.");
           const data = await response.json();
+          
+          // 🌟 [블랙아웃 방어 로직] 데이터가 배열이 아니거나 서버 에러 객체일 경우 화면 크래시를 방지합니다.
+          if (data && data.status === 'error') {
+            throw new Error(data.message || "서버에서 데이터를 불러오지 못했습니다.");
+          }
+          if (!Array.isArray(data)) {
+            throw new Error("서버에서 올바른 목록 형식을 받지 못했습니다.");
+          }
+          
           setCampaigns(data);
         } catch (err) { 
           console.error("캠페인 로드 실패", err); 
           setError(err.message || "목록을 불러오는 중 문제가 발생했습니다."); 
+          setCampaigns([]); // 🌟 빈 배열을 강제 할당하여 map() 함수 크래시 영구 차단
         } finally { 
           setIsLoading(false); 
         }
