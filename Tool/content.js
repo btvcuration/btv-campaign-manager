@@ -1,10 +1,14 @@
+// ✨ [변경 후]
 // 🌟 [추가됨] 프론트엔드가 확장앱 설치 여부와 버전을 즉시 인식할 수 있도록 DOM에 마커 삽입
 if (!document.getElementById('btv-campaign-extension-installed')) {
   const checkNode = document.createElement('div');
   checkNode.id = 'btv-campaign-extension-installed';
   checkNode.style.display = 'none';
-  // manifest.json의 버전에 맞춰 1.2.0으로 수정했습니다.
-  checkNode.setAttribute('data-version', '1.2.0'); 
+  
+  // 🌟 [핵심 수정] 하드코딩을 지우고, manifest.json 파일의 버전을 실시간으로 읽어옵니다!
+  const manifest = chrome.runtime.getManifest();
+  checkNode.setAttribute('data-version', manifest.version || '1.3'); 
+  
   document.body.appendChild(checkNode);
 }
 
