@@ -434,6 +434,7 @@ async function createJiraHierarchy(data, sourceTabId) {
       console.log("🎉 DB 전용 저장 완료!");
     }
 
+    
   } catch (error) {
     console.error("API 연동 에러:", error);
     if (sourceTabId) {
