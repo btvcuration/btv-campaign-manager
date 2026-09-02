@@ -593,33 +593,20 @@
           const resData = await response.json();
           if (resData.status !== 'success') throw new Error(resData.message || "알 수 없는 에러");
 
+          // 🌟 [수정됨] 백틱 정규식 대신, 가장 확실한 첫 중괄호 '{' 와 마지막 '}' 를 찾는 무적의 파서
           let displayAiText = resData.text;
-          const collectedMatch = displayAiText.match(/\*\*\[현재까지 수집된 정보\]\*\*[\s\S]*?(?=\n\n|$)/);
-          if (collectedMatch) displayAiText = displayAiText.replace(collectedMatch[0], '').trim();
-
-          // 화면에 출력되는 머메이드 코드 제거
-          const mermaidRegex = /```(?:mermaid)?\s*(graph TD|flowchart TD)[\s\S]*?```/;
-          const mMatch = displayAiText.match(mermaidRegex);
-          if (mMatch) displayAiText = displayAiText.replace(mMatch[0], '').trim();
-
-          // 🌟 [수정됨] 마크다운이 없어도 텍스트 안에서 중괄호 {} 를 추적하여 강제 파싱하는 로직
           let matchJsonStr = null;
-          let fullMatchString = null; // 🌟 삭제를 위해 백틱 전체를 포함한 원본 문자열 보관
 
-          // 1. 마크다운 ```json 블록 찾기
-          const mdMatch = resData.text.match(/```(?:json)?\n?([\s\S]*?)```/i);
-          
-          if (mdMatch) {
-            fullMatchString = mdMatch[0]; // ```json { ... } ``` 전체
-            matchJsonStr = mdMatch[1];    // { ... } 알맹이만
-          } else {
-            // 2. 마크다운이 없을 경우 텍스트 안의 { 부터 } 까지 추출
-            const startIdx = resData.text.indexOf('{');
-            const endIdx = resData.text.lastIndexOf('}');
-            if (startIdx !== -1 && endIdx !== -1 && endIdx > startIdx) {
-              fullMatchString = resData.text.substring(startIdx, endIdx + 1);
-              matchJsonStr = fullMatchString;
-            }
+          const firstBrace = displayAiText.indexOf('{');
+          const lastBrace = displayAiText.lastIndexOf('}');
+
+          if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+            matchJsonStr = displayAiText.substring(firstBrace, lastBrace + 1);
+            
+            // JSON 부분을 화면 텍스트에서 완전히 도려냅니다.
+            displayAiText = displayAiText.substring(0, firstBrace);
+            // 혹시 남아있을지 모를 마크다운 찌꺼기 청소
+            displayAiText = displayAiText.replace(/```(?:json)?/gi, '').replace(/```/g, '').trim();
           }
 
           if (matchJsonStr) {
@@ -640,19 +627,11 @@
                 if (Array.isArray(metaData.gnbLocations)) metaData.gnbLocations = metaData.gnbLocations.join(', ');
                 setCampaignMeta(prev => ({ ...prev, ...metaData }));
 
-                setPendingAiPayload(parsedJson);
-                displayAiText = "매니저님, 우측 **'비주얼 유저플로우 시뮬레이터'**에 플로우차트가 렌더링되었습니다! 확인해 보시고, 마음에 드신다면 하단의 **[완성된 기획안으로 시안 편집 이동]** 버튼을 눌러 디자인 작업을 시작해 주세요.";
+                setPendingAiPayload(parsedJson); // 🌟 여기서 데이터가 세팅되어야 하단 버튼이 열림!
+                if (!displayAiText) {
+                  displayAiText = "매니저님, 우측 **'비주얼 유저플로우 시뮬레이터'**에 플로우차트가 렌더링되었습니다! 확인해 보시고, 하단의 **[완성된 기획안으로 시안 편집 이동 〉]** 버튼을 눌러주세요.";
+                }
               }
-              
-              // 🌟 [최종 방어선] 화면에 출력할 텍스트에서 JSON의 흔적을 영구 삭제합니다.
-              if (fullMatchString) {
-                displayAiText = displayAiText.replace(fullMatchString, ''); // 찾은 덩어리 전체 삭제
-              }
-              // 혹시 남아있을지 모를 잔여물 강제 청소
-              displayAiText = displayAiText.replace(/```(?:json)?\s*/gi, '');
-              displayAiText = displayAiText.replace(/```/g, '');
-              displayAiText = displayAiText.trim();
-
             } catch (e) { 
               console.error("JSON 파싱 에러", e); 
             }
@@ -761,9 +740,27 @@
                         <option value="" disabled>선택</option><option value="MASS">MASS</option><option value="TARGET">TARGET</option>
                       </select>
                     </div>
+                    {/* 🌟 디자인 통일성을 맞춘 수정본 */}
                     <div>
-                      <label className="block text-[11px] font-bold text-[#7387ff] mb-1.5 ml-1 flex items-center gap-1"><ImageIcon size={10}/> 메인 키비주얼 URL</label>
-                      <input type="text" name="mainImageUrl" value={campaignMeta.mainImageUrl || ''} onChange={handleMetaChange} className="w-full bg-[#0a0812] border border-[#303340] rounded-lg px-3 py-2.5 text-xs text-[#7387ff] focus:border-[#4f3df6] outline-none transition-all" />
+                      <label className="block text-[11px] font-bold text-slate-400 mb-1.5 ml-1">메인 키비주얼 URL</label>
+                      <div className="flex gap-2 items-center">
+                        <input 
+                          type="text" 
+                          name="mainImageUrl"
+                          className="w-full bg-[#0a0812] border border-[#303340] rounded-lg px-3 py-2.5 text-xs text-white focus:border-[#4f3df6] outline-none transition-all" 
+                          placeholder="https://..."
+                          value={campaignMeta.mainImageUrl || ''}
+                          onChange={(e) => setCampaignMeta({...campaignMeta, mainImageUrl: e.target.value})}
+                        />
+                        <button 
+                          type="button" 
+                          onClick={handleGenerateImage} 
+                          disabled={isGeneratingImg}
+                          className="bg-[#4f3df6] hover:bg-[#3b2bc7] text-white px-4 py-2.5 rounded-lg text-xs font-bold whitespace-nowrap disabled:opacity-50 transition-colors"
+                        >
+                          {isGeneratingImg ? "⏳ 생성 중..." : "🪄 AI 이미지 생성"}
+                        </button>
+                      </div>
                     </div>
                   </div>
                   <div>
@@ -826,9 +823,20 @@
               )}
             </div>
             
-            <div className="p-3 bg-[#12141c] border-t border-[#262833]">
-              <button onClick={() => { onMoveToEditor(pendingAiPayload); setPendingAiPayload(null); }} className="w-full flex items-center justify-center gap-1.5 px-4 py-3 bg-gradient-to-r from-[#4f3df6] to-[#7387ff] text-white rounded-lg font-black text-[13px] shadow-[0_0_15px_rgba(79,61,246,0.3)] hover:shadow-[0_0_25px_rgba(79,61,246,0.5)] hover:-translate-y-0.5 transition-all">
-                완성된 기획안으로 시안 편집 이동 <ChevronRight size={16} />
+            {/* 🌟 [수정됨] 데이터가 완벽히 생성되기 전까지는 버튼을 잠금 처리합니다 */}
+            <div className="mt-8">
+              <button
+                onClick={() => {
+                  if (pendingAiPayload) setStep(3);
+                }}
+                disabled={!pendingAiPayload}
+                className={`w-full py-4 rounded-lg font-bold text-white transition-all shadow-md ${
+                  pendingAiPayload
+                    ? "bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 cursor-pointer"
+                    : "bg-gray-400 cursor-not-allowed opacity-70"
+                }`}
+              >
+                {pendingAiPayload ? "완성된 기획안으로 시안 편집 이동 〉" : "⚠️ 시안(에셋) 데이터가 생성되어야 이동 가능합니다"}
               </button>
             </div>
           </div>
@@ -1081,6 +1089,42 @@
         campaignName: '', product: '', target: 'MASS', targetSize: '', startDate: '', dueDate: '',
         hasCoupon: 'N', couponBenefit: '', externalGift: '', conceptCopy: '', mainImageUrl: '', bannerTypes: '', gnbLocations: '', isCapaChecked: false
       });
+      // 🌟 [추가] 이미지 생성 로딩 상태
+      const [isGeneratingImg, setIsGeneratingImg] = React.useState(false);
+
+      // 🌟 [추가] 이미지 생성 버튼 클릭 핸들러
+      const handleGenerateImage = async () => {
+        if (!campaignMeta.conceptCopy) {
+          alert("먼저 'Key 컨셉 & 대표 문구'를 입력해 주세요!");
+          return;
+        }
+        setIsGeneratingImg(true);
+        try {
+          // 🚨 매니저님이 사용하시는 프록시(Cloudflare Worker) 또는 GAS 웹앱 주소로 반드시 변경하세요!
+          const response = await fetch("https://btv-proxy.alcheminos.workers.dev", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              action: "generateImage",
+              product: campaignMeta.product,
+              conceptCopy: campaignMeta.conceptCopy
+            })
+          });
+          
+          const resData = await response.json();
+          if (resData.status === "success" && resData.url) {
+            setCampaignMeta(prev => ({ ...prev, mainImageUrl: resData.url }));
+            alert("✅ AI 키비주얼이 성공적으로 생성 및 반영되었습니다!");
+          } else {
+            alert("⚠️ 이미지 생성 실패: " + resData.message);
+          }
+        } catch (error) {
+          console.error(error);
+          alert("⚠️ 서버와 통신하는 중 에러가 발생했습니다.");
+        } finally {
+          setIsGeneratingImg(false);
+        }
+      };
       const [assets, setAssets] = useState([]); 
       const [mermaidCode, setMermaidCode] = useState(''); // 🌟 App 레벨에 머메이드 저장소 추가
 
