@@ -1343,7 +1343,34 @@
         setExportState({ isExporting: true, progress: 10, msg: "이미지 추출 준비 중..." });
         let capturedImages = {};
 
-        // 🌟 수정: 세트형 배너는 다중 캡처 지원
+        // 🌟 [핵심 보강] 네이티브 캡처 실패 시 html2canvas로 즉시 우회하는 무적의 캡처 헬퍼 함수
+        const captureElementWithFallback = async (element) => {
+          const rect = element.getBoundingClientRect();
+          let dataUrl = await new Promise((resolve) => {
+            const timeout = setTimeout(() => resolve(null), 2500); // 2.5초 대기
+            const listener = (e) => { 
+              clearTimeout(timeout); 
+              window.removeEventListener('RECEIVE_SCREENSHOT', listener); 
+              resolve(e.detail?.dataUrl); 
+            };
+            window.addEventListener('RECEIVE_SCREENSHOT', listener);
+            window.dispatchEvent(new CustomEvent('REQUEST_SCREENSHOT', { detail: { x: rect.left, y: rect.top, width: rect.width, height: rect.height } }));
+          });
+
+          // 네이티브 캡처가 null을 뱉었을 경우 자체 엔진으로 강제 캡처
+          if (!dataUrl) {
+            console.warn("🚨 Native capture failed or timed out. Falling back to html2canvas...");
+            try {
+              const canvas = await window.html2canvas(element, { backgroundColor: '#0a0a0f', scale: 2, useCORS: true });
+              dataUrl = canvas.toDataURL('image/png');
+            } catch (err) {
+              console.error("Fallback capture error:", err);
+            }
+          }
+          return dataUrl || ''; // 최악의 경우에도 빈 문자열 보장하여 에러 방지
+        };
+
+        // 🌟 수정: 세트형/단일 배너 모두 무적 캡처 함수 적용
         for (let i = 0; i < assets.length; i++) {
           const asset = assets[i];
           const currentProgress = 10 + Math.floor((i / assets.length) * 40); 
@@ -1357,34 +1384,22 @@
             for (let c = 0; c < colCount; c++) {
               setExportState({ isExporting: true, progress: currentProgress, msg: `[${asset.name}] 세트 ${c+1}/${colCount} 캡처 중...` });
               handleAssetChange(asset.id, 'selectedCardIndex', c);
-              await new Promise(r => setTimeout(r, 1000)); // UI 업데이트 대기
+              await new Promise(r => setTimeout(r, 1500)); // UI 업데이트 대기
               
               const element = document.getElementById('capture-preview-area');
               if (element) {
-                const rect = element.getBoundingClientRect();
-                const dataUrl = await new Promise((resolve) => {
-                  const timeout = setTimeout(() => resolve(null), 3000);
-                  const listener = (e) => { clearTimeout(timeout); window.removeEventListener('RECEIVE_SCREENSHOT', listener); resolve(e.detail.dataUrl); };
-                  window.addEventListener('RECEIVE_SCREENSHOT', listener);
-                  window.dispatchEvent(new CustomEvent('REQUEST_SCREENSHOT', { detail: { x: rect.left, y: rect.top, width: rect.width, height: rect.height } }));
-                });
+                const dataUrl = await captureElementWithFallback(element);
                 if (dataUrl) setImages.push(dataUrl);
               }
             }
             capturedImages[asset.id] = setImages;
           } else {
             setExportState({ isExporting: true, progress: currentProgress, msg: `[${asset.name}] 캡처 진행 중...` });
-            await new Promise(r => setTimeout(r, 800)); 
+            await new Promise(r => setTimeout(r, 1200)); 
             
             const element = document.getElementById('capture-preview-area');
             if (element) {
-              const rect = element.getBoundingClientRect();
-              const dataUrl = await new Promise((resolve) => {
-                const timeout = setTimeout(() => resolve(null), 3000);
-                const listener = (e) => { clearTimeout(timeout); window.removeEventListener('RECEIVE_SCREENSHOT', listener); resolve(e.detail.dataUrl); };
-                window.addEventListener('RECEIVE_SCREENSHOT', listener);
-                window.dispatchEvent(new CustomEvent('REQUEST_SCREENSHOT', { detail: { x: rect.left, y: rect.top, width: rect.width, height: rect.height } }));
-              });
+              const dataUrl = await captureElementWithFallback(element);
               if (dataUrl) capturedImages[asset.id] = dataUrl;
             }
           }
@@ -1393,7 +1408,8 @@
         setExportState({ isExporting: true, progress: 60, msg: "워크플로우 플로우차트 생성 중..." });
 
         let workflowDataUrl = null;
-        const canvasOptions = { backgroundColor: '#0f111a', scale: 2, useCORS: true, allowTaint: true };
+        // 🌟 [버그 수정] allowTaint: true를 제거하여 캔버스 오염(Tainted) 에러 원천 차단
+        const canvasOptions = { backgroundColor: '#0f111a', scale: 2, useCORS: true };
 
         if (mermaidCode && mermaidCode.trim().length > 0) {
           try {
@@ -1410,30 +1426,33 @@
             mermaidContainer.innerHTML = `<div style="width:100%; text-align:left; margin-bottom:40px; border-bottom:2px solid #262833; padding-bottom:15px;"><h2 style="color:#7387ff; margin:0; font-size:28px; font-weight:900;">🎯 B tv Campaign Userflow</h2><p style="color:#cbd5e1; margin:8px 0 0 0; font-size:16px;">${meta.campaignName || "신규 캠페인"}</p></div><div id="mermaid-render-target"></div>`;
             document.body.appendChild(mermaidContainer);
 
-            mermaid.initialize({ startOnLoad: false, theme: 'dark', securityLevel: 'loose', maxTextSize: 50000000 });
-            const { svg } = await mermaid.render('mermaid-export-svg', finalMermaidCode);
+            window.mermaid.initialize({ startOnLoad: false, theme: 'dark', securityLevel: 'loose', maxTextSize: 50000000 });
+            const { svg } = await window.mermaid.render('mermaid-export-svg', finalMermaidCode);
             document.getElementById('mermaid-render-target').innerHTML = svg;
 
             await new Promise(r => setTimeout(r, 1500));
             const workflowCanvas = await window.html2canvas(mermaidContainer, canvasOptions);
             workflowDataUrl = workflowCanvas.toDataURL('image/png');
             document.body.removeChild(mermaidContainer);
-          } catch (error) { console.error(error); }
+          } catch (error) { console.error("Mermaid Render Error:", error); }
         }
 
-        if (!workflowDataUrl) {
+        if (!workflowDataUrl && assets.length > 0) {
           const workflowContainer = document.createElement('div');
-          workflowContainer.style.cssText = 'position:absolute; top:0; left:0; width:1400px; background:#0f111a; padding:50px; border-radius:20px; display:flex; flex-direction:column; align-items:center; color:white; font-family:Pretendard, sans-serif; z-index:-9999;';
-          let flowHtml = `<div style="width:100%; text-align:left; margin-bottom:40px; border-bottom:2px solid #262833; padding-bottom:15px;"><h2 style="color:#7387ff; margin:0; font-size:28px; font-weight:900;">🎯 B tv Campaign Userflow</h2><p style="color:#cbd5e1; margin:8px 0 0 0; font-size:16px;">${meta.campaignName || "신규 캠페인"}</p></div><div style="display:flex; align-items:center; justify-content:center; gap:20px; width:100%; flex-wrap:wrap;">`;
+          workflowContainer.style.cssText = 'position:absolute; top:0; left:0; width:1000px; background:#0f111a; padding:50px; border-radius:20px; display:flex; flex-direction:column; align-items:center; color:white; font-family:Pretendard, sans-serif; z-index:-9999;';
+          let flowHtml = `<div style="width:100%; text-align:left; margin-bottom:40px; border-bottom:2px solid #262833; padding-bottom:15px;"><h2 style="color:#7387ff; margin:0; font-size:32px; font-weight:900;">🎯 B tv Campaign Userflow</h2><p style="color:#cbd5e1; margin:8px 0 0 0; font-size:18px;">${meta.campaignName || "신규 캠페인"}</p></div><div style="display:flex; flex-direction:column; align-items:center; width:100%; padding: 20px 0;">`;
+          
           assets.forEach((asset, idx) => {
              const imgData = Array.isArray(capturedImages[asset.id]) ? capturedImages[asset.id][0] : capturedImages[asset.id];
-             flowHtml += `<div style="display:flex; flex-direction:column; align-items:center; width:280px;"><div style="width:100%; background:#1a1c26; padding:15px; border-radius:16px; border:1px solid #303340; box-shadow:0 10px 25px rgba(0,0,0,0.5);"><img src="${imgData}" style="width:100%; border-radius:8px; object-fit:contain; display:block;" /></div><div style="margin-top:20px; text-align:center;"><span style="background:#4f3df6; color:white; padding:5px 12px; border-radius:20px; font-size:13px; font-weight:bold;">Step ${idx + 1}</span><p style="margin:10px 0 0 0; font-size:15px; font-weight:bold; color:#e2e8f0; word-break:keep-all;">${asset.name}</p><p style="margin:5px 0 0 0; font-size:12px; color:#7387ff; font-weight:bold;">[${asset.data?.gnb || '미지정'}]</p></div></div>`;
-             if (idx < assets.length - 1) { flowHtml += `<div style="color:#7387ff; font-size:32px; font-weight:bold; margin-bottom:50px;">➔</div>`; }
+             const imgSrcHtml = imgData ? `<img src="${imgData}" style="width:100%; border-radius:8px; object-fit:contain; display:block;" />` : `<div style="width:100%; height:200px; display:flex; align-items:center; justify-content:center; color:#555;">이미지 없음</div>`;
+             
+             flowHtml += `<div style="display:flex; flex-direction:column; align-items:center; width: 600px;"><div style="width:100%; background:#1a1c26; padding:20px; border-radius:16px; border:1px solid #303340; box-shadow:0 10px 25px rgba(0,0,0,0.5);">${imgSrcHtml}</div><div style="margin-top:20px; text-align:center;"><span style="background:#4f3df6; color:white; padding:6px 16px; border-radius:20px; font-size:15px; font-weight:bold;">Step ${idx + 1}</span><p style="margin:12px 0 0 0; font-size:20px; font-weight:bold; color:#e2e8f0; word-break:keep-all;">${asset.name}</p><p style="margin:6px 0 0 0; font-size:16px; color:#7387ff; font-weight:bold;">[${asset.data?.gnb || '미지정'}]</p></div></div>`;
+             if (idx < assets.length - 1) { flowHtml += `<div style="color:#7387ff; font-size:40px; font-weight:bold; margin: 30px 0;">⬇️</div>`; }
           });
           flowHtml += `</div>`;
           workflowContainer.innerHTML = flowHtml;
           document.body.appendChild(workflowContainer);
-          await new Promise(r => setTimeout(r, 1000));
+          await new Promise(r => setTimeout(r, 1500));
           const workflowCanvas = await window.html2canvas(workflowContainer, canvasOptions);
           workflowDataUrl = workflowCanvas.toDataURL('image/png');
           document.body.removeChild(workflowContainer);
@@ -1442,7 +1461,8 @@
         setExportState({ isExporting: true, progress: 85, msg: "Jira 최적화 데이터 압축 중..." });
 
         const compressImageForBody = (dataUrl, maxWidth = 500, quality = 0.4) => {
-          if (!dataUrl) return Promise.resolve('');
+          // 🌟 빈 값 방어 로직 추가
+          if (!dataUrl || typeof dataUrl !== 'string' || !dataUrl.startsWith('data:image')) return Promise.resolve('');
           return new Promise((resolve) => {
             const img = new Image();
             img.onload = () => {
@@ -1479,7 +1499,6 @@
           
           const dateInfo = data.startDate ? `${data.startDate} ~ ${data.dueDate || ''}` : '미지정';
           
-          // 🌟 세트형 배너 다중 이미지 및 표 처리
           if (asset.type === 'GENERAL_SET_BANNER') {
             const setImagesArr = capturedImages[asset.id] || [];
             const colCount = data.colType === '3단' ? 3 : 2;
@@ -1523,7 +1542,7 @@
               title: `[디자인] ${meta.campaignName || "신규 캠페인"} _ ${asset?.name || '미지정'}`, 
               desc: childDesc, 
               assignee: mappedAssigneeJiraId, 
-              imagesDataArr: setImagesArr, // 🌟 세트 이미지는 배열로 넘겨 Background에서 개별 첨부하게 처리
+              imagesDataArr: setImagesArr, 
               startDate: data.startDate, 
               dueDate: data.dueDate, 
               gnb: targetGnbs 
@@ -1532,7 +1551,12 @@
             // 단일 배너
             let copyText = data.mainTitle || data.copy || data.bannerCopy || data.previewTitle || '미지정';
             const imgName = `banner_preview_${idx + 1}.png`;
-            const imgDataUrl = capturedImages[asset.id] || '';
+            
+            // 🌟 단일/다중 배열 예외 완벽 방어 처리
+            let imgDataUrl = capturedImages[asset.id];
+            if (Array.isArray(imgDataUrl)) imgDataUrl = imgDataUrl[0];
+            imgDataUrl = imgDataUrl || '';
+
             const compressedThumb = await compressImageForBody(imgDataUrl, 200, 0.3);
             const compressedBody = await compressImageForBody(imgDataUrl, 500, 0.4);
             
@@ -1552,7 +1576,7 @@
               "<tr><th style='padding: 8px; background-color: #f4f5f7;'>비고</th><td style='padding: 8px;'>" + (data.note || '없음').replace(/\n/g, '<br>') + "</td></tr>" +
               "</table><br><h3>🎨 시뮬레이터 캡처 시안</h3>" +
               (compressedBody ? `<img src="${compressedBody}" style="max-width: 100%; border: 1px solid #e2e8f0; border-radius: 8px; margin: 10px 0;" />` : '') +
-              "<p>※ 고화질 원본은 본문 하단 <b>첨부파일(${imgName})</b>을 확인해 주세요.</p>";
+              `<p>※ 고화질 원본은 본문 하단 <b>첨부파일(${imgName})</b>을 확인해 주세요.</p>`;
 
             return {
               title: `[디자인] ${meta.campaignName || "신규 캠페인"} _ ${asset?.name || '미지정'}`, 
@@ -1571,7 +1595,6 @@
           uniqueAssignees.add(cleanAssignee);
           
           const couponTextForTarget = meta.hasCoupon === 'Y' ? `<li><b>B tv 쿠폰:</b> ${meta.couponBenefit || '미지정'}</li>` : '';
-          // 🌟 [추가됨] 타겟 하위일감에 외부 사은품 내용 추가
           const giftTextForTarget = meta.externalGift ? `<li><b>외부 사은품:</b> ${meta.externalGift}</li>` : '';
           
           childIssues.push({
@@ -1583,7 +1606,6 @@
 
         const safeHasCoupon = (meta.hasCoupon || '').trim().toUpperCase() === 'Y' ? 'Y' : 'N';
         
-        // 🌟 [추가됨] 모일감 공통 정보에 외부 사은품 내용 추가
         const parentDescText = 
           "<h3>📌 캠페인 공통 정보</h3>" +
           "<ul>" +
@@ -1594,7 +1616,7 @@
             "<li><b>타겟 조건:</b> " + (meta.targetCondition || "미지정") + "</li>" +
             "<li><b>편성 일정:</b> " + (meta.startDate || "미지정") + " ~ " + (meta.dueDate || "미지정") + "</li>" +
             "<li><b>B tv 쿠폰:</b> " + (safeHasCoupon === 'Y' ? "포함 (" + (meta.couponBenefit || "혜택 미상") + ")" : "미포함") + "</li>" +
-            "<li><b>외부 사은품:</b> " + (meta.externalGift || "없음") + "</li>" + // 🌟 여기에 사은품 필드 반영
+            "<li><b>외부 사은품:</b> " + (meta.externalGift || "없음") + "</li>" +
             "<li><b>총 요청 건수:</b> " + assets.length + "건</li>" +
           "</ul><br>" +
           "<h3>🗺️ 고객 이동 경로 (Userflow)</h3>" +
@@ -1602,17 +1624,19 @@
           "<h3>📊 배너 편성 종합표</h3>" + parentTable + "<br><hr><br><p>하위 작업(Sub-task)으로 개별 상세 기획안이 첨부되어 있습니다.</p>";
         
         const mentionString = Array.from(uniqueAssignees).map(id => `[~${id}]`).join(' ');
-        const parentCommentText = `${mentionString}\n담당자님, 신규 캠페인 프로모션이 등록되었습니다. 각 영역별 하위 일감(Sub-task)을 확인하시어 배너 편성 및 세팅을 부탁드립니다.`;
+        const parentCommentText = `${mentionString}\n담당자님, 신규 캠페인 프로모션이 등록(또는 업데이트) 되었습니다. 각 영역별 하위 일감(Sub-task)을 확인하시어 배너 편성 및 세팅을 부탁드립니다.`;
 
-        // 🌟 타겟 모수 쉼표(,) 파싱 에러 방지 (숫자만 추출)
-        const uniqueCode = `BTV-${Date.now().toString(36).toUpperCase()}`;
+        const uniqueCode = meta.uniqueCode || `BTV-${Date.now().toString(36).toUpperCase()}`;
         const safeTargetSize = String(meta.targetSize || '0').replace(/[^0-9]/g, '');
 
         const finalData = {
+          skipJira: false,
+          parentJiraKey: meta.parentJiraKey || "",
+          uniqueCode: uniqueCode,
           parent: { title: `[캠페인] ${meta.campaignName || "신규 캠페인"}`, desc: parentDescText, assignee: cleanAssignee, startDate: meta.startDate, dueDate: meta.dueDate, images: parentImagesToUpload, comment: parentCommentText },
           children: childIssues,
           rawGasData: { 
-            meta: { ...meta, targetSize: safeTargetSize }, // 쉼표 제거된 안전한 모수 전달
+            meta: { ...meta, targetSize: safeTargetSize, uniqueCode: uniqueCode }, 
             assignee: cleanAssignee, 
             assets: assets, 
             mermaidCode: mermaidCode 
@@ -1622,7 +1646,10 @@
         window.dispatchEvent(event);
         
         setExportState({ isExporting: true, progress: 100, msg: "🚀 전송 완료! 잠시 후 Jira가 열립니다." });
-        setTimeout(() => setExportState({ isExporting: false, progress: 0, msg: '' }), 4000);
+        setTimeout(() => {
+          setExportState({ isExporting: false, progress: 0, msg: '' });
+          setCurrentView('LIST');
+        }, 4000);
       };
 
       const activeAsset = assets.find(a => a.id === activeTabId) || assets[0];
