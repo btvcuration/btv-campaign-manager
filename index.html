@@ -602,18 +602,23 @@
           const mMatch = displayAiText.match(mermaidRegex);
           if (mMatch) displayAiText = displayAiText.replace(mMatch[0], '').trim();
 
-          // 🌟 [수정됨] 마크다운이 없어도 텍스트 안에서 중괄호 {} 를 추적하여 강제 파싱하는 철벽 로직
+          // 🌟 [수정됨] 마크다운이 없어도 텍스트 안에서 중괄호 {} 를 추적하여 강제 파싱하는 로직
           let matchJsonStr = null;
-          const mdMatch = resData.text.match(/```(?:json)?\n?([\s\S]*?)```/);
+          let fullMatchString = null; // 🌟 삭제를 위해 백틱 전체를 포함한 원본 문자열 보관
+
+          // 1. 마크다운 ```json 블록 찾기
+          const mdMatch = resData.text.match(/```(?:json)?\n?([\s\S]*?)```/i);
           
           if (mdMatch) {
-            matchJsonStr = mdMatch[1];
+            fullMatchString = mdMatch[0]; // ```json { ... } ``` 전체
+            matchJsonStr = mdMatch[1];    // { ... } 알맹이만
           } else {
-            // 마크다운이 없을 경우 텍스트 안의 { 부터 } 까지 추출
+            // 2. 마크다운이 없을 경우 텍스트 안의 { 부터 } 까지 추출
             const startIdx = resData.text.indexOf('{');
             const endIdx = resData.text.lastIndexOf('}');
             if (startIdx !== -1 && endIdx !== -1 && endIdx > startIdx) {
-              matchJsonStr = resData.text.substring(startIdx, endIdx + 1);
+              fullMatchString = resData.text.substring(startIdx, endIdx + 1);
+              matchJsonStr = fullMatchString;
             }
           }
 
@@ -629,7 +634,6 @@
                 setCampaignMeta(prev => ({ ...prev, ...d }));
               } 
               else if (parsedJson.action === "CREATE_CAMPAIGN_ASSETS") {
-                // 🌟 [추가됨] 시안 생성 직후 2단(기획 폼)에도 누락 필드 즉시 렌더링
                 const metaData = parsedJson.rawGasData?.meta || parsedJson.meta || {};
                 if (!metaData.conceptCopy && (metaData.concept || metaData.mainCopy || metaData.keyConcept)) metaData.conceptCopy = metaData.concept || metaData.mainCopy || metaData.keyConcept;
                 if (Array.isArray(metaData.bannerTypes)) metaData.bannerTypes = metaData.bannerTypes.join(', ');
@@ -640,11 +644,13 @@
                 displayAiText = "매니저님, 우측 **'비주얼 유저플로우 시뮬레이터'**에 플로우차트가 렌더링되었습니다! 확인해 보시고, 마음에 드신다면 하단의 **[완성된 기획안으로 시안 편집 이동]** 버튼을 눌러 디자인 작업을 시작해 주세요.";
               }
               
-              // 🌟 [최종 방어선] 화면에 출력할 텍스트에서 JSON의 흔적을 영구 제초(Obliterate)합니다.
-              // (문제의 불필요한 괄호를 삭제하고 try 블록 안쪽으로 정상 편입했습니다.)
-              displayAiText = displayAiText.replace(matchJsonStr, '');
-              displayAiText = displayAiText.replace(/```(json)?/gi, '');
-              displayAiText = displayAiText.replace(/\{\s*"action"[\s\S]*/, '');
+              // 🌟 [최종 방어선] 화면에 출력할 텍스트에서 JSON의 흔적을 영구 삭제합니다.
+              if (fullMatchString) {
+                displayAiText = displayAiText.replace(fullMatchString, ''); // 찾은 덩어리 전체 삭제
+              }
+              // 혹시 남아있을지 모를 잔여물 강제 청소
+              displayAiText = displayAiText.replace(/```(?:json)?\s*/gi, '');
+              displayAiText = displayAiText.replace(/```/g, '');
               displayAiText = displayAiText.trim();
 
             } catch (e) { 
