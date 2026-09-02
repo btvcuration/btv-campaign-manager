@@ -61,8 +61,20 @@ chrome.action.onClicked.addListener((tab) => {
   chrome.tabs.create({ url: "https://btvcuration.github.io/campaign/" });
 });
 
-// 🌟 Content Script의 요청을 받아 Capa CSV 데이터를 Fetch 해오는 리스너
-chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+// 🌟 [추가됨] Jira 로그인 상태를 몰래 찔러보고(Fetch) 결과를 반환
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.action === "CHECK_JIRA_SESSION") {
+    fetch("https://jira.skbroadband.com/rest/api/2/myself", { credentials: "include" })
+      .then(res => {
+        const isHtml = res.headers.get("content-type")?.includes("text/html");
+        // HTML 로그인 페이지로 리다이렉트되지 않고 정상 JSON 응답이 오면 로그인 상태임
+        if (res.ok && !isHtml) sendResponse({ isLogged: true });
+        else sendResponse({ isLogged: false });
+      })
+      .catch(e => sendResponse({ isLogged: false }));
+    return true; // 비동기 응답 대기
+  }
+  
   if (request.action === 'fetchCapaCsv') {
     const CSV_URL = 'https://btv-proxy.alcheminos.workers.dev/?action=getCapaCsv';
     
