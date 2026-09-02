@@ -1700,61 +1700,108 @@
               </div>
               
               {/* 하단 제어 메뉴 */}
-              <div className="mt-auto flex flex-col w-full">
+              <div className="mt-auto flex flex-col w-full px-3 gap-2.5">
                 
                 {/* 🌟 Jira 세션 상태 뱃지 */}
-                <div className={`flex items-center px-3 py-2.5 mx-3 mb-4 rounded-xl border ${jiraSession === 'LOGGED_IN' ? 'bg-[#32d782]/10 border-[#32d782]/30' : 'bg-pink-500/10 border-pink-500/30'} transition-all ${isNavExpanded ? '' : 'justify-center'}`}>
-                  <div className={`w-2 h-2 rounded-full ${jiraSession === 'LOGGED_IN' ? 'bg-[#32d782] shadow-[0_0_8px_#32d782]' : 'bg-pink-500 shadow-[0_0_8px_#ec4899] animate-pulse'} shrink-0`}></div>
-                  <span className={`text-[11px] font-bold ml-2.5 whitespace-nowrap transition-opacity duration-300 ${jiraSession === 'LOGGED_IN' ? 'text-[#32d782]' : 'text-pink-400'} ${isNavExpanded ? 'opacity-100' : 'hidden opacity-0'}`}>
-                    {jiraSession === 'LOGGED_IN' ? 'Jira 연동됨' : 'Jira 로그인 필요'}
-                  </span>
+                <div 
+                  title={jiraSession === 'LOGGED_IN' ? 'Jira 세션 유효' : 'Jira 로그인 필요 (클릭 시 이동)'}
+                  onClick={() => jiraSession !== 'LOGGED_IN' && window.open('https://jira.skbroadband.com', '_blank')}
+                  className={`h-[44px] flex items-center rounded-xl border transition-all cursor-pointer ${
+                    jiraSession === 'LOGGED_IN' 
+                      ? 'bg-[#32d782]/10 border-[#32d782]/30 text-[#32d782]' 
+                      : 'bg-pink-500/10 border-pink-500/30 text-pink-400 hover:bg-pink-500/20'
+                  } ${isNavExpanded ? 'px-3.5 w-full' : 'w-[48px] justify-center px-0'}`}
+                >
+                  <div className={`w-2.5 h-2.5 rounded-full shrink-0 ${
+                    jiraSession === 'LOGGED_IN' 
+                      ? 'bg-[#32d782] shadow-[0_0_8px_#32d782]' 
+                      : 'bg-pink-500 shadow-[0_0_8px_#ec4899] animate-pulse'
+                  }`}></div>
+                  {isNavExpanded && (
+                    <span className="text-[11px] font-bold ml-3 whitespace-nowrap truncate">
+                      {jiraSession === 'LOGGED_IN' ? 'Jira 연동됨' : 'Jira 로그인 필요'}
+                    </span>
+                  )}
                 </div>
 
-                <div className="flex flex-col gap-3 px-3">
-                  {/* 🌟 스마트 확장앱 버전 관리 버튼 */}
-                  {(() => {
-                    let extBtnText = "확장앱 로딩중";
-                    let extBtnClass = "text-slate-500 bg-[#1a1c26] cursor-wait";
-                    let extIcon = <Loader2 size={16} className="shrink-0 animate-spin" />;
-                    let extClick = () => {};
+                {/* 🌟 스마트 확장앱 버전 관리 버튼 */}
+                {(() => {
+                  // 버전 문자열 정규화 (1.3 -> 1.3.0 형태 비교 지원)
+                  const cleanVer = (v) => v ? String(v).trim().replace(/^v/, '') : '';
+                  const curV = cleanVer(extensionVersion);
+                  const gitV = cleanVer(githubVersion);
 
-                    if (extensionVersion === null) {
-                      extBtnText = "확장앱 설치 필요";
-                      extBtnClass = "text-pink-400 bg-pink-400/10 border-pink-400/30 border hover:bg-pink-400/20 cursor-pointer";
-                      extIcon = <Download size={16} className="shrink-0" />;
-                      extClick = handleDownloadExtension;
-                    } else if (githubVersion && extensionVersion !== githubVersion) {
-                      extBtnText = `v${githubVersion} 업데이트 필요`;
-                      extBtnClass = "text-orange-400 bg-orange-400/10 border-orange-400/30 border hover:bg-orange-400/20 cursor-pointer";
-                      extIcon = <RefreshCw size={16} className="shrink-0" />;
-                      extClick = handleDownloadExtension;
-                    } else if (githubVersion && extensionVersion === githubVersion) {
-                      extBtnText = `확장앱 최신 (v${extensionVersion})`;
-                      extBtnClass = "text-[#32d782] bg-[#32d782]/10 border-[#32d782]/20 border cursor-default";
-                      extIcon = <CheckCircle size={16} className="shrink-0" />;
-                      extClick = () => {};
-                    }
+                  let extBtnText = "확장앱 확인 중";
+                  let extBtnClass = "text-slate-500 bg-[#1a1c26] border-transparent";
+                  let extIcon = <Loader2 size={18} className="shrink-0 animate-spin" />;
+                  let extClick = () => {};
+                  let tooltip = "확장 프로그램 상태 확인 중";
 
-                    return (
-                      <button onClick={extClick} className={`h-[44px] w-full flex items-center px-3.5 rounded-xl transition-colors ${extBtnClass}`}>
-                        {extIcon}
-                        <span className={`text-[11px] ml-3.5 whitespace-nowrap transition-opacity duration-300 font-bold ${isNavExpanded ? 'opacity-100' : 'hidden opacity-0'}`}>
+                  if (!curV) {
+                    extBtnText = "확장앱 설치 필요";
+                    extBtnClass = "text-pink-400 bg-pink-500/10 border-pink-500/30 hover:bg-pink-500/20";
+                    extIcon = <Download size={18} className="shrink-0" />;
+                    extClick = handleDownloadExtension;
+                    tooltip = "확장 프로그램 미설치: 클릭 시 다운로드";
+                  } else if (gitV && curV !== gitV) {
+                    extBtnText = `v${gitV} 업데이트 필요`;
+                    extBtnClass = "text-orange-400 bg-orange-500/10 border-orange-500/30 hover:bg-orange-500/20";
+                    extIcon = <RefreshCw size={18} className="shrink-0" />;
+                    extClick = handleDownloadExtension;
+                    tooltip = `업데이트 가능 (현재: v${curV} / 최신: v${gitV})`;
+                  } else {
+                    extBtnText = `확장앱 최신 (v${curV || '1.3'})`;
+                    extBtnClass = "text-[#32d782] bg-[#32d782]/10 border-[#32d782]/30";
+                    extIcon = <CheckCircle size={18} className="shrink-0" />;
+                    extClick = () => {};
+                    tooltip = `최신 버전 사용 중 (v${curV || '1.3'})`;
+                  }
+
+                  return (
+                    <button 
+                      onClick={extClick} 
+                      title={tooltip}
+                      className={`h-[44px] flex items-center rounded-xl border transition-all ${extBtnClass} ${
+                        isNavExpanded ? 'px-3.5 w-full' : 'w-[48px] justify-center px-0'
+                      }`}
+                    >
+                      {extIcon}
+                      {isNavExpanded && (
+                        <span className="text-[11px] font-bold ml-3 whitespace-nowrap truncate">
                           {extBtnText}
                         </span>
-                      </button>
-                    );
-                  })()}
+                      )}
+                    </button>
+                  );
+                })()}
 
-                  <button onClick={() => setIsNavExpanded(!isNavExpanded)} className={`h-[44px] overflow-hidden flex items-center justify-start px-3.5 rounded-xl transition-all duration-300 text-slate-500 hover:text-white hover:bg-[#1a1c26] ${isNavExpanded ? 'w-full' : ''}`}>
-                    <Menu size={18} className="shrink-0" />
-                    <span className={`font-bold text-[12px] ml-3.5 whitespace-nowrap transition-opacity duration-300 ${isNavExpanded ? 'opacity-100' : 'hidden opacity-0'}`}>메뉴 닫기</span>
-                  </button>
-                  
-                  <button onClick={handleSettingsClick} className={`h-[44px] overflow-hidden flex items-center justify-start px-3.5 rounded-xl transition-all duration-300 text-slate-500 hover:text-white hover:bg-[#1a1c26] ${isNavExpanded ? 'w-full' : ''}`}>
-                    <Settings size={18} className="shrink-0" />
-                    <span className={`font-bold text-[12px] ml-3.5 whitespace-nowrap transition-opacity duration-300 ${isNavExpanded ? 'opacity-100' : 'hidden opacity-0'}`}>설정</span>
-                  </button>
-                </div>
+                {/* 메뉴 토글 버튼 */}
+                <button 
+                  onClick={() => setIsNavExpanded(!isNavExpanded)} 
+                  title={isNavExpanded ? "메뉴 닫기" : "메뉴 열기"}
+                  className={`h-[44px] flex items-center rounded-xl transition-all text-slate-400 hover:text-white hover:bg-[#1a1c26] ${
+                    isNavExpanded ? 'px-3.5 w-full' : 'w-[48px] justify-center px-0'
+                  }`}
+                >
+                  <Menu size={18} className="shrink-0" />
+                  {isNavExpanded && (
+                    <span className="font-bold text-[12px] ml-3 whitespace-nowrap truncate">메뉴 닫기</span>
+                  )}
+                </button>
+                
+                {/* 설정 버튼 */}
+                <button 
+                  onClick={handleSettingsClick} 
+                  title="설정"
+                  className={`h-[44px] flex items-center rounded-xl transition-all text-slate-400 hover:text-white hover:bg-[#1a1c26] ${
+                    isNavExpanded ? 'px-3.5 w-full' : 'w-[48px] justify-center px-0'
+                  }`}
+                >
+                  <Settings size={18} className="shrink-0" />
+                  {isNavExpanded && (
+                    <span className="font-bold text-[12px] ml-3 whitespace-nowrap truncate">설정</span>
+                  )}
+                </button>
               </div>
             </div>
           </nav>
