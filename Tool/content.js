@@ -22,33 +22,32 @@ window.addEventListener('TEST_JIRA_SEND', (e) => {
 
 // 2. 네이티브 캡처 및 이미지 자르기(크롭)
 window.addEventListener('REQUEST_SCREENSHOT', (e) => {
-  const rect = e.detail; 
-  
-  // 백그라운드 카메라에 캡처 요청
-  chrome.runtime.sendMessage({ action: "TAKE_SCREENSHOT" }, (response) => {
-    if (!response || !response.dataUrl) {
-      window.dispatchEvent(new CustomEvent('RECEIVE_SCREENSHOT', { detail: { dataUrl: null } }));
-      return;
-    }
-
-    const img = new Image();
-    img.onload = () => {
-      const canvas = document.createElement('canvas');
-      canvas.width = rect.width;
-      canvas.height = rect.height;
-      const ctx = canvas.getContext('2d');
-
-      const dpr = window.devicePixelRatio || 1;
-      ctx.drawImage(img, rect.x * dpr, rect.y * dpr, rect.width * dpr, rect.height * dpr, 0, 0, rect.width, rect.height);
-      
-      const croppedDataUrl = canvas.toDataURL('image/png');
-      window.dispatchEvent(new CustomEvent('RECEIVE_SCREENSHOT', { detail: { dataUrl: croppedDataUrl } }));
-    };
-    img.onerror = () => {
-      window.dispatchEvent(new CustomEvent('RECEIVE_SCREENSHOT', { detail: { dataUrl: null } }));
-    };
-    img.src = response.dataUrl;
-  });
+  const rect = e.detail;
+  try {
+    chrome.runtime.sendMessage({ action: "TAKE_SCREENSHOT" }, (response) => {
+      if (chrome.runtime.lastError || !response || !response.dataUrl) {
+        window.dispatchEvent(new CustomEvent('RECEIVE_SCREENSHOT', { detail: { dataUrl: null } }));
+        return;
+      }
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = rect.width;
+        canvas.height = rect.height;
+        const ctx = canvas.getContext('2d');
+        const dpr = window.devicePixelRatio || 1;
+        ctx.drawImage(img, rect.x * dpr, rect.y * dpr, rect.width * dpr, rect.height * dpr, 0, 0, rect.width, rect.height);
+        const croppedDataUrl = canvas.toDataURL('image/png');
+        window.dispatchEvent(new CustomEvent('RECEIVE_SCREENSHOT', { detail: { dataUrl: croppedDataUrl } }));
+      };
+      img.onerror = () => {
+        window.dispatchEvent(new CustomEvent('RECEIVE_SCREENSHOT', { detail: { dataUrl: null } }));
+      };
+      img.src = response.dataUrl;
+    });
+  } catch (err) {
+    window.dispatchEvent(new CustomEvent('RECEIVE_SCREENSHOT', { detail: { dataUrl: null } }));
+  }
 });
 
 // 🌟 [추가됨] 프론트엔드의 Jira 세션 체크 요청을 백그라운드로 전달
