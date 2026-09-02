@@ -1347,7 +1347,7 @@
         const captureElementWithFallback = async (element) => {
           const rect = element.getBoundingClientRect();
           let dataUrl = await new Promise((resolve) => {
-            const timeout = setTimeout(() => resolve(null), 2500); // 2.5초 대기
+            const timeout = setTimeout(() => resolve(null), 8000); // 2.5초 대기
             const listener = (e) => { 
               clearTimeout(timeout); 
               window.removeEventListener('RECEIVE_SCREENSHOT', listener); 
