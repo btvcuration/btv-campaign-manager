@@ -46,3 +46,10 @@ window.addEventListener('REQUEST_SCREENSHOT', (e) => {
     img.src = response.dataUrl;
   });
 });
+
+// 🌟 [추가됨] 프론트엔드의 Jira 세션 체크 요청을 백그라운드로 전달
+window.addEventListener('REQUEST_JIRA_SESSION', () => {
+  chrome.runtime.sendMessage({ action: 'CHECK_JIRA_SESSION' }, (response) => {
+    window.dispatchEvent(new CustomEvent('RECEIVE_JIRA_SESSION', { detail: response }));
+  });
+});
