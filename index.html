@@ -562,6 +562,41 @@
       const [pendingAiPayload, setPendingAiPayload] = useState(null); 
       const chatEndRef = useRef(null);
 
+      // 🌟 [수정됨] App에 있던 이미지 생성 로직을 정상적인 위치(AiPlannerView 내부)로 이동
+      const [isGeneratingImg, setIsGeneratingImg] = useState(false);
+
+      const handleGenerateImage = async () => {
+        if (!campaignMeta.conceptCopy) {
+          alert("먼저 'Key 컨셉 & 대표 문구'를 입력해 주세요!");
+          return;
+        }
+        setIsGeneratingImg(true);
+        try {
+          const response = await fetch("https://btv-proxy.alcheminos.workers.dev", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              action: "generateImage",
+              product: campaignMeta.product,
+              conceptCopy: campaignMeta.conceptCopy
+            })
+          });
+          
+          const resData = await response.json();
+          if (resData.status === "success" && resData.url) {
+            setCampaignMeta(prev => ({ ...prev, mainImageUrl: resData.url }));
+            alert("✅ AI 키비주얼이 성공적으로 생성 및 반영되었습니다!");
+          } else {
+            alert("⚠️ 이미지 생성 실패: " + resData.message);
+          }
+        } catch (error) {
+          console.error(error);
+          alert("⚠️ 서버와 통신하는 중 에러가 발생했습니다.");
+        } finally {
+          setIsGeneratingImg(false);
+        }
+      };
+
       const handleMetaChange = (e) => {
         setCampaignMeta(prev => ({ ...prev, [e.target.name]: e.target.value }));
       };
@@ -823,11 +858,11 @@
               )}
             </div>
             
-            {/* 🌟 [수정됨] 데이터가 완벽히 생성되기 전까지는 버튼을 잠금 처리합니다 */}
+            {/* 🌟 [수정됨] setStep(3) 오류를 onMoveToEditor 함수로 정상 교체 */}
             <div className="mt-8">
               <button
                 onClick={() => {
-                  if (pendingAiPayload) setStep(3);
+                  if (pendingAiPayload) onMoveToEditor(pendingAiPayload);
                 }}
                 disabled={!pendingAiPayload}
                 className={`w-full py-4 rounded-lg font-bold text-white transition-all shadow-md ${
