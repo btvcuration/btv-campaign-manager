@@ -674,32 +674,37 @@
 
           if (!isSuccess) throw new Error("서버 혼잡이 심합니다. 잠시 후 다시 시도해주세요. (" + lastError + ")");
 
-          // 🌟 [프론트엔드 파서 전면 철거] GAS가 이미 분리해서 준 필드를 그대로 소비합니다.
-          let displayAiText = (resData.text || "").trim();
+          // 🌟 기존 정규식 파싱(mermaidMatch, firstBrace/lastBrace, matchJsonStr) 블록 전체 삭제 후 아래로 교체
 
+          let displayAiText = (resData.text || "").trim();
+          
           if (resData.action === "UPDATE_STATE" && resData.rawGasData) {
-            const d = { ...resData.rawGasData };
-            setCampaignMeta(prev => ({ ...prev, ...d }));
-          } 
+            setCampaignMeta(prev => ({ ...prev, ...resData.rawGasData }));
+          }
           else if (resData.action === "CREATE_CAMPAIGN_ASSETS" && resData.rawGasData) {
             const metaData = resData.rawGasData.meta || {};
             if (Array.isArray(metaData.bannerTypes)) metaData.bannerTypes = metaData.bannerTypes.join(', ');
             if (Array.isArray(metaData.gnbLocations)) metaData.gnbLocations = metaData.gnbLocations.join(', ');
             setCampaignMeta(prev => ({ ...prev, ...metaData }));
-
-            // 🌟 최상위로 전달된 mermaidCode를 페이로드에 장착
+          
             setPendingAiPayload({
               action: "CREATE_CAMPAIGN_ASSETS",
               mermaidCode: resData.mermaidCode || "",
               rawGasData: resData.rawGasData
-            }); 
-            
+            });
+          
             if (!displayAiText) {
               displayAiText = "매니저님, 우측 **'비주얼 유저플로우 시뮬레이터'**에 플로우차트가 렌더링되었습니다! 확인해 보시고, 하단의 **[완성된 기획안으로 시안 편집 이동 〉]** 버튼을 눌러주세요.";
             }
           }
-
-          if (!displayAiText) displayAiText = "우측 기획 정보가 업데이트되었습니다!";
+          
+          // 🌟 UPDATE_STATE인데 텍스트가 비어있는 경우 최소한의 이어가기 문구 (대화 끊김 방지)
+          if (!displayAiText) {
+            displayAiText = resData.action === "UPDATE_STATE" 
+              ? "네, 반영했습니다. 다음으로 어떤 정보를 알려주시겠어요?" 
+              : "우측 기획 정보가 업데이트되었습니다!";
+          }
+          
           setChatHistory(prev => [...prev, { id: `msg-${Date.now()}`, sender: 'ai', text: displayAiText }]);
 
         } catch (error) {
