@@ -1181,6 +1181,23 @@
       const [extensionVersion, setExtensionVersion] = useState(null);
       const [githubVersion, setGithubVersion] = useState(null);
       const [jiraSession, setJiraSession] = useState('CHECKING');
+      // 🌟 [신규] 언제든 수동으로 호출할 수 있는 Jira 세션 체크 함수
+      const checkJiraSessionNow = () => {
+        setJiraSession('CHECKING'); // 체크 중 상태로 잠시 변경
+        const extNode = document.getElementById('btv-campaign-extension-installed');
+        if (extNode) {
+          setExtensionVersion(extNode.getAttribute('data-version') || '1.0.0');
+          
+          const sessionListener = (e) => {
+            setJiraSession(e.detail?.isLogged ? 'LOGGED_IN' : 'LOGGED_OUT');
+            window.removeEventListener('RECEIVE_JIRA_SESSION', sessionListener);
+          };
+          window.addEventListener('RECEIVE_JIRA_SESSION', sessionListener);
+          window.dispatchEvent(new CustomEvent('REQUEST_JIRA_SESSION'));
+        } else {
+          setJiraSession('LOGGED_OUT');
+        }
+      };
 
       useEffect(() => {
         // 1. GitHub 최신 버전 체크
@@ -1188,6 +1205,11 @@
           .then(res => res.json())
           .then(data => setGithubVersion(data.version))
           .catch(e => console.error("버전 체크 실패", e));
+
+        // 2. 초기 로드 시 Jira 세션 체크 실행
+        checkJiraSessionNow();
+        setTimeout(checkJiraSessionNow, 1000); // 딜레이 보완
+      }, []);
 
         // 2. 확장앱 설치 확인 & Jira 세션 체크
         const checkExtensionAndJira = () => {
@@ -1478,33 +1500,7 @@
           alert("다운로드 중 오류가 발생했습니다: " + e.message);
         }
       };
-      const handleSaveDBOnly = () => {
-        if (!campaignMeta.campaignName) return alert("캠페인명을 입력해주세요.");
-        if (assets.length > 0) {
-          if(!window.confirm("배너 에셋이 존재합니다.\n디자인 제작이 필요 없는 쿠폰/사은품 단독 프로모션이 맞습니까?\n\n(확인을 누르면 Jira 일감을 생성하지 않고 DB에만 즉시 저장합니다.)")) return;
-        } else {
-          if(!window.confirm("Jira 일감 생성 없이 타겟팅(DB) 정보만 저장하시겠습니까?")) return;
-        }
-
-        const meta = campaignMeta || {};
-        const cleanAssignee = (localStorage.getItem('myJiraId') || '시스템').split('@')[0].trim();
-        // 🌟 유니크 코드 생성 (현재 타임스탬프 + 난수 조합)
-        const uniqueCode = `BTV-${Date.now().toString(36).toUpperCase()}`;
-        const safeTargetSize = String(meta.targetSize || '0').replace(/[^0-9]/g, '');
-        
-        const finalData = {
-          skipJira: true, // 🌟 이 플래그가 백그라운드에게 Jira 패스 명령을 내립니다!
-          parent: { assignee: cleanAssignee }, // 에러 방지용 더미
-          children: [],
-          rawGasData: { 
-            meta: { ...meta, targetSize: safeTargetSize, uniqueCode: uniqueCode }, 
-            assignee: cleanAssignee, 
-            assets: assets, 
-            mermaidCode: mermaidCode 
-          }
-        };
-
-        setExportState({ isExporting: true, progress: 100, msg: "🚀 DB 저장 중..." });
+      g: "🚀 DB 저장 중..." });
         window.dispatchEvent(new CustomEvent('TEST_JIRA_SEND', { detail: finalData }));
         
         setTimeout(() => {
@@ -2257,7 +2253,7 @@
                         </button>
 
                         <button onClick={() => setIsAddAssetModalOpen(true)} className="flex items-center gap-1.5 px-4 py-2 bg-[#1a1c26] text-white rounded-lg text-xs font-bold border border-[#303340] hover:bg-[#262833] transition-colors"><Plus size={14} className="text-[#7387ff]"/> 배너 추가</button>
-                        {/* 🌟 기존 'Jira 일감 전송' 버튼 옆에 'DB 저장' 버튼 나란히 배치 */}
+                        {/* 🌟 기존 'Jira 패스' 버튼을 삭제하고, 그 자리에 '재확인' 버튼을 추가했습니다 */}
                         {exportState.isExporting ? (
                           <div className="w-[200px] h-[34px] bg-[#1a1c26] border border-[#4f3df6] rounded-lg overflow-hidden relative flex items-center shadow-[0_0_15px_rgba(79,61,246,0.3)]">
                             <div className="absolute inset-0 bg-[#4f3df6]/20 progress-stripes pointer-events-none"></div>
@@ -2265,22 +2261,30 @@
                             <span className="relative z-10 w-full text-center text-[10px] font-bold text-white flex items-center justify-center gap-1.5"><Loader2 size={12} className="animate-spin"/> {exportState.msg}</span>
                           </div>
                         ) : (
-                          <div className="flex gap-2">
-                            <button onClick={handleSaveDBOnly} className="flex items-center gap-1.5 px-4 py-2 bg-[#1a1c26] text-slate-300 rounded-lg text-xs font-bold border border-[#303340] hover:bg-[#262833] hover:text-white transition-colors">
-                              <Database size={14} className="text-pink-400"/> Jira 패스 (저장)
-                            </button>
+                          <div className="flex gap-2 items-center">
                             
-                            {/* 🌟 Jira 로그인이 풀려있으면 경고창과 함께 로그인 페이지를 띄움 */}
+                            {/* 🌟 [신규] 로그인이 안 되어 있을 때만 나타나는 재확인 버튼 */}
+                            {jiraSession !== 'LOGGED_IN' && (
+                              <button 
+                                onClick={checkJiraSessionNow} 
+                                className="flex items-center gap-1.5 px-4 py-2 bg-[#262833] text-slate-300 rounded-lg text-xs font-bold border border-[#303340] hover:bg-[#303340] hover:text-white transition-colors"
+                              >
+                                <RefreshCw size={14} className={jiraSession === 'CHECKING' ? 'animate-spin' : ''}/> 재확인
+                              </button>
+                            )}
+                            
+                            {/* 🌟 Jira 전송 버튼 */}
                             <button onClick={() => {
                               if (jiraSession !== 'LOGGED_IN') {
                                 window.open('https://jira.skbroadband.com', '_blank');
-                                return alert("Jira 로그인이 풀려있습니다. 새 탭에서 로그인하신 후 다시 시도해 주세요.");
+                                return alert("Jira 로그인이 풀려있습니다. 새 탭에서 로그인하신 후 '재확인' 버튼을 눌러 상태를 갱신해 주세요.");
                               }
                               handleExport();
                             }} 
                             className={`flex items-center gap-1.5 px-5 py-2 rounded-lg text-xs font-bold transition-all ${jiraSession === 'LOGGED_IN' ? 'bg-[#4f3df6] hover:bg-[#6252ff] text-white shadow-lg shadow-[#4f3df6]/20' : 'bg-pink-500/20 text-pink-400 border border-pink-500/50'}`}>
                               <Send size={14}/> {jiraSession === 'LOGGED_IN' ? 'Jira 전송' : 'Jira 로그인 대기'}
                             </button>
+
                           </div>
                         )}
                       </div>
