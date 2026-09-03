@@ -938,10 +938,25 @@
               )}
             </div>
             
-            {/* 🌟 [수정됨] setStep(3) 오류를 onMoveToEditor 함수로 정상 교체 */}
+            {/* 🌟 [수정됨] 필수값 철통 방어 (Validation) 로직 추가 */}
             <div className="mt-8">
               <button
                 onClick={() => {
+                  // 1. 공통 필수 기획 정보 체크
+                  if (!campaignMeta.campaignName || !campaignMeta.product || !campaignMeta.startDate || !campaignMeta.dueDate || !campaignMeta.conceptCopy) {
+                    alert("⚠️ 필수 기획 정보(캠페인명, 대상 상품, 시작/종료일, Key 컨셉)가 모두 입력되어야 다음 단계로 이동할 수 있습니다.");
+                    setActiveFormTab('STEP1'); // 해당 탭으로 강제 이동
+                    return;
+                  }
+                  
+                  // 2. TARGET 프로모션일 경우 추가 필수 정보 체크
+                  if (campaignMeta.target === 'TARGET' && (!campaignMeta.targetSize || !campaignMeta.isCapaChecked)) {
+                    alert("⚠️ TARGET 프로모션은 '타겟 모수' 입력 및 'Capa 검증' 완료가 필수입니다.");
+                    setActiveFormTab('STEP2'); // 해당 탭으로 강제 이동
+                    return;
+                  }
+
+                  // 모든 검증 통과 시 에디터로 이동!
                   if (pendingAiPayload) onMoveToEditor(pendingAiPayload);
                 }}
                 disabled={!pendingAiPayload}
