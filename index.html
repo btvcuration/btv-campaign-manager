@@ -635,16 +635,17 @@
 
         try {
           const proxyUrl = "https://btv-proxy.alcheminos.workers.dev";
+          
+          // 🌟 [정규식 제거] Function Calling 응답에는 애초에 json 코드가 섞이지 않으므로 단순화
           const cleanHistory = newHistory.map(msg => ({
             sender: msg.sender,
-            text: msg.text.replace(/```json[\s\S]*?```/g, '\n[JSON 처리 완료]\n')
+            text: msg.text
           }));
 
           let resData = null;
           let isSuccess = false;
           let lastError = "";
 
-          // 🌟 [핵심 방어 로직] 프록시 튕김 현상을 대비한 '몰래 자동 재시도' (최대 3회)
           for (let attempt = 1; attempt <= 3; attempt++) {
             try {
               const response = await fetch(proxyUrl, {
@@ -654,10 +655,7 @@
 
               if (!response.ok) throw new Error("HTTP 통신 에러: " + response.status);
 
-              // JSON 변환 전에 일단 텍스트로 먼저 받아서 검사합니다.
               const rawText = await response.text();
-              
-              // 프록시 서버가 뱉어낸 HTML 쓰레기 데이터인지 확인
               if (rawText.trim().startsWith('<!DOCTYPE') || rawText.trim().startsWith('<html')) {
                 throw new Error("프록시 지연으로 HTML 에러 페이지가 수신되었습니다.");
               }
@@ -666,75 +664,41 @@
               if (resData.status !== 'success') throw new Error(resData.message || "서버 로직 에러");
               
               isSuccess = true;
-              break; // 통신에 성공하면 즉시 재시도 루프를 탈출합니다!
-
+              break;
             } catch (err) {
               lastError = err.message;
-              console.warn(`[통신 튐 방어] ${attempt}차 시도 실패, 1.5초 후 재시도합니다... 사유:`, lastError);
-              if (attempt < 3) await new Promise(r => setTimeout(r, 1500)); // 1.5초 숨 고르고 재시도
+              console.warn(`[통신 튐 방어] ${attempt}차 시도 실패, 1.5초 후 재시도합니다...`, lastError);
+              if (attempt < 3) await new Promise(r => setTimeout(r, 1500));
             }
           }
 
-          // 3번이나 시도했는데도 다 실패했을 때만 진짜 에러를 띄웁니다.
           if (!isSuccess) throw new Error("서버 혼잡이 심합니다. 잠시 후 다시 시도해주세요. (" + lastError + ")");
 
-          // 🌟 1. 마크다운에서 Mermaid 코드를 JSON 파싱 전에 먼저 빼냅니다.
-          let displayAiText = resData.text;
-          const mermaidMatch = displayAiText.match(/```mermaid\s*([\s\S]*?)```/);
-          let extractedMermaid = null;
-          if (mermaidMatch) {
-            extractedMermaid = mermaidMatch[1].trim();
-            displayAiText = displayAiText.replace(mermaidMatch[0], ''); // 챗봇 화면에 코드 찌꺼기 노출 방지
-          }
+          // 🌟 [프론트엔드 파서 전면 철거] GAS가 이미 분리해서 준 필드를 그대로 소비합니다.
+          let displayAiText = (resData.text || "").trim();
 
-          let matchJsonStr = null;
-          const firstBrace = displayAiText.indexOf('{');
-          const lastBrace = displayAiText.lastIndexOf('}');
+          if (resData.action === "UPDATE_STATE" && resData.rawGasData) {
+            const d = { ...resData.rawGasData };
+            setCampaignMeta(prev => ({ ...prev, ...d }));
+          } 
+          else if (resData.action === "CREATE_CAMPAIGN_ASSETS" && resData.rawGasData) {
+            const metaData = resData.rawGasData.meta || {};
+            if (Array.isArray(metaData.bannerTypes)) metaData.bannerTypes = metaData.bannerTypes.join(', ');
+            if (Array.isArray(metaData.gnbLocations)) metaData.gnbLocations = metaData.gnbLocations.join(', ');
+            setCampaignMeta(prev => ({ ...prev, ...metaData }));
 
-          if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
-            matchJsonStr = displayAiText.substring(firstBrace, lastBrace + 1);
+            // 🌟 최상위로 전달된 mermaidCode를 페이로드에 장착
+            setPendingAiPayload({
+              action: "CREATE_CAMPAIGN_ASSETS",
+              mermaidCode: resData.mermaidCode || "",
+              rawGasData: resData.rawGasData
+            }); 
             
-            // JSON 부분을 화면 텍스트에서 완전히 도려냅니다.
-            displayAiText = displayAiText.substring(0, firstBrace);
-            // 혹시 남아있을지 모를 마크다운 찌꺼기 청소
-            displayAiText = displayAiText.replace(/```(?:json)?/gi, '').replace(/```/g, '').trim();
-          }
-
-          if (matchJsonStr) {
-            try {
-              const parsedJson = JSON.parse(matchJsonStr);
-              
-              if (parsedJson.action === "UPDATE_STATE" && parsedJson.data) {
-                const d = parsedJson.data;
-                if (!d.conceptCopy && (d.concept || d.mainCopy || d.keyConcept)) d.conceptCopy = d.concept || d.mainCopy || d.keyConcept;
-                if (Array.isArray(d.bannerTypes)) d.bannerTypes = d.bannerTypes.join(', ');
-                if (Array.isArray(d.gnbLocations)) d.gnbLocations = d.gnbLocations.join(', ');
-                setCampaignMeta(prev => ({ ...prev, ...d }));
-              } 
-              else if (parsedJson.action === "CREATE_CAMPAIGN_ASSETS") {
-                const metaData = parsedJson.rawGasData?.meta || parsedJson.meta || {};
-                if (!metaData.conceptCopy && (metaData.concept || metaData.mainCopy || metaData.keyConcept)) metaData.conceptCopy = metaData.concept || metaData.mainCopy || metaData.keyConcept;
-                if (Array.isArray(metaData.bannerTypes)) metaData.bannerTypes = metaData.bannerTypes.join(', ');
-                if (Array.isArray(metaData.gnbLocations)) metaData.gnbLocations = metaData.gnbLocations.join(', ');
-                setCampaignMeta(prev => ({ ...prev, ...metaData }));
-
-                // 🌟 2. 빼둔 Mermaid 코드를 페이로드에 쏙 넣어줍니다 (버튼 활성화 & 시뮬레이터 렌더링 정상화!)
-                if (extractedMermaid) {
-                  parsedJson.mermaidCode = extractedMermaid;
-                }
-                setPendingAiPayload(parsedJson); 
-                
-                if (!displayAiText) {
-                  displayAiText = "매니저님, 우측 **'비주얼 유저플로우 시뮬레이터'**에 플로우차트가 렌더링되었습니다! 확인해 보시고, 하단의 **[완성된 기획안으로 시안 편집 이동 〉]** 버튼을 눌러주세요.";
-                }
-              }
-            } catch (e) { 
-              console.error("JSON 파싱 에러", e); 
+            if (!displayAiText) {
+              displayAiText = "매니저님, 우측 **'비주얼 유저플로우 시뮬레이터'**에 플로우차트가 렌더링되었습니다! 확인해 보시고, 하단의 **[완성된 기획안으로 시안 편집 이동 〉]** 버튼을 눌러주세요.";
             }
           }
 
-          // 🌟 마지막으로 한번 더 찌꺼기 백틱 청소
-          displayAiText = displayAiText.replace(/```/g, '').trim();
           if (!displayAiText) displayAiText = "우측 기획 정보가 업데이트되었습니다!";
           setChatHistory(prev => [...prev, { id: `msg-${Date.now()}`, sender: 'ai', text: displayAiText }]);
 
@@ -1304,30 +1268,26 @@
       const handleConfigChange = (gnbName, field, value) => setConfigMap(prev => ({ ...prev, [gnbName]: { ...prev[gnbName], [field]: value } }));
       const handleSaveConfig = async () => { setIsSettingsOpen(false); };
 
-      // 🌟 [핵심] AI 뷰에서 매니저님이 명시적으로 '시안 편집 이동'을 눌렀을 때만 작동!
       const handleMoveToEditor = (payload) => {
-        // 1. 매니저님이 직접 수정한 AI 기획 폼(aiCampaignMeta)을 에디터 폼(campaignMeta)으로 넘깁니다.
         setCampaignMeta({ ...aiCampaignMeta });
 
-        // 2. 전달된 데이터가 없으면 화면만 쓱 넘깁니다.
         if (!payload || payload.action !== "CREATE_CAMPAIGN_ASSETS") {
           setCurrentView('EDITOR');
           return;
         }
         
-        // 3. 기존에 그려진 배너가 있을 때만 덮어쓸지 경고합니다. (버튼 눌렀을 때만 뜸!)
         if (assets.length > 0) {
           const confirmOverwrite = window.confirm("⚠️ 이미 시안 편집 화면에 작업 중인 배너가 존재합니다.\n새로운 AI 기획안으로 덮어씌우시겠습니까?");
           if (!confirmOverwrite) {
-            setCurrentView('EDITOR'); // 취소하면 기존 에셋 유지하고 넘어가기만 함
+            setCurrentView('EDITOR');
             return; 
           }
         }
 
-        // 4. 승인되었거나 빈 화면이면 AI 에셋을 에디터에 쫙 깔아줍니다.
-        const aiMeta = payload.rawGasData?.meta || payload.campaignMeta;
-        const aiAssets = payload.rawGasData?.assets || payload.assets;
-        const aiMermaid = payload.mermaidCode || payload.rawGasData?.mermaidCode;
+        // 🌟 payload.campaignMeta 폴백을 제거하고 rawGasData.meta만 안전하게 참조
+        const aiMeta = payload.rawGasData?.meta || {};
+        const aiAssets = payload.rawGasData?.assets || [];
+        const aiMermaid = payload.mermaidCode || "";
         
         if (aiMermaid) setMermaidCode(aiMermaid);
         
