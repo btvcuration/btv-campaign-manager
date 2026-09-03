@@ -1300,17 +1300,19 @@
           return;
         }
 
+        // 🌟 1. 변수 선언은 여기서 한 번만!
         const aiMeta = payload.rawGasData?.meta || {};
         const aiAssets = payload.rawGasData?.assets || [];
         const aiMermaid = payload.mermaidCode || payload.rawGasData?.mermaidCode || "";
 
-        // 🌟 [방어 로직 추가] 만약 데이터가 완전히 누락되었다면 Editor 진입 차단
+        // 🌟 2. 방어 로직: 만약 데이터가 완전히 누락되었다면 Editor 진입 차단
         if (aiAssets.length === 0 && !aiMermaid) {
           alert("🚨 AI가 최종 시안 데이터를 정상적으로 렌더링하지 못했습니다. (서버 응답 오류)\n수동으로 배너를 추가하거나, AI에게 다시 시안 생성을 요청해 주세요.");
           setPendingAiPayload(null); // 버튼 다시 비활성화
           return;
         }
         
+        // 🌟 3. 기존에 작업 중인 시안이 있을 경우 덮어쓰기 확인
         if (assets.length > 0) {
           const confirmOverwrite = window.confirm("⚠️ 이미 시안 편집 화면에 작업 중인 배너가 존재합니다.\n새로운 AI 기획안으로 덮어씌우시겠습니까?");
           if (!confirmOverwrite) {
@@ -1319,11 +1321,7 @@
           }
         }
 
-        // 🌟 payload.campaignMeta 폴백을 제거하고 rawGasData.meta만 안전하게 참조
-        const aiMeta = payload.rawGasData?.meta || {};
-        const aiAssets = payload.rawGasData?.assets || [];
-        const aiMermaid = payload.mermaidCode || "";
-        
+        // 🌟 4. 데이터 정상 매핑 처리
         if (aiMermaid) setMermaidCode(aiMermaid);
         
         if (aiMeta) {
@@ -1355,7 +1353,6 @@
               else if (aiAsset.type === 'PROMO_POPUP') baseData = { ...DEFAULT_PROMO_POPUP };
               else if (aiAsset.type === 'MINI_EPG_BANNER') baseData = { ...DEFAULT_MINI_EPG_BANNER };
 
-              // 🌟 [추가됨] AI가 키값을 혼동했을 때를 대비한 자동 매핑 (방어 로직)
               let aiData = aiAsset.data || {};
               
               if (aiAsset.type === 'TODAY_BTV') {
@@ -1374,18 +1371,17 @@
               let rawGnb = aiData.gnb || baseData.gnb;
               let gnbArray = Array.isArray(rawGnb) ? rawGnb : [rawGnb];
               let cleanedGnb = gnbArray
-                .filter(g => typeof g === 'string' && g.trim() !== '')   // 🌟 undefined/null/빈값 방어
+                .filter(g => typeof g === 'string' && g.trim() !== '')   
                 .map(g => {
                   if (g.includes('영화') && g.includes('시리즈')) return '영화시리즈';
                   if (g.includes('TV') && g.includes('방송')) return 'TV 방송';
                   if (g === 'OTT 홈' || g === 'OTT') return 'OTT홈';
                   return g;
                 });
-              if (cleanedGnb.length === 0) cleanedGnb = ['홈'];   // 🌟 전부 걸러졌을 때 기본값 보장
+              if (cleanedGnb.length === 0) cleanedGnb = ['홈'];  
 
               return {
                 id: `ai-asset-${index}-${timestamp}`, type: aiAsset.type, name: aiAsset.name || `${aiAsset.type.replace('_', ' ')} (AI)`, 
-                // aiAsset.data 대신 보정된 aiData를 병합합니다.
                 data: { ...baseData, ...aiData, gnb: cleanedGnb, startDate: aiMeta?.startDate || baseData.startDate, dueDate: aiMeta?.dueDate || baseData.dueDate } 
               };
             });
