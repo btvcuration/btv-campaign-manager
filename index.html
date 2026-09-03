@@ -568,6 +568,15 @@
       const [showPreviewModal, setShowPreviewModal] = useState(false);
 
       // 🌟 [수정됨] 생성 성공 시 폼에 바로 넣지 않고 모달을 엽니다.
+      const handleOpenImagePreview = () => {
+        if (campaignMeta.mainImageUrl) {
+          setPreviewImageUrl(campaignMeta.mainImageUrl);
+          setShowPreviewModal(true);
+          return;
+        }
+        handleGenerateImage(); // 없을 때만 신규 생성
+      };
+      
       const handleGenerateImage = async () => {
         if (!campaignMeta.conceptCopy) {
           alert("먼저 'Key 컨셉 & 대표 문구'를 입력해 주세요!");
@@ -819,11 +828,11 @@
                         />
                         <button 
                           type="button" 
-                          onClick={handleGenerateImage} 
+                          onClick={handleOpenImagePreview} 
                           disabled={isGeneratingImg}
                           className="bg-[#4f3df6] hover:bg-[#3b2bc7] text-white px-4 py-2.5 rounded-lg text-xs font-bold whitespace-nowrap disabled:opacity-50 transition-colors"
                         >
-                          {isGeneratingImg ? "⏳ 생성 중..." : "🪄 AI 이미지 생성"}
+                          {isGeneratingImg ? "⏳ 생성 중..." : (campaignMeta.mainImageUrl ? "🖼️ 이미지 확인" : "🪄 AI 이미지 생성")}
                         </button>
                       </div>
                     </div>
