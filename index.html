@@ -1352,12 +1352,15 @@
 
               let rawGnb = aiData.gnb || baseData.gnb;
               let gnbArray = Array.isArray(rawGnb) ? rawGnb : [rawGnb];
-              let cleanedGnb = gnbArray.map(g => {
-                if (g.includes('영화') && g.includes('시리즈')) return '영화시리즈';
-                if (g.includes('TV') && g.includes('방송')) return 'TV 방송';
-                if (g === 'OTT 홈' || g === 'OTT') return 'OTT홈';
-                return g;
-              });
+              let cleanedGnb = gnbArray
+                .filter(g => typeof g === 'string' && g.trim() !== '')   // 🌟 undefined/null/빈값 방어
+                .map(g => {
+                  if (g.includes('영화') && g.includes('시리즈')) return '영화시리즈';
+                  if (g.includes('TV') && g.includes('방송')) return 'TV 방송';
+                  if (g === 'OTT 홈' || g === 'OTT') return 'OTT홈';
+                  return g;
+                });
+              if (cleanedGnb.length === 0) cleanedGnb = ['홈'];   // 🌟 전부 걸러졌을 때 기본값 보장
 
               return {
                 id: `ai-asset-${index}-${timestamp}`, type: aiAsset.type, name: aiAsset.name || `${aiAsset.type.replace('_', ' ')} (AI)`, 
