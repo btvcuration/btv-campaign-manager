@@ -1184,7 +1184,7 @@
       
       // 🌟 [신규] 언제든 수동으로 호출할 수 있는 Jira 세션 체크 함수
       const checkJiraSessionNow = () => {
-        setJiraSession('CHECKING'); // 체크 중 상태로 잠시 변경
+        setJiraSession('CHECKING');
         const extNode = document.getElementById('btv-campaign-extension-installed');
         if (extNode) {
           setExtensionVersion(extNode.getAttribute('data-version') || '1.0.0');
@@ -1209,36 +1209,13 @@
 
         // 2. 초기 로드 시 Jira 세션 체크 실행
         checkJiraSessionNow();
-        setTimeout(checkJiraSessionNow, 1000); // 딜레이 보완
+        setTimeout(checkJiraSessionNow, 1000);
       }, []);
 
-      const today = new Date();
-
-        // 2. 확장앱 설치 확인 & Jira 세션 체크
-        const checkExtensionAndJira = () => {
-          const extNode = document.getElementById('btv-campaign-extension-installed');
-          if (extNode) {
-            setExtensionVersion(extNode.getAttribute('data-version') || '1.0.0');
-            
-            // Content Script로 Jira 세션 확인 요청
-            const sessionListener = (e) => {
-              setJiraSession(e.detail?.isLogged ? 'LOGGED_IN' : 'LOGGED_OUT');
-              window.removeEventListener('RECEIVE_JIRA_SESSION', sessionListener);
-            };
-            window.addEventListener('RECEIVE_JIRA_SESSION', sessionListener);
-            window.dispatchEvent(new CustomEvent('REQUEST_JIRA_SESSION'));
-          } else {
-            setJiraSession('LOGGED_OUT');
-          }
-        };
-        
-        checkExtensionAndJira();
-        setTimeout(checkExtensionAndJira, 1000); // 딜레이 보완
-      }, []);
-
+      // 🌟 찌꺼기 삭제 완료! 바로 날짜 선언으로 넘어갑니다.
       const today = new Date();
       const todayStr = new Date(today.getTime() - (today.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
-
+      
       // EDITOR 전용 상태
       const [campaignMeta, setCampaignMeta] = useState({ 
         campaignName: '', product: '', target: 'MASS', targetSize: '', startDate: '', dueDate: '',
