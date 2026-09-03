@@ -640,19 +640,46 @@
             text: msg.text.replace(/```json[\s\S]*?```/g, '\n[JSON 처리 완료]\n')
           }));
 
-          const response = await fetch(proxyUrl, {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ action: 'chatWithGemini', history: cleanHistory, currentState: campaignMeta })
-          });
+          let resData = null;
+          let isSuccess = false;
+          let lastError = "";
 
-          if (!response.ok) throw new Error("서버 통신에 실패했습니다.");
-          const resData = await response.json();
-          if (resData.status !== 'success') throw new Error(resData.message || "알 수 없는 에러");
+          // 🌟 [핵심 방어 로직] 프록시 튕김 현상을 대비한 '몰래 자동 재시도' (최대 3회)
+          for (let attempt = 1; attempt <= 3; attempt++) {
+            try {
+              const response = await fetch(proxyUrl, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'chatWithGemini', history: cleanHistory, currentState: campaignMeta })
+              });
 
-          // 🌟 [수정됨] 백틱 정규식 대신, 가장 확실한 첫 중괄호 '{' 와 마지막 '}' 를 찾는 무적의 파서
-          let displayAiText = resData.text;
+              if (!response.ok) throw new Error("HTTP 통신 에러: " + response.status);
+
+              // JSON 변환 전에 일단 텍스트로 먼저 받아서 검사합니다.
+              const rawText = await response.text();
+              
+              // 프록시 서버가 뱉어낸 HTML 쓰레기 데이터인지 확인
+              if (rawText.trim().startsWith('<!DOCTYPE') || rawText.trim().startsWith('<html')) {
+                throw new Error("프록시 지연으로 HTML 에러 페이지가 수신되었습니다.");
+              }
+
+              resData = JSON.parse(rawText);
+              if (resData.status !== 'success') throw new Error(resData.message || "서버 로직 에러");
+              
+              isSuccess = true;
+              break; // 통신에 성공하면 즉시 재시도 루프를 탈출합니다!
+
+            } catch (err) {
+              lastError = err.message;
+              console.warn(`[통신 튐 방어] ${attempt}차 시도 실패, 1.5초 후 재시도합니다... 사유:`, lastError);
+              if (attempt < 3) await new Promise(r => setTimeout(r, 1500)); // 1.5초 숨 고르고 재시도
+            }
+          }
+
+          // 3번이나 시도했는데도 다 실패했을 때만 진짜 에러를 띄웁니다.
+          if (!isSuccess) throw new Error("서버 혼잡이 심합니다. 잠시 후 다시 시도해주세요. (" + lastError + ")");
 
           // 🌟 1. 마크다운에서 Mermaid 코드를 JSON 파싱 전에 먼저 빼냅니다.
+          let displayAiText = resData.text;
           const mermaidMatch = displayAiText.match(/```mermaid\s*([\s\S]*?)```/);
           let extractedMermaid = null;
           if (mermaidMatch) {
