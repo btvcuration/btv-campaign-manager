@@ -1181,6 +1181,7 @@
       const [extensionVersion, setExtensionVersion] = useState(null);
       const [githubVersion, setGithubVersion] = useState(null);
       const [jiraSession, setJiraSession] = useState('CHECKING');
+      
       // 🌟 [신규] 언제든 수동으로 호출할 수 있는 Jira 세션 체크 함수
       const checkJiraSessionNow = () => {
         setJiraSession('CHECKING'); // 체크 중 상태로 잠시 변경
@@ -1210,6 +1211,8 @@
         checkJiraSessionNow();
         setTimeout(checkJiraSessionNow, 1000); // 딜레이 보완
       }, []);
+
+      const today = new Date();
 
         // 2. 확장앱 설치 확인 & Jira 세션 체크
         const checkExtensionAndJira = () => {
@@ -1500,16 +1503,7 @@
           alert("다운로드 중 오류가 발생했습니다: " + e.message);
         }
       };
-      g: "🚀 DB 저장 중..." });
-        window.dispatchEvent(new CustomEvent('TEST_JIRA_SEND', { detail: finalData }));
-        
-        setTimeout(() => {
-          setExportState({ isExporting: false, progress: 0, msg: '' });
-          alert("DB 저장이 완료되었습니다!");
-          setCurrentView('LIST'); // 완료 후 목록으로 쿨하게 이동
-        }, 3000);
-      };
-      
+
       const handleExport = async () => {
         if (!assets || assets.length === 0) {
           if (campaignMeta.target !== 'TARGET') return alert("전송할 배너 기획안이 없고, 타겟팅 캠페인도 아닙니다.");
