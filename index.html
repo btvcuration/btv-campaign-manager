@@ -795,30 +795,36 @@
             </div>
           </div>
 
-          {/* 2단: 중앙 기획 폼 (33%) */}
-          <div className="flex-1 flex flex-col bg-[#0f111a] border border-[#262833] rounded-2xl shadow-xl overflow-hidden min-w-[320px]">
-            <div className="px-5 py-4 border-b border-[#262833] bg-[#12141c] flex items-center justify-between">
+          {/* 🌟 2단: 중앙 기획 폼 (매니저님 요청 완벽 반영) */}
+          <div className="flex-1 flex flex-col bg-[#0f111a] border border-[#262833] rounded-2xl shadow-xl overflow-hidden min-w-[350px]">
+            <div className="px-5 py-4 border-b border-[#262833] bg-[#12141c] flex items-center justify-between shrink-0">
               <h3 className="text-white font-bold text-[15px] tracking-tight flex items-center gap-2"><Settings size={16} className="text-pink-400" /> 캠페인 기획 폼</h3>
               <span className="text-[9px] text-slate-400 bg-[#1a1c26] px-2 py-0.5 rounded border border-[#303340] animate-pulse">AI 실시간 동기화</span>
             </div>
-
-            <div className="px-5 pb-5 pt-5 overflow-y-auto custom-scrollbar flex-1 bg-[#06070a]">
+            
+            <div className="flex-1 overflow-y-auto custom-scrollbar p-6 bg-[#06070a]">
               
-              {/* 🌟 STEP 1 컨텐츠 */}
-              <div className="space-y-4 mb-8">
+              {/* === SECTION 1 === */}
+              <div className="mb-8">
                 <div className="border-b border-[#262833] pb-2 mb-4 flex items-center gap-2">
                   <div className="w-1.5 h-4 bg-[#4f3df6] rounded-full"></div>
                   <h4 className="text-sm font-bold text-white tracking-tight">1. 기본 기획 및 편성</h4>
                 </div>
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-400 mb-1.5 ml-1">캠페인 / 프로젝트명</label>
-                  <input type="text" name="campaignName" value={campaignMeta.campaignName || ''} onChange={handleMetaChange} className="w-full bg-[#0a0812] border border-[#303340] rounded-lg px-3 py-2.5 text-xs text-white focus:border-[#4f3df6] outline-none transition-all" />
+                
+                {/* 1줄: 캠페인명 + 대상 상품 (2칸) */}
+                <div className="grid grid-cols-2 gap-4 mb-4">
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-400 mb-1.5 ml-1">캠페인 / 프로젝트명</label>
+                    <input type="text" name="campaignName" value={campaignMeta.campaignName || ''} onChange={handleMetaChange} className="w-full bg-[#0a0812] border border-[#303340] rounded-lg px-3 py-2 text-xs text-white focus:border-[#4f3df6] outline-none" />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-400 mb-1.5 ml-1">대상 상품 (VOD / 월정액 등)</label>
+                    <input type="text" name="product" value={campaignMeta.product || ''} onChange={handleMetaChange} className="w-full bg-[#0a0812] border border-[#303340] rounded-lg px-3 py-2 text-xs text-white focus:border-[#4f3df6] outline-none" />
+                  </div>
                 </div>
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-400 mb-1.5 ml-1">대상 상품 (VOD / 월정액 등)</label>
-                  <input type="text" name="product" value={campaignMeta.product || ''} onChange={handleMetaChange} className="w-full bg-[#0a0812] border border-[#303340] rounded-lg px-3 py-2.5 text-xs text-white focus:border-[#4f3df6] outline-none transition-all" />
-                </div>
-                <div className="grid grid-cols-2 gap-3">
+
+                {/* 2줄: 시작일 + 종료일 + 타겟 유형 (3칸) */}
+                <div className="grid grid-cols-3 gap-4 mb-4">
                   <div>
                     <label className="block text-[11px] font-bold text-slate-400 mb-1.5 ml-1">시작일</label>
                     <input type="date" name="startDate" value={campaignMeta.startDate || ''} onChange={handleMetaChange} className="w-full bg-[#0a0812] border border-[#303340] rounded-lg px-3 py-2 text-xs text-slate-200 outline-none focus:border-[#4f3df6] [&::-webkit-calendar-picker-indicator]:invert" />
@@ -827,98 +833,87 @@
                     <label className="block text-[11px] font-bold text-slate-400 mb-1.5 ml-1">종료일</label>
                     <input type="date" name="dueDate" value={campaignMeta.dueDate || ''} onChange={handleMetaChange} className="w-full bg-[#0a0812] border border-[#303340] rounded-lg px-3 py-2 text-xs text-slate-200 outline-none focus:border-[#4f3df6] [&::-webkit-calendar-picker-indicator]:invert" />
                   </div>
-                </div>
-                <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block text-[11px] font-bold text-slate-400 mb-1.5 ml-1">타겟 유형</label>
-                    <select name="target" value={campaignMeta.target || ''} onChange={handleMetaChange} className="w-full bg-[#0a0812] border border-[#303340] rounded-lg px-3 py-2.5 text-xs text-white focus:border-[#4f3df6] outline-none transition-all">
-                      <option value="" disabled>선택</option><option value="MASS">MASS</option><option value="TARGET">TARGET</option>
+                    <select name="target" value={campaignMeta.target || ''} onChange={handleMetaChange} className="w-full bg-[#0a0812] border border-[#303340] rounded-lg px-3 py-2 text-xs text-white focus:border-[#4f3df6] outline-none">
+                      <option value="MASS">MASS</option><option value="TARGET">TARGET</option>
                     </select>
                   </div>
-                  <div>
+                </div>
+
+                {/* 3줄: 컨셉 + 키비주얼 (2칸, 높이 동기화) */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="flex flex-col">
+                    <label className="block text-[11px] font-bold text-slate-400 mb-1.5 ml-1">Key 컨셉 & 대표 문구</label>
+                    <textarea name="conceptCopy" value={campaignMeta.conceptCopy || ''} onChange={handleMetaChange} className="w-full h-[88px] bg-[#0a0812] border border-[#303340] rounded-lg px-3 py-2 text-xs text-white focus:border-[#4f3df6] outline-none resize-none custom-scrollbar" />
+                  </div>
+                  <div className="flex flex-col">
                     <label className="block text-[11px] font-bold text-slate-400 mb-1.5 ml-1">메인 키비주얼 URL</label>
-                    <div className="flex gap-2 items-center">
-                      <input 
-                        type="text" 
-                        name="mainImageUrl"
-                        className="w-full bg-[#0a0812] border border-[#303340] rounded-lg px-3 py-2.5 text-xs text-white focus:border-[#4f3df6] outline-none transition-all" 
-                        placeholder="https://..."
-                        value={campaignMeta.mainImageUrl || ''}
-                        onChange={(e) => setCampaignMeta({...campaignMeta, mainImageUrl: e.target.value})}
-                      />
-                      <button 
-                        type="button" 
-                        onClick={handleOpenImagePreview} 
-                        disabled={isGeneratingImg}
-                        className="bg-[#4f3df6] hover:bg-[#3b2bc7] text-white px-4 py-2.5 rounded-lg text-xs font-bold whitespace-nowrap disabled:opacity-50 transition-colors"
-                      >
-                        {isGeneratingImg ? "⏳ 생성 중..." : (campaignMeta.mainImageUrl ? "🖼️ 이미지 확인" : "🪄 AI 이미지 생성")}
+                    <div className="flex flex-col gap-2 h-full">
+                      <input type="text" name="mainImageUrl" placeholder="https://..." value={campaignMeta.mainImageUrl || ''} onChange={(e) => setCampaignMeta({...campaignMeta, mainImageUrl: e.target.value})} className="w-full bg-[#0a0812] border border-[#303340] rounded-lg px-3 py-2 text-xs text-white focus:border-[#4f3df6] outline-none" />
+                      <button type="button" onClick={handleOpenImagePreview} disabled={isGeneratingImg} className="bg-[#4f3df6] hover:bg-[#3b2bc7] text-white flex-1 rounded-lg text-xs font-bold w-full transition-colors h-full min-h-[38px]">
+                        {isGeneratingImg ? "⏳ AI 이미지 생성 중..." : (campaignMeta.mainImageUrl ? "🖼️ 반영된 이미지 확인" : "🪄 AI 키비주얼 이미지 자동 생성")}
                       </button>
                     </div>
                   </div>
                 </div>
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-400 mb-1.5 ml-1">Key 컨셉 & 대표 문구</label>
-                  <textarea name="conceptCopy" value={campaignMeta.conceptCopy || ''} onChange={handleMetaChange} className="w-full bg-[#0a0812] border border-[#303340] rounded-lg px-3 py-2.5 text-xs text-white focus:border-[#4f3df6] outline-none transition-all h-20 resize-none custom-scrollbar" />
-                </div>
               </div>
 
-              {/* 🌟 STEP 2 컨텐츠 */}
-              <div className="space-y-4">
+              {/* === SECTION 2 === */}
+              <div>
                 <div className="border-b border-[#262833] pb-2 mb-4 flex items-center gap-2">
                   <div className="w-1.5 h-4 bg-pink-500 rounded-full"></div>
                   <h4 className="text-sm font-bold text-white tracking-tight">2. 타겟 혜택 및 Capa 검증</h4>
                 </div>
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-400 mb-1.5 ml-1">타겟 모수 (TARGET 전용)</label>
-                  {/* 🌟 onBlur 이벤트 추가 */}
-                  <input type="text" name="targetSize" value={campaignMeta.targetSize || ''} onChange={handleMetaChange} onBlur={handleTargetSizeBlur} disabled={campaignMeta.target !== 'TARGET'} placeholder="MASS일 경우 비활성화됨" className="w-full bg-[#0a0812] border border-[#303340] rounded-lg px-3 py-2.5 text-xs text-white focus:border-pink-500 outline-none transition-all disabled:opacity-30" />
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="col-span-2">
-                    <label className="block text-[11px] font-bold text-slate-400 mb-1.5 ml-1">제작 배너 유형</label>
-                    <input type="text" name="bannerTypes" value={campaignMeta.bannerTypes || ''} onChange={handleMetaChange} placeholder="예: 빅배너, 띠배너" className="w-full bg-[#0a0812] border border-[#303340] rounded-lg px-3 py-2.5 text-xs text-white focus:border-[#4f3df6] outline-none transition-all" />
+
+                {/* 1줄: 타겟 모수 + 배너/GNB (2칸) */}
+                <div className="grid grid-cols-2 gap-4 mb-4">
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-400 mb-1.5 ml-1">타겟 모수 (TARGET 전용)</label>
+                    <input type="text" name="targetSize" value={campaignMeta.targetSize || ''} onChange={handleMetaChange} onBlur={handleTargetSizeBlur} disabled={campaignMeta.target !== 'TARGET'} placeholder="입력 후 폼 밖을 누르면 자동 변환" className="w-full bg-[#0a0812] border border-[#303340] rounded-lg px-3 py-2 text-xs text-white focus:border-pink-500 outline-none disabled:opacity-30" />
                   </div>
-                  <div className="col-span-2">
-                    <label className="block text-[11px] font-bold text-slate-400 mb-1.5 ml-1">편성 GNB 위치</label>
-                    <input type="text" name="gnbLocations" value={campaignMeta.gnbLocations || ''} onChange={handleMetaChange} placeholder="예: 영화시리즈, TV 방송" className="w-full bg-[#0a0812] border border-[#303340] rounded-lg px-3 py-2.5 text-xs text-white focus:border-[#4f3df6] outline-none transition-all" />
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-400 mb-1.5 ml-1">제작 배너 / GNB (자동 추출)</label>
+                    <input type="text" value={`${campaignMeta.bannerTypes || ''} / ${campaignMeta.gnbLocations || ''}`} disabled className="w-full bg-[#1a1c26] border border-[#303340] rounded-lg px-3 py-2 text-xs text-slate-400 opacity-60 outline-none" placeholder="AI가 자동으로 추출합니다" />
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-3">
+
+                {/* 2줄: 쿠폰 + 혜택명 + 외부 사은품 (3칸) */}
+                <div className="grid grid-cols-3 gap-4 mb-5">
                   <div>
                     <label className="block text-[11px] font-bold text-slate-400 mb-1.5 ml-1">B tv 쿠폰 발급</label>
-                    <select name="hasCoupon" value={campaignMeta.hasCoupon || ''} onChange={handleMetaChange} className="w-full bg-[#0a0812] border border-[#303340] rounded-lg px-3 py-2.5 text-xs text-white focus:border-[#4f3df6] outline-none transition-all">
-                      <option value="N">미포함 (N)</option><option value="Y">포함 (Y)</option>
+                    <select name="hasCoupon" value={campaignMeta.hasCoupon || ''} onChange={handleMetaChange} className="w-full bg-[#0a0812] border border-[#303340] rounded-lg px-3 py-2 text-xs text-white focus:border-[#4f3df6] outline-none">
+                      <option value="N">미포함</option><option value="Y">포함</option>
                     </select>
                   </div>
                   <div>
                     <label className="block text-[11px] font-bold text-slate-400 mb-1.5 ml-1">쿠폰 혜택 명</label>
-                    <input type="text" name="couponBenefit" value={campaignMeta.couponBenefit || ''} onChange={handleMetaChange} disabled={campaignMeta.hasCoupon === 'N'} placeholder="예: 2,000원 할인" className="w-full bg-[#0a0812] border border-[#303340] rounded-lg px-3 py-2.5 text-xs text-white focus:border-[#4f3df6] outline-none transition-all disabled:opacity-30" />
+                    <input type="text" name="couponBenefit" value={campaignMeta.couponBenefit || ''} onChange={handleMetaChange} disabled={campaignMeta.hasCoupon === 'N'} placeholder="예: 2,000원 할인" className="w-full bg-[#0a0812] border border-[#303340] rounded-lg px-3 py-2 text-xs text-white focus:border-[#4f3df6] outline-none disabled:opacity-30" />
                   </div>
-                  <div className="col-span-2 pt-2 border-t border-[#1a1c26]">
+                  <div>
                     <label className="block text-[11px] font-bold text-slate-400 mb-1.5 ml-1">외부 사은품 (기프티콘 등)</label>
-                    <input type="text" name="externalGift" value={campaignMeta.externalGift || ''} onChange={handleMetaChange} placeholder="예: 스타벅스 아메리카노 기프티콘 100명 추첨" className="w-full bg-[#0a0812] border border-[#303340] rounded-lg px-3 py-2.5 text-xs text-white focus:border-[#4f3df6] outline-none transition-all" />
+                    <input type="text" name="externalGift" value={campaignMeta.externalGift || ''} onChange={handleMetaChange} placeholder="예: 스타벅스 추첨" className="w-full bg-[#0a0812] border border-[#303340] rounded-lg px-3 py-2 text-xs text-white focus:border-[#4f3df6] outline-none" />
                   </div>
                 </div>
                 
-                {/* 🌟 수동 클릭을 차단한 Capa 검증 UI */}
-                <div className={`mt-4 p-5 rounded-xl border transition-colors ${campaignMeta.target === 'TARGET' ? 'bg-[#1a1325] border-pink-500/50 shadow-[0_0_15px_rgba(236,72,153,0.1)]' : 'bg-[#1a1c26] border-[#303340]'} pointer-events-none select-none`}>
-                  {campaignMeta.target === 'TARGET' ? (
-                    <div className="flex flex-col items-center justify-center gap-2">
-                      {campaignMeta.isCapaChecked ? (
-                        <div className="text-[#32d782] font-black text-[15px] flex items-center gap-2"><CheckCircle size={18}/> ✅ 시스템 자동 Capa 검증 완료</div>
-                      ) : (
-                        <div className="text-pink-400 font-bold text-[14px] flex items-center gap-2 animate-pulse"><Loader2 size={16} className="animate-spin" /> 시스템 자동 Capa 검증 대기 중...</div>
-                      )}
-                      <span className="text-[10px] text-slate-500">* AI가 타겟 모수와 일정을 확인하여 자동으로 승인합니다.</span>
-                    </div>
-                  ) : (
-                    <div className="text-center text-xs font-bold text-slate-400 flex flex-col items-center justify-center gap-1">
-                      <CheckCircle size={18} className="text-slate-500 mb-1"/>
-                      <span>MASS 캠페인 모드</span>
-                      <span className="text-[10px] font-medium opacity-70">전체 고객 대상이므로 타겟 Capa 검증이 생략됩니다.</span>
-                    </div>
-                  )}
+                {/* 수동 클릭 차단된 Capa 검증 블록 */}
+                <div className={`p-4 rounded-xl border transition-colors ${campaignMeta.target === 'TARGET' ? 'bg-[#1a1325] border-pink-500/50 shadow-[0_0_15px_rgba(236,72,153,0.1)]' : 'bg-[#1a1c26] border-[#303340]'} pointer-events-none select-none`}>
+                   {campaignMeta.target === 'TARGET' ? (
+                      <div className="flex flex-col items-center justify-center gap-2">
+                        {campaignMeta.isCapaChecked ? (
+                           <div className="text-[#32d782] font-black text-[15px] flex items-center gap-2"><CheckCircle size={18}/> ✅ 시스템 자동 Capa 검증 통과 완료</div>
+                        ) : (
+                           <div className="text-pink-400 font-bold text-[14px] flex items-center gap-2 animate-pulse"><Loader2 className="animate-spin" size={16}/> 시스템 자동 Capa 검증 대기 중...</div>
+                        )}
+                        <span className="text-[10px] text-slate-500">* AI가 타겟 모수와 일정을 확인하여 자동으로 승인합니다.</span>
+                      </div>
+                   ) : (
+                       <div className="text-center text-xs font-bold text-slate-400 flex flex-col items-center justify-center gap-1">
+                         <CheckCircle className="text-slate-500" size={16}/>
+                         <span>MASS 캠페인 모드</span>
+                         <span className="text-[10px] font-medium opacity-70">전체 고객 대상이므로 타겟 Capa 검증이 생략됩니다.</span>
+                       </div>
+                   )}
                 </div>
               </div>
 
@@ -927,14 +922,9 @@
                 <div className="fixed inset-0 bg-[#0a0812]/90 backdrop-blur-sm z-[60] flex items-center justify-center p-4 animate-in fade-in zoom-in-95 duration-200">
                   <div className="bg-[#12141c] border border-[#262833] rounded-2xl shadow-2xl flex flex-col overflow-hidden max-w-xl w-full ring-1 ring-[#4f3df6]/30">
                     <div className="p-5 border-b border-[#262833] flex justify-between items-center bg-[#0f111a]">
-                      <h3 className="text-base font-black text-white flex items-center gap-2">
-                        <ImageIcon size={18} className="text-[#4f3df6]"/> AI 이미지 미리보기
-                      </h3>
-                      <button onClick={cancelGeneratedImage} className="p-1.5 hover:bg-[#262833] rounded-full text-slate-400 hover:text-white transition-colors">
-                        <X size={16}/>
-                      </button>
+                      <h3 className="text-base font-black text-white flex items-center gap-2"><ImageIcon size={18} className="text-[#4f3df6]"/> AI 이미지 미리보기</h3>
+                      <button onClick={cancelGeneratedImage} className="p-1.5 hover:bg-[#262833] rounded-full text-slate-400 hover:text-white transition-colors"><X size={16}/></button>
                     </div>
-                    
                     <div className="p-6 bg-[#0a0812] flex flex-col items-center">
                       {isGeneratingImg ? (
                         <div className="w-full aspect-[16/9] flex flex-col items-center justify-center bg-[#1a1c26] rounded-xl border border-[#303340] gap-3 shadow-inner">
@@ -945,12 +935,11 @@
                         <img src={previewImageUrl} alt="Generated Preview" className="w-full aspect-[16/9] object-cover rounded-xl shadow-[0_10px_30px_rgba(0,0,0,0.5)] border border-[#303340]" />
                       )}
                     </div>
-                    
                     <div className="p-4 border-t border-[#262833] bg-[#0f111a] flex justify-end gap-3">
                       <button onClick={handleGenerateImage} disabled={isGeneratingImg} className="px-5 py-2.5 bg-[#262833] hover:bg-[#303340] text-slate-200 hover:text-white rounded-lg text-sm font-bold transition-all flex items-center gap-2 border border-[#303340] disabled:opacity-50">
                         <RefreshCw size={14} className={isGeneratingImg ? "animate-spin" : ""} /> 다시 생성
                       </button>
-                      <button onClick={applyGeneratedImage} disabled={isGeneratingImg || !previewImageUrl} className="px-6 py-2.5 bg-[#4f3df6] hover:bg-[#6252ff] text-white rounded-lg text-sm font-bold transition-all shadow-lg shadow-[#4f3df6]/20 disabled:opacity-50 disabled:shadow-none">
+                      <button onClick={applyGeneratedImage} disabled={isGeneratingImg || !previewImageUrl} className="px-6 py-2.5 bg-[#4f3df6] hover:bg-[#6252ff] text-white rounded-lg text-sm font-bold transition-all shadow-lg disabled:opacity-50">
                         이 이미지로 적용
                       </button>
                     </div>
