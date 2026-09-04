@@ -124,7 +124,7 @@ async function createJiraHierarchy(data, sourceTabId) {
       }
     }
 
-    // 🌟 2단계: DB(구글 시트) 동기화를 첨부파일 업로드보다 먼저 실행!! (Jira Key 확보 즉시 저장)
+    // 🌟 2단계: DB(구글 시트) 동기화를 첨부파일 업로드보다 먼저 실행!!
     if (data.rawGasData) {
       const { meta, assignee, assets } = data.rawGasData;
       const uniqueCode = data.uniqueCode || meta.uniqueCode;
@@ -150,8 +150,33 @@ async function createJiraHierarchy(data, sourceTabId) {
           jiraLink: "", uniqueCode: uniqueCode, campaignName: meta.campaignName || '-', product: meta.product || '', targetType: meta.target || 'TARGET', channel: '-', hasBanner: 'N', taskType: 'TARGET_OPERATION', startDate: meta.startDate || '', endDate: meta.dueDate || '', assignee: assignee || '', targetSize: safeTargetSize, targetCondition: meta.targetCondition || '', notiChannel: '', mainCopy: `타겟 배정(${bannerTypes})`, landingUrl: '', designLink: '', hasCoupon: (meta.hasCoupon || '').trim().toUpperCase() === 'Y' ? 'Y' : 'N'
         });
       }
+      
       if (bulkPayload.length > 0) {
-        await fetch(CF_WORKER_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: "bulkInsert", rows: bulkPayload }) });
+        try {
+          const dbRes = await fetch(CF_WORKER_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: "bulkInsert", rows: bulkPayload }) });
+          const dbText = await dbRes.text();
+          let dbJson;
+          try { dbJson = JSON.parse(dbText); } catch(e) {}
+          
+          if (!dbJson || dbJson.status !== "success") {
+            // 🌟 [핵심] 실패하더라도 스크립트를 죽이지(throw) 않고 화면에 팝업만 띄웁니다!
+            if (sourceTabId) {
+              chrome.scripting.executeScript({ 
+                target: { tabId: sourceTabId }, 
+                func: (msg) => alert("🚨 [구글 시트 저장 실패] 에러 상세 정보:\n" + msg), 
+                args: [dbJson ? dbJson.message : dbText.substring(0, 150)] 
+              }).catch(e=>e);
+            }
+          }
+        } catch (dbErr) {
+          if (sourceTabId) {
+            chrome.scripting.executeScript({ 
+              target: { tabId: sourceTabId }, 
+              func: (msg) => alert("🚨 [구글 시트 통신 실패]\n" + msg), 
+              args: [dbErr.message] 
+            }).catch(e=>e);
+          }
+        }
       }
     }
 
