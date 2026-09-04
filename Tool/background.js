@@ -1,3 +1,24 @@
+// 🌟 [신규] description 안의 mermaid 코드 블록(```...```)을 찾아냄
+const MERMAID_BLOCK_REGEX = /```(?:mermaid)?\s*\n?(graph\s[\s\S]*?)```/;
+function extractMermaidBlock(desc) {
+  if (!desc) return null;
+  const match = desc.match(MERMAID_BLOCK_REGEX);
+  if (!match) return null;
+  return { fullMatch: match[0], code: match[1].trim() };
+}
+
+// 🌟 [신규] mermaid.ink로 mermaid 코드 → PNG Blob 변환 (한글 포함 UTF-8 안전 처리)
+async function mermaidToPngBlob(mermaidCode) {
+  const utf8Bytes = new TextEncoder().encode(mermaidCode);
+  let binary = '';
+  utf8Bytes.forEach(b => { binary += String.fromCharCode(b); });
+  const base64 = btoa(binary);
+  const url = `https://mermaid.ink/img/${encodeURIComponent(base64)}?type=png&bgColor=white`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`mermaid.ink 렌더링 실패 (HTTP ${res.status})`);
+  return await res.blob();
+}
+
 const CF_WORKER_URL = "https://btv-proxy.alcheminos.workers.dev";
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -60,6 +81,11 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
 async function createJiraHierarchy(data, sourceTabId) {
   const baseUrl = "https://jira.skbroadband.com";
+  const MERMAID_PLACEHOLDER = "___MERMAID_DIAGRAM_PLACEHOLDER___";
+  const mermaidBlock = extractMermaidBlock(data.parent.desc);
+  if (mermaidBlock) {
+    data.parent.desc = data.parent.desc.replace(mermaidBlock.fullMatch, MERMAID_PLACEHOLDER);
+  }
   const projectKey = "BTVMKT";
   const targetUserId = data.parent?.assignee || "system";
   const PARENT_ISSUE_TYPE = "Task", CHILD_ISSUE_TYPE = "Sub-Task";
@@ -198,11 +224,45 @@ async function createJiraHierarchy(data, sourceTabId) {
           }
         }
       }
-      if (uploadedParentAttachments.length > 0) {
-        let finalParentDesc = data.parent.desc; 
-        uploadedParentAttachments.forEach(att => { finalParentDesc = finalParentDesc.split(`PLACEHOLDER_${att.filename}`).join(att.content); });
-        finalParentDesc = finalParentDesc.replace(/data:image\/[a-zA-Z0-9+;/=]+/g, uploadedParentAttachments[0].content);
-        await fetchWithRetry(`${baseUrl}/rest/api/2/issue/${parentKey}`, { method: 'PUT', headers: { 'Content-Type': 'application/json', 'X-Atlassian-Token': 'no-check' }, credentials: 'include', body: JSON.stringify({ fields: { description: finalParentDesc } }) });
+      // 🌟 [신규] mermaid 다이어그램 이미지 변환 + 첨부
+      let mermaidAttachment = null;
+      if (mermaidBlock) {
+        try {
+          const pngBlob = await mermaidToPngBlob(mermaidBlock.code);
+          const mermaidFormData = new FormData();
+          mermaidFormData.append("file", pngBlob, `user_flow_${Date.now()}.png`);
+          const mermaidAttachRes = await fetchWithRetry(
+            `${baseUrl}/rest/api/2/issue/${parentKey}/attachments`,
+            { method: 'POST', headers: { 'X-Atlassian-Token': 'no-check' }, credentials: 'include', body: mermaidFormData }
+          );
+          const mermaidAttJson = await mermaidAttachRes.json();
+          if (mermaidAttJson && mermaidAttJson.length > 0) mermaidAttachment = mermaidAttJson[0];
+        } catch (mermaidErr) {
+          if (sourceTabId) {
+            chrome.scripting.executeScript({
+              target: { tabId: sourceTabId },
+              func: (m) => alert("🚨 유저플로우 다이어그램 변환/첨부 실패:\n" + m),
+              args: [mermaidErr.message]
+            }).catch(e => e);
+          }
+        }
+      }
+    
+      if (uploadedParentAttachments.length > 0 || mermaidAttachment) {
+        let finalParentDesc = data.parent.desc;
+        uploadedParentAttachments.forEach(att => {
+          finalParentDesc = finalParentDesc.split(`PLACEHOLDER_${att.filename}`).join(att.content);
+        });
+        if (uploadedParentAttachments.length > 0) {
+          finalParentDesc = finalParentDesc.replace(/data:image\/[a-zA-Z0-9+;/=]+/g, uploadedParentAttachments[0].content);
+        }
+        if (mermaidAttachment) {
+          finalParentDesc = finalParentDesc.split(MERMAID_PLACEHOLDER).join(`!${mermaidAttachment.filename}|width=760!`);
+        }
+        await fetchWithRetry(
+          `${baseUrl}/rest/api/2/issue/${parentKey}`,
+          { method: 'PUT', headers: { 'Content-Type': 'application/json', 'X-Atlassian-Token': 'no-check' }, credentials: 'include', body: JSON.stringify({ fields: { description: finalParentDesc } }) }
+        );
       }
 
       for (let i = 0; i < data.children.length; i++) {
