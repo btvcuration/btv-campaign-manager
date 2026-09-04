@@ -551,7 +551,17 @@
         );
       }
     };
-    
+    // 🌟 [추가 1] 숫자 스마트 파싱 유틸리티 ("5만" -> "50,000")
+    const parseAndFormatKoreanNumber = (str) => {
+      if (!str) return '';
+      let cleanStr = String(str).replace(/,/g, '').replace(/명/g, '').replace(/원/g, '').trim();
+      let multiplier = 1;
+      if (cleanStr.includes('만')) { multiplier = 10000; cleanStr = cleanStr.replace('만', ''); }
+      else if (cleanStr.includes('천')) { multiplier = 1000; cleanStr = cleanStr.replace('천', ''); }
+      const num = parseFloat(cleanStr);
+      if (isNaN(num)) return str; 
+      return (num * multiplier).toLocaleString();
+    };
     // ====================================================================================
     // 🌟 [최종 개편] AI 프로모션 기획 뷰 (폼 확장, 팝업 제어, 머메이드 렌더링)
     // ====================================================================================
@@ -566,6 +576,10 @@
       const [isGeneratingImg, setIsGeneratingImg] = useState(false);
       const [previewImageUrl, setPreviewImageUrl] = useState('');
       const [showPreviewModal, setShowPreviewModal] = useState(false);
+
+      const handleTargetSizeBlur = (e) => {
+        setCampaignMeta(prev => ({ ...prev, targetSize: parseAndFormatKoreanNumber(e.target.value) }));
+      };
 
       // 🌟 [수정됨] 생성 성공 시 폼에 바로 넣지 않고 모달을 엽니다.
       const handleOpenImagePreview = () => {
@@ -787,206 +801,166 @@
               <h3 className="text-white font-bold text-[15px] tracking-tight flex items-center gap-2"><Settings size={16} className="text-pink-400" /> 캠페인 기획 폼</h3>
               <span className="text-[9px] text-slate-400 bg-[#1a1c26] px-2 py-0.5 rounded border border-[#303340] animate-pulse">AI 실시간 동기화</span>
             </div>
-            
-            {/* 🌟 2-Step 탭 버튼 영역 */}
-            <div className="flex bg-[#0a0812] p-1 rounded-xl border border-[#303340] mb-1 mx-5 mt-5 shrink-0">
-              <button onClick={() => setActiveFormTab('STEP1')} className={`flex-1 py-2.5 text-xs font-bold rounded-lg transition-all duration-300 ${activeFormTab === 'STEP1' ? 'bg-[#4f3df6] text-white shadow-md' : 'text-slate-500 hover:text-slate-300'}`}>Step 1. 기본 기획 및 편성</button>
-              <button onClick={() => setActiveFormTab('STEP2')} className={`flex-1 py-2.5 text-xs font-bold rounded-lg transition-all duration-300 ${activeFormTab === 'STEP2' ? 'bg-pink-500 text-white shadow-md' : 'text-slate-500 hover:text-slate-300'}`}>Step 2. 혜택 및 Capa 검증</button>
-            </div>
 
-            <div className="px-5 pb-5 pt-3 overflow-y-auto custom-scrollbar flex-1 bg-[#06070a]">
+            <div className="px-5 pb-5 pt-5 overflow-y-auto custom-scrollbar flex-1 bg-[#06070a]">
               
               {/* 🌟 STEP 1 컨텐츠 */}
-              {activeFormTab === 'STEP1' && (
-                <div className="space-y-4 animate-in fade-in zoom-in-95 duration-200">
+              <div className="space-y-4 mb-8">
+                <div className="border-b border-[#262833] pb-2 mb-4 flex items-center gap-2">
+                  <div className="w-1.5 h-4 bg-[#4f3df6] rounded-full"></div>
+                  <h4 className="text-sm font-bold text-white tracking-tight">1. 기본 기획 및 편성</h4>
+                </div>
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-400 mb-1.5 ml-1">캠페인 / 프로젝트명</label>
+                  <input type="text" name="campaignName" value={campaignMeta.campaignName || ''} onChange={handleMetaChange} className="w-full bg-[#0a0812] border border-[#303340] rounded-lg px-3 py-2.5 text-xs text-white focus:border-[#4f3df6] outline-none transition-all" />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-400 mb-1.5 ml-1">대상 상품 (VOD / 월정액 등)</label>
+                  <input type="text" name="product" value={campaignMeta.product || ''} onChange={handleMetaChange} className="w-full bg-[#0a0812] border border-[#303340] rounded-lg px-3 py-2.5 text-xs text-white focus:border-[#4f3df6] outline-none transition-all" />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-[11px] font-bold text-slate-400 mb-1.5 ml-1">캠페인 / 프로젝트명</label>
-                    <input type="text" name="campaignName" value={campaignMeta.campaignName || ''} onChange={handleMetaChange} className="w-full bg-[#0a0812] border border-[#303340] rounded-lg px-3 py-2.5 text-xs text-white focus:border-[#4f3df6] outline-none transition-all" />
-                  </div>
-                  <div>
-                    <label className="block text-[11px] font-bold text-slate-400 mb-1.5 ml-1">대상 상품 (VOD / 월정액 등)</label>
-                    <input type="text" name="product" value={campaignMeta.product || ''} onChange={handleMetaChange} className="w-full bg-[#0a0812] border border-[#303340] rounded-lg px-3 py-2.5 text-xs text-white focus:border-[#4f3df6] outline-none transition-all" />
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-[11px] font-bold text-slate-400 mb-1.5 ml-1">시작일</label>
-                      <input type="date" name="startDate" value={campaignMeta.startDate || ''} onChange={handleMetaChange} className="w-full bg-[#0a0812] border border-[#303340] rounded-lg px-3 py-2 text-xs text-slate-200 outline-none focus:border-[#4f3df6] [&::-webkit-calendar-picker-indicator]:invert" />
-                    </div>
-                    <div>
-                      <label className="block text-[11px] font-bold text-slate-400 mb-1.5 ml-1">종료일</label>
-                      <input type="date" name="dueDate" value={campaignMeta.dueDate || ''} onChange={handleMetaChange} className="w-full bg-[#0a0812] border border-[#303340] rounded-lg px-3 py-2 text-xs text-slate-200 outline-none focus:border-[#4f3df6] [&::-webkit-calendar-picker-indicator]:invert" />
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-[11px] font-bold text-slate-400 mb-1.5 ml-1">타겟 유형</label>
-                      <select name="target" value={campaignMeta.target || ''} onChange={handleMetaChange} className="w-full bg-[#0a0812] border border-[#303340] rounded-lg px-3 py-2.5 text-xs text-white focus:border-[#4f3df6] outline-none transition-all">
-                        <option value="" disabled>선택</option><option value="MASS">MASS</option><option value="TARGET">TARGET</option>
-                      </select>
-                    </div>
-                    {/* 🌟 디자인 통일성을 맞춘 수정본 */}
-                    <div>
-                      <label className="block text-[11px] font-bold text-slate-400 mb-1.5 ml-1">메인 키비주얼 URL</label>
-                      <div className="flex gap-2 items-center">
-                        <input 
-                          type="text" 
-                          name="mainImageUrl"
-                          className="w-full bg-[#0a0812] border border-[#303340] rounded-lg px-3 py-2.5 text-xs text-white focus:border-[#4f3df6] outline-none transition-all" 
-                          placeholder="https://..."
-                          value={campaignMeta.mainImageUrl || ''}
-                          onChange={(e) => setCampaignMeta({...campaignMeta, mainImageUrl: e.target.value})}
-                        />
-                        <button 
-                          type="button" 
-                          onClick={handleOpenImagePreview} 
-                          disabled={isGeneratingImg}
-                          className="bg-[#4f3df6] hover:bg-[#3b2bc7] text-white px-4 py-2.5 rounded-lg text-xs font-bold whitespace-nowrap disabled:opacity-50 transition-colors"
-                        >
-                          {isGeneratingImg ? "⏳ 생성 중..." : (campaignMeta.mainImageUrl ? "🖼️ 이미지 확인" : "🪄 AI 이미지 생성")}
-                        </button>
-                      </div>
-                    </div>
+                    <label className="block text-[11px] font-bold text-slate-400 mb-1.5 ml-1">시작일</label>
+                    <input type="date" name="startDate" value={campaignMeta.startDate || ''} onChange={handleMetaChange} className="w-full bg-[#0a0812] border border-[#303340] rounded-lg px-3 py-2 text-xs text-slate-200 outline-none focus:border-[#4f3df6] [&::-webkit-calendar-picker-indicator]:invert" />
                   </div>
                   <div>
-                    <label className="block text-[11px] font-bold text-slate-400 mb-1.5 ml-1">Key 컨셉 & 대표 문구</label>
-                    <textarea name="conceptCopy" value={campaignMeta.conceptCopy || ''} onChange={handleMetaChange} className="w-full bg-[#0a0812] border border-[#303340] rounded-lg px-3 py-2.5 text-xs text-white focus:border-[#4f3df6] outline-none transition-all h-20 resize-none custom-scrollbar" />
+                    <label className="block text-[11px] font-bold text-slate-400 mb-1.5 ml-1">종료일</label>
+                    <input type="date" name="dueDate" value={campaignMeta.dueDate || ''} onChange={handleMetaChange} className="w-full bg-[#0a0812] border border-[#303340] rounded-lg px-3 py-2 text-xs text-slate-200 outline-none focus:border-[#4f3df6] [&::-webkit-calendar-picker-indicator]:invert" />
                   </div>
-                  {/* 🌟 [신규 추가] AI 이미지 미리보기 및 재생성 팝업 */}
-                  {showPreviewModal && (
-                    <div className="fixed inset-0 bg-[#0a0812]/90 backdrop-blur-sm z-[60] flex items-center justify-center p-4 animate-in fade-in zoom-in-95 duration-200">
-                      <div className="bg-[#12141c] border border-[#262833] rounded-2xl shadow-2xl flex flex-col overflow-hidden max-w-xl w-full ring-1 ring-[#4f3df6]/30">
-                        <div className="p-5 border-b border-[#262833] flex justify-between items-center bg-[#0f111a]">
-                          <h3 className="text-base font-black text-white flex items-center gap-2">
-                            <ImageIcon size={18} className="text-[#4f3df6]"/> AI 이미지 미리보기
-                          </h3>
-                          <button onClick={cancelGeneratedImage} className="p-1.5 hover:bg-[#262833] rounded-full text-slate-400 hover:text-white transition-colors">
-                            <X size={16}/>
-                          </button>
-                        </div>
-                        
-                        <div className="p-6 bg-[#0a0812] flex flex-col items-center">
-                          {isGeneratingImg ? (
-                            <div className="w-full aspect-[16/9] flex flex-col items-center justify-center bg-[#1a1c26] rounded-xl border border-[#303340] gap-3 shadow-inner">
-                              <Loader2 size={32} className="text-[#4f3df6] animate-spin" />
-                              <p className="text-slate-400 text-sm font-bold animate-pulse">새로운 이미지를 생성 중입니다...</p>
-                            </div>
-                          ) : (
-                            <img src={previewImageUrl} alt="Generated Preview" className="w-full aspect-[16/9] object-cover rounded-xl shadow-[0_10px_30px_rgba(0,0,0,0.5)] border border-[#303340]" />
-                          )}
-                          <p className="text-slate-400 text-xs mt-4 text-center break-keep leading-relaxed">
-                            생성된 이미지를 확인해 주세요.<br/>마음에 들지 않으면 <b>'다시 생성'</b>을 눌러 새로운 시안을 받아볼 수 있습니다.
-                          </p>
-                        </div>
-                        
-                        <div className="p-4 border-t border-[#262833] bg-[#0f111a] flex justify-end gap-3">
-                          <button 
-                            onClick={handleGenerateImage} 
-                            disabled={isGeneratingImg} 
-                            className="px-5 py-2.5 bg-[#262833] hover:bg-[#303340] text-slate-200 hover:text-white rounded-lg text-sm font-bold transition-all flex items-center gap-2 border border-[#303340] disabled:opacity-50"
-                          >
-                            <RefreshCw size={14} className={isGeneratingImg ? "animate-spin" : ""} /> 다시 생성
-                          </button>
-                          <button 
-                            onClick={applyGeneratedImage} 
-                            disabled={isGeneratingImg || !previewImageUrl} 
-                            className="px-6 py-2.5 bg-[#4f3df6] hover:bg-[#6252ff] text-white rounded-lg text-sm font-bold transition-all shadow-lg shadow-[#4f3df6]/20 disabled:opacity-50 disabled:shadow-none"
-                          >
-                            이 이미지로 적용
-                          </button>
-                        </div>
-                      </div>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-400 mb-1.5 ml-1">타겟 유형</label>
+                    <select name="target" value={campaignMeta.target || ''} onChange={handleMetaChange} className="w-full bg-[#0a0812] border border-[#303340] rounded-lg px-3 py-2.5 text-xs text-white focus:border-[#4f3df6] outline-none transition-all">
+                      <option value="" disabled>선택</option><option value="MASS">MASS</option><option value="TARGET">TARGET</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-400 mb-1.5 ml-1">메인 키비주얼 URL</label>
+                    <div className="flex gap-2 items-center">
+                      <input 
+                        type="text" 
+                        name="mainImageUrl"
+                        className="w-full bg-[#0a0812] border border-[#303340] rounded-lg px-3 py-2.5 text-xs text-white focus:border-[#4f3df6] outline-none transition-all" 
+                        placeholder="https://..."
+                        value={campaignMeta.mainImageUrl || ''}
+                        onChange={(e) => setCampaignMeta({...campaignMeta, mainImageUrl: e.target.value})}
+                      />
+                      <button 
+                        type="button" 
+                        onClick={handleOpenImagePreview} 
+                        disabled={isGeneratingImg}
+                        className="bg-[#4f3df6] hover:bg-[#3b2bc7] text-white px-4 py-2.5 rounded-lg text-xs font-bold whitespace-nowrap disabled:opacity-50 transition-colors"
+                      >
+                        {isGeneratingImg ? "⏳ 생성 중..." : (campaignMeta.mainImageUrl ? "🖼️ 이미지 확인" : "🪄 AI 이미지 생성")}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-400 mb-1.5 ml-1">Key 컨셉 & 대표 문구</label>
+                  <textarea name="conceptCopy" value={campaignMeta.conceptCopy || ''} onChange={handleMetaChange} className="w-full bg-[#0a0812] border border-[#303340] rounded-lg px-3 py-2.5 text-xs text-white focus:border-[#4f3df6] outline-none transition-all h-20 resize-none custom-scrollbar" />
+                </div>
+              </div>
+
+              {/* 🌟 STEP 2 컨텐츠 */}
+              <div className="space-y-4">
+                <div className="border-b border-[#262833] pb-2 mb-4 flex items-center gap-2">
+                  <div className="w-1.5 h-4 bg-pink-500 rounded-full"></div>
+                  <h4 className="text-sm font-bold text-white tracking-tight">2. 타겟 혜택 및 Capa 검증</h4>
+                </div>
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-400 mb-1.5 ml-1">타겟 모수 (TARGET 전용)</label>
+                  {/* 🌟 onBlur 이벤트 추가 */}
+                  <input type="text" name="targetSize" value={campaignMeta.targetSize || ''} onChange={handleMetaChange} onBlur={handleTargetSizeBlur} disabled={campaignMeta.target !== 'TARGET'} placeholder="MASS일 경우 비활성화됨" className="w-full bg-[#0a0812] border border-[#303340] rounded-lg px-3 py-2.5 text-xs text-white focus:border-pink-500 outline-none transition-all disabled:opacity-30" />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="col-span-2">
+                    <label className="block text-[11px] font-bold text-slate-400 mb-1.5 ml-1">제작 배너 유형</label>
+                    <input type="text" name="bannerTypes" value={campaignMeta.bannerTypes || ''} onChange={handleMetaChange} placeholder="예: 빅배너, 띠배너" className="w-full bg-[#0a0812] border border-[#303340] rounded-lg px-3 py-2.5 text-xs text-white focus:border-[#4f3df6] outline-none transition-all" />
+                  </div>
+                  <div className="col-span-2">
+                    <label className="block text-[11px] font-bold text-slate-400 mb-1.5 ml-1">편성 GNB 위치</label>
+                    <input type="text" name="gnbLocations" value={campaignMeta.gnbLocations || ''} onChange={handleMetaChange} placeholder="예: 영화시리즈, TV 방송" className="w-full bg-[#0a0812] border border-[#303340] rounded-lg px-3 py-2.5 text-xs text-white focus:border-[#4f3df6] outline-none transition-all" />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-400 mb-1.5 ml-1">B tv 쿠폰 발급</label>
+                    <select name="hasCoupon" value={campaignMeta.hasCoupon || ''} onChange={handleMetaChange} className="w-full bg-[#0a0812] border border-[#303340] rounded-lg px-3 py-2.5 text-xs text-white focus:border-[#4f3df6] outline-none transition-all">
+                      <option value="N">미포함 (N)</option><option value="Y">포함 (Y)</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-400 mb-1.5 ml-1">쿠폰 혜택 명</label>
+                    <input type="text" name="couponBenefit" value={campaignMeta.couponBenefit || ''} onChange={handleMetaChange} disabled={campaignMeta.hasCoupon === 'N'} placeholder="예: 2,000원 할인" className="w-full bg-[#0a0812] border border-[#303340] rounded-lg px-3 py-2.5 text-xs text-white focus:border-[#4f3df6] outline-none transition-all disabled:opacity-30" />
+                  </div>
+                  <div className="col-span-2 pt-2 border-t border-[#1a1c26]">
+                    <label className="block text-[11px] font-bold text-slate-400 mb-1.5 ml-1">외부 사은품 (기프티콘 등)</label>
+                    <input type="text" name="externalGift" value={campaignMeta.externalGift || ''} onChange={handleMetaChange} placeholder="예: 스타벅스 아메리카노 기프티콘 100명 추첨" className="w-full bg-[#0a0812] border border-[#303340] rounded-lg px-3 py-2.5 text-xs text-white focus:border-[#4f3df6] outline-none transition-all" />
+                  </div>
+                </div>
+                
+                {/* 🌟 수동 클릭을 차단한 Capa 검증 UI */}
+                <div className={`mt-4 p-5 rounded-xl border transition-colors ${campaignMeta.target === 'TARGET' ? 'bg-[#1a1325] border-pink-500/50 shadow-[0_0_15px_rgba(236,72,153,0.1)]' : 'bg-[#1a1c26] border-[#303340]'} pointer-events-none select-none`}>
+                  {campaignMeta.target === 'TARGET' ? (
+                    <div className="flex flex-col items-center justify-center gap-2">
+                      {campaignMeta.isCapaChecked ? (
+                        <div className="text-[#32d782] font-black text-[15px] flex items-center gap-2"><CheckCircle size={18}/> ✅ 시스템 자동 Capa 검증 완료</div>
+                      ) : (
+                        <div className="text-pink-400 font-bold text-[14px] flex items-center gap-2 animate-pulse"><Loader2 size={16} className="animate-spin" /> 시스템 자동 Capa 검증 대기 중...</div>
+                      )}
+                      <span className="text-[10px] text-slate-500">* AI가 타겟 모수와 일정을 확인하여 자동으로 승인합니다.</span>
+                    </div>
+                  ) : (
+                    <div className="text-center text-xs font-bold text-slate-400 flex flex-col items-center justify-center gap-1">
+                      <CheckCircle size={18} className="text-slate-500 mb-1"/>
+                      <span>MASS 캠페인 모드</span>
+                      <span className="text-[10px] font-medium opacity-70">전체 고객 대상이므로 타겟 Capa 검증이 생략됩니다.</span>
                     </div>
                   )}
                 </div>
-              )}
+              </div>
 
-              {/* 🌟 STEP 2 컨텐츠 */}
-              {activeFormTab === 'STEP2' && (
-                <div className="space-y-4 animate-in fade-in zoom-in-95 duration-200">
-                  <div>
-                    <label className="block text-[11px] font-bold text-slate-400 mb-1.5 ml-1">타겟 모수 (TARGET 전용)</label>
-                    <input type="text" name="targetSize" value={campaignMeta.targetSize || ''} onChange={handleMetaChange} disabled={campaignMeta.target !== 'TARGET'} placeholder="MASS일 경우 비활성화됨" className="w-full bg-[#0a0812] border border-[#303340] rounded-lg px-3 py-2.5 text-xs text-white focus:border-pink-500 outline-none transition-all disabled:opacity-30" />
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="col-span-2">
-                      <label className="block text-[11px] font-bold text-slate-400 mb-1.5 ml-1">제작 배너 유형</label>
-                      <input type="text" name="bannerTypes" value={campaignMeta.bannerTypes || ''} onChange={handleMetaChange} placeholder="예: 빅배너, 띠배너" className="w-full bg-[#0a0812] border border-[#303340] rounded-lg px-3 py-2.5 text-xs text-white focus:border-[#4f3df6] outline-none transition-all" />
+              {/* 이미지 팝업 모달 */}
+              {showPreviewModal && (
+                <div className="fixed inset-0 bg-[#0a0812]/90 backdrop-blur-sm z-[60] flex items-center justify-center p-4 animate-in fade-in zoom-in-95 duration-200">
+                  <div className="bg-[#12141c] border border-[#262833] rounded-2xl shadow-2xl flex flex-col overflow-hidden max-w-xl w-full ring-1 ring-[#4f3df6]/30">
+                    <div className="p-5 border-b border-[#262833] flex justify-between items-center bg-[#0f111a]">
+                      <h3 className="text-base font-black text-white flex items-center gap-2">
+                        <ImageIcon size={18} className="text-[#4f3df6]"/> AI 이미지 미리보기
+                      </h3>
+                      <button onClick={cancelGeneratedImage} className="p-1.5 hover:bg-[#262833] rounded-full text-slate-400 hover:text-white transition-colors">
+                        <X size={16}/>
+                      </button>
                     </div>
-                    <div className="col-span-2">
-                      <label className="block text-[11px] font-bold text-slate-400 mb-1.5 ml-1">편성 GNB 위치</label>
-                      <input type="text" name="gnbLocations" value={campaignMeta.gnbLocations || ''} onChange={handleMetaChange} placeholder="예: 영화시리즈, TV 방송" className="w-full bg-[#0a0812] border border-[#303340] rounded-lg px-3 py-2.5 text-xs text-white focus:border-[#4f3df6] outline-none transition-all" />
+                    
+                    <div className="p-6 bg-[#0a0812] flex flex-col items-center">
+                      {isGeneratingImg ? (
+                        <div className="w-full aspect-[16/9] flex flex-col items-center justify-center bg-[#1a1c26] rounded-xl border border-[#303340] gap-3 shadow-inner">
+                          <Loader2 size={32} className="text-[#4f3df6] animate-spin" />
+                          <p className="text-slate-400 text-sm font-bold animate-pulse">새로운 이미지를 생성 중입니다...</p>
+                        </div>
+                      ) : (
+                        <img src={previewImageUrl} alt="Generated Preview" className="w-full aspect-[16/9] object-cover rounded-xl shadow-[0_10px_30px_rgba(0,0,0,0.5)] border border-[#303340]" />
+                      )}
                     </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-[11px] font-bold text-slate-400 mb-1.5 ml-1">B tv 쿠폰 발급</label>
-                      <select name="hasCoupon" value={campaignMeta.hasCoupon || ''} onChange={handleMetaChange} className="w-full bg-[#0a0812] border border-[#303340] rounded-lg px-3 py-2.5 text-xs text-white focus:border-[#4f3df6] outline-none transition-all">
-                        <option value="N">미포함 (N)</option><option value="Y">포함 (Y)</option>
-                      </select>
+                    
+                    <div className="p-4 border-t border-[#262833] bg-[#0f111a] flex justify-end gap-3">
+                      <button onClick={handleGenerateImage} disabled={isGeneratingImg} className="px-5 py-2.5 bg-[#262833] hover:bg-[#303340] text-slate-200 hover:text-white rounded-lg text-sm font-bold transition-all flex items-center gap-2 border border-[#303340] disabled:opacity-50">
+                        <RefreshCw size={14} className={isGeneratingImg ? "animate-spin" : ""} /> 다시 생성
+                      </button>
+                      <button onClick={applyGeneratedImage} disabled={isGeneratingImg || !previewImageUrl} className="px-6 py-2.5 bg-[#4f3df6] hover:bg-[#6252ff] text-white rounded-lg text-sm font-bold transition-all shadow-lg shadow-[#4f3df6]/20 disabled:opacity-50 disabled:shadow-none">
+                        이 이미지로 적용
+                      </button>
                     </div>
-                    <div>
-                      <label className="block text-[11px] font-bold text-slate-400 mb-1.5 ml-1">쿠폰 혜택 명</label>
-                      <input type="text" name="couponBenefit" value={campaignMeta.couponBenefit || ''} onChange={handleMetaChange} disabled={campaignMeta.hasCoupon === 'N'} placeholder="예: 2,000원 할인" className="w-full bg-[#0a0812] border border-[#303340] rounded-lg px-3 py-2.5 text-xs text-white focus:border-[#4f3df6] outline-none transition-all disabled:opacity-30" />
-                    </div>
-                    <div className="col-span-2 pt-2 border-t border-[#1a1c26]">
-                      <label className="block text-[11px] font-bold text-slate-400 mb-1.5 ml-1">외부 사은품 (기프티콘 등)</label>
-                      <input type="text" name="externalGift" value={campaignMeta.externalGift || ''} onChange={handleMetaChange} placeholder="예: 스타벅스 아메리카노 기프티콘 100명 추첨" className="w-full bg-[#0a0812] border border-[#303340] rounded-lg px-3 py-2.5 text-xs text-white focus:border-[#4f3df6] outline-none transition-all" />
-                    </div>
-                  </div>
-                  
-                  {/* 🌟 최종 게이트: Capa 검증 UI */}
-                  <div className={`mt-4 p-5 rounded-xl border transition-colors ${campaignMeta.target === 'TARGET' ? 'bg-[#1a1325] border-pink-500/50 shadow-[0_0_15px_rgba(236,72,153,0.1)]' : 'bg-[#1a1c26] border-[#303340]'}`}>
-                    {campaignMeta.target === 'TARGET' ? (
-                      <label className="flex items-center justify-center gap-3 cursor-pointer group">
-                        <input type="checkbox" checked={campaignMeta.isCapaChecked || false} onChange={(e) => setCampaignMeta(prev => ({...prev, isCapaChecked: e.target.checked}))} className="w-5 h-5 accent-pink-500" />
-                        <span className="text-sm text-pink-400 font-black tracking-tight group-hover:text-pink-300 transition-colors">타겟 모수 및 리소스 Capa 검증 완료</span>
-                      </label>
-                    ) : (
-                      <div className="text-center text-xs font-bold text-slate-400 flex flex-col items-center justify-center gap-1">
-                        <CheckCircle size={18} className="text-slate-500 mb-1"/>
-                        <span>MASS 캠페인 모드</span>
-                        <span className="text-[10px] font-medium opacity-70">전체 고객 대상이므로 타겟 Capa 검증이 생략됩니다.</span>
-                      </div>
-                    )}
                   </div>
                 </div>
               )}
             </div>
-            
-            {/* 🌟 [수정됨] 필수값 철통 방어 (Validation) 로직 추가 */}
-            <div className="mt-8">
-              <button
-                onClick={() => {
-                  // 1. 공통 필수 기획 정보 체크
-                  if (!campaignMeta.campaignName || !campaignMeta.product || !campaignMeta.startDate || !campaignMeta.dueDate || !campaignMeta.conceptCopy) {
-                    alert("⚠️ 필수 기획 정보(캠페인명, 대상 상품, 시작/종료일, Key 컨셉)가 모두 입력되어야 다음 단계로 이동할 수 있습니다.");
-                    setActiveFormTab('STEP1'); // 해당 탭으로 강제 이동
-                    return;
-                  }
-                  
-                  // 2. TARGET 프로모션일 경우 추가 필수 정보 체크
-                  if (campaignMeta.target === 'TARGET' && (!campaignMeta.targetSize || !campaignMeta.isCapaChecked)) {
-                    alert("⚠️ TARGET 프로모션은 '타겟 모수' 입력 및 'Capa 검증' 완료가 필수입니다.");
-                    setActiveFormTab('STEP2'); // 해당 탭으로 강제 이동
-                    return;
-                  }
-
-                  // 모든 검증 통과 시 에디터로 이동!
-                  if (pendingAiPayload) onMoveToEditor(pendingAiPayload);
-                }}
-                disabled={!pendingAiPayload}
-                className={`w-full py-4 rounded-lg font-bold text-white transition-all shadow-md ${
-                  pendingAiPayload
-                    ? "bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 cursor-pointer"
-                    : "bg-gray-400 cursor-not-allowed opacity-70"
-                }`}
-              >
-                {pendingAiPayload ? "완성된 기획안으로 시안 편집 이동 〉" : "⚠️ 시안(에셋) 데이터가 생성되어야 이동 가능합니다"}
-              </button>
-            </div>
           </div>
           
-          {/* 3단: 우측 머메이드 시뮬레이터 (33%) */}
+          {/* 3단: 우측 머메이드 시뮬레이터 (33%) 및 🌟 전송 버튼 위치 */}
           <div className="flex-1 flex flex-col bg-[#0f111a] border border-[#262833] rounded-2xl shadow-xl overflow-hidden min-w-[320px]">
             <div className="px-5 py-4 border-b border-[#262833] bg-[#12141c] flex items-center justify-between">
               <h3 className="text-white font-bold text-[15px] tracking-tight flex items-center gap-2"><LayoutTemplate size={16} className="text-cyan-400" /> 비주얼 유저플로우 시뮬레이터</h3>
@@ -1000,6 +974,31 @@
                   <p className="text-xs font-bold text-center">AI와 대화를 통해 기획안이 확정되면<br/>이곳에 유저플로우가 그려집니다.</p>
                 </div>
               )}
+            </div>
+
+            {/* 🌟 3단 화면 맨 아래 고정된 이동 버튼 */}
+            <div className="p-5 bg-[#12141c] border-t border-[#262833]">
+              <button
+                onClick={() => {
+                  if (!campaignMeta.campaignName || !campaignMeta.product || !campaignMeta.startDate || !campaignMeta.dueDate || !campaignMeta.conceptCopy) {
+                    alert("⚠️ 필수 기획 정보(캠페인명, 대상 상품, 시작/종료일, Key 컨셉)가 모두 입력되어야 다음 단계로 이동할 수 있습니다.");
+                    return;
+                  }
+                  if (campaignMeta.target === 'TARGET' && (!campaignMeta.targetSize || !campaignMeta.isCapaChecked)) {
+                    alert("⚠️ TARGET 프로모션은 '타겟 모수' 입력 및 'Capa 검증' 완료가 필수입니다.");
+                    return;
+                  }
+                  if (pendingAiPayload) onMoveToEditor(pendingAiPayload);
+                }}
+                disabled={!pendingAiPayload}
+                className={`w-full py-4 rounded-lg font-bold text-white transition-all shadow-md ${
+                  pendingAiPayload
+                    ? "bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 cursor-pointer"
+                    : "bg-[#262833] text-slate-500 cursor-not-allowed border border-[#303340] shadow-none"
+                }`}
+              >
+                {pendingAiPayload ? "완성된 기획안으로 시안 편집 이동 〉" : "⚠️ 시안(에셋) 데이터가 생성되어야 이동 가능합니다"}
+              </button>
             </div>
           </div>
         </div>
@@ -1454,163 +1453,32 @@
 
           for (let i = 0; i < filesToFetch.length; i++) {
             const fileName = filesToFetch[i];
-            setExportState({ isExporting: true, progress: 10 + Math.floor((i / filesToFetch.length) * 60), msg: `${fileName} 가져오는 중...` });
-            const response = await fetch(`${baseUrl}/${fileName}?t=${new Date().getTime()}`);
-            if (!response.ok) throw new Error(`${fileName} 파일을 찾을 수 없습니다.`);
-            zip.file(fileName, await response.text());
-          }
+            setExportState({ isExporting: true, progress: 85, msg: "Jira 데이터 조립 중..." });
 
-          setExportState({ isExporting: true, progress: 85, msg: "압축 파일 생성 중..." });
-          const blob = await zip.generateAsync({ type: "blob" });
-          const downloadUrl = URL.createObjectURL(blob);
-          const link = document.createElement("a");
-          link.href = downloadUrl; link.download = `btv-campaign-extension-${new Date().toISOString().slice(0,10)}.zip`;
-          document.body.appendChild(link); link.click(); document.body.removeChild(link); URL.revokeObjectURL(downloadUrl);
-          
-          setExportState({ isExporting: true, progress: 100, msg: "✅ 최신 버전 다운로드 완료!" });
-          setTimeout(() => {
-            setExportState({ isExporting: false, progress: 0, msg: '' });
-            alert("확장 프로그램 다운로드가 완료되었습니다.\n기존 버전 삭제 후 새로 등록하시고 키보드 F5를 눌러 새로고침 해주세요!");
-          }, 1500);
-        } catch (e) {
-          console.error("Extension Download Error:", e);
-          setExportState({ isExporting: true, progress: 100, msg: "⚠️ 다운로드 실패" });
-          setTimeout(() => setExportState({ isExporting: false, progress: 0, msg: '' }), 3000);
-          alert("다운로드 중 오류가 발생했습니다: " + e.message);
-        }
-      };
+        // 🌟 [수정 1] 머메이드 코드에서 img 태그 삭제, 괄호 치환 적용 (Jira 문법 파괴 방지)
+        let safeMermaidCode = mermaidCode ? mermaidCode.replace(/<img[^>]*>/gi, '').replace(/\[/g, '【').replace(/\]/g, '】') : '유저플로우 데이터 없음';
 
-      const handleExport = async () => {
-        if (!assets || assets.length === 0) {
-          if (campaignMeta.target !== 'TARGET') return alert("전송할 배너 기획안이 없고, 타겟팅 캠페인도 아닙니다.");
-        }
-        
-        const isConfirmed = window.confirm("Jira 일감 전송을 시작하시겠습니까?\n\n확인(OK)을 누르면 화면 캡처가 시작됩니다.\n※ 주의: Jira에 미리 로그인이 되어있어야 정상 작동합니다.");
-        if (!isConfirmed) return;
-
-        const meta = campaignMeta || {};
-        const myJiraId = localStorage.getItem('myJiraId') || '';
-        if (!myJiraId) {
-          alert("🚨 지라 전송을 위해 담당자 ID가 필요합니다!");
-          return handleSettingsClick();
-        }
-        const cleanAssignee = myJiraId.split('@')[0].trim();
-
-        setExportState({ isExporting: true, progress: 10, msg: "이미지 추출 및 최적화 준비 중..." });
-        let capturedImages = {};
-
-        // 🌟 1. 이미지 다이어트 (압축) 함수 부활 (용량 폭발 에러 방지)
-        const compressImage = (dataUrl, maxWidth = 1200, quality = 0.7) => {
-          if (!dataUrl || typeof dataUrl !== 'string' || !dataUrl.startsWith('data:image')) return Promise.resolve('');
-          return new Promise((resolve) => {
-            const img = new Image();
-            img.onload = () => {
-              const canvas = document.createElement('canvas');
-              let width = img.width; let height = img.height;
-              if (width > maxWidth) { height = Math.floor((maxWidth / width) * height); width = maxWidth; }
-              canvas.width = width; canvas.height = height;
-              const ctx = canvas.getContext('2d');
-              ctx.drawImage(img, 0, 0, width, height);
-              resolve(canvas.toDataURL('image/jpeg', quality));
-            };
-            img.src = dataUrl;
-          });
-        };
-
-        const captureElementNative = async (element) => {
-          const rect = element.getBoundingClientRect();
-          let dataUrl = await new Promise((resolve) => {
-            const timeout = setTimeout(() => resolve(null), 3500); 
-            const listener = (e) => { 
-              clearTimeout(timeout); 
-              window.removeEventListener('RECEIVE_SCREENSHOT', listener); 
-              resolve(e.detail?.dataUrl); 
-            };
-            window.addEventListener('RECEIVE_SCREENSHOT', listener);
-            window.dispatchEvent(new CustomEvent('REQUEST_SCREENSHOT', { detail: { x: rect.left, y: rect.top, width: rect.width, height: rect.height } }));
-          });
-
-          if (!dataUrl) {
-            setExportState({ isExporting: false, progress: 0, msg: '' });
-            alert("🚨 화면 캡처에 실패했습니다!\n\n확장프로그램과 통신이 끊어졌을 수 있습니다. [F5]를 눌러 새로고침 후 다시 시도해주세요.");
-            throw new Error("Capture failed");
-          }
-          // 🌟 캡처 후 즉시 가볍게 압축하여 메모리 및 업로드 용량 절약
-          return await compressImage(dataUrl, 1000, 0.7);
-        };
-
-        for (let i = 0; i < assets.length; i++) {
-          const asset = assets[i];
-          const currentProgress = 10 + Math.floor((i / assets.length) * 40); 
-          
-          setActiveTabId(asset.id);
-          
-          if (asset.type === 'GENERAL_SET_BANNER') {
-            const colCount = asset.data?.colType === '3단' ? 2 : 3;
-            let setImages = [];
-            for (let c = 0; c < colCount; c++) {
-              setExportState({ isExporting: true, progress: currentProgress, msg: `[${asset.name}] 세트 ${c+1}/${colCount} 캡처 중...` });
-              handleAssetChange(asset.id, 'selectedCardIndex', c);
-              await new Promise(r => setTimeout(r, 1000)); 
-              
-              const element = document.getElementById('capture-preview-area');
-              if (element) {
-                const dataUrl = await captureElementNative(element);
-                if (dataUrl) setImages.push(dataUrl);
-              }
-            }
-            capturedImages[asset.id] = setImages;
-          } else {
-            setExportState({ isExporting: true, progress: currentProgress, msg: `[${asset.name}] 캡처 진행 중...` });
-            await new Promise(r => setTimeout(r, 800)); 
-            
-            const element = document.getElementById('capture-preview-area');
-            if (element) {
-              const dataUrl = await captureElementNative(element);
-              if (dataUrl) capturedImages[asset.id] = dataUrl;
-            }
-          }
-        }
-
-        setExportState({ isExporting: true, progress: 60, msg: "AI 기획 유저플로우 및 변경 내역 분석 중..." });
-
-        // 🌟 2. 변경 내역 추적 로직 (추가/삭제된 배너 파악)
         const originalAssets = meta.aiOriginalAssets || [];
         const currentAssetIds = assets.map(a => a.id);
         const addedAssets = assets.filter(a => !a.id.startsWith('ai-asset-') && !originalAssets.find(oa => oa.id === a.id));
         const deletedAssets = originalAssets.filter(oa => !currentAssetIds.includes(oa.id));
 
+        // 🌟 [수정 2] Jira 위키 마크다운 형식으로 테이블/패널 변경
         let changeLogHtml = "";
         if (addedAssets.length > 0 || deletedAssets.length > 0) {
-            changeLogHtml += "<div style='background-color:#fff0f0; border:1px solid #ffccc7; padding:15px; border-radius:8px; margin-bottom:20px;'>";
-            changeLogHtml += "<h3 style='color:#e74c3c; margin-top:0;'>🚨 기획 변경 사항 안내</h3><ul style='margin-bottom:0;'>";
-            addedAssets.forEach(a => changeLogHtml += `<li style='color:#333;'><b>➕ 추가된 배너:</b> ${a.name} (수동 추가)</li>`);
-            deletedAssets.forEach(a => changeLogHtml += `<li style='color:#333;'><b>➖ 삭제/제외된 배너:</b> ${a.name}</li>`);
-            changeLogHtml += "</ul><p style='color:#666; font-size:12px; margin-top:10px;'><i>※ 상단 유저플로우는 기획 초안 기준이며, 실제 세팅은 위 변경 사항 및 하단 종합표를 기준으로 진행해 주세요.</i></p></div>";
+            changeLogHtml += "{panel:title=🚨 기획 변경 사항 안내|borderStyle=dashed|borderColor=#ffccc7|titleBGColor=#fff0f0|bgColor=#ffffff}\n";
+            addedAssets.forEach(a => changeLogHtml += `* *(+) 추가된 배너:* ${a.name} (수동 추가)\n`);
+            deletedAssets.forEach(a => changeLogHtml += `* *(-) 삭제/제외된 배너:* ${a.name}\n`);
+            changeLogHtml += "_{color:#666666}※ 하단 유저플로우는 기획 초안 기준이며, 실제 세팅은 위 변경 사항 및 하단 종합표를 기준으로 진행해 주세요.{color}_\n{panel}\n";
         }
-
-        // 🌟 3. 머메이드 SVG 순수 영역만 캡처 (가짜 플로우차트 삭제!)
-        let workflowDataUrl = null;
-        const mermaidEl = document.getElementById('mermaid-export-area');
-        if (mermaidEl && mermaidCode) {
-           try {
-               const canvas = await window.html2canvas(mermaidEl, { backgroundColor: '#0f111a', scale: 2 });
-               workflowDataUrl = await compressImage(canvas.toDataURL('image/png'), 1000, 0.7);
-           } catch(e) { console.warn("Mermaid capture failed", e); }
-        }
-
-        setExportState({ isExporting: true, progress: 85, msg: "Jira 데이터 조립 중..." });
 
         let workflowCompressedUrl = '';
-        let parentImagesToUpload = [];
-        
-        if (workflowDataUrl) {
-            workflowCompressedUrl = 'PLACEHOLDER_workflow_summary.jpg';
-            parentImagesToUpload.push({ filename: 'workflow_summary.jpg', dataUrl: workflowDataUrl });
-        }
+        if (workflowDataUrl) workflowCompressedUrl = await compressImageForBody(workflowDataUrl, 600, 0.4);
 
-        let parentTable = `<table border="1" style="border-collapse: collapse; width: 100%; text-align: center; font-size: 13px;"><tbody><tr style="background-color: #f4f5f7; color: #333;"><td style="padding: 10px; font-weight: bold; width: 5%;">순번</td><td style="padding: 10px; font-weight: bold; width: 25%;">배너명</td><td style="padding: 10px; font-weight: bold; width: 15%;">편성 GNB</td><td style="padding: 10px; font-weight: bold; width: 25%;">랜딩 URL</td><td style="padding: 10px; font-weight: bold; width: 30%;">시안 미리보기</td></tr>`;
-        
+        // HTML 테이블 ➔ 마크다운 테이블 (||)
+        let parentTable = `||순번||배너명||편성 GNB||랜딩 URL||시안 미리보기||\n`;
+        let parentImagesToUpload = [];
+        if (workflowDataUrl) parentImagesToUpload.push({ filename: 'workflow_summary.png', dataUrl: workflowDataUrl });
         let uniqueAssignees = new Set();
 
         const childIssues = await Promise.all(assets.map(async (asset, idx) => {
@@ -1631,80 +1499,63 @@
             const colCount = data.colType === '3단' ? 3 : 2;
             let compressedThumbsHTML = '';
             let compressedBodyHTML = '';
-            let childTableRows = '';
+            let childTableRows = `||구분||주요 카피||랜딩 URL||\n`;
             
             for (let c = 0; c < colCount; c++) {
                const imgUrl = setImagesArr[c] || '';
-               const imgName = `banner_set_${idx + 1}_card_${c + 1}.jpg`;
+               const imgName = `banner_set_${idx + 1}_card_${c + 1}.png`;
                const cardData = data.cards[c] || {};
                
                if (imgUrl) parentImagesToUpload.push({ filename: imgName, dataUrl: imgUrl });
                
-               const cThumb = imgUrl ? `PLACEHOLDER_${imgName}` : '';
-               // 🌟 하위 일감에는 첫 번째 카드 이미지만 preview.png로 업로드되도록 방어 로직 적용
-               let cBody = "";
-               if (c === 0 && imgUrl) cBody = `PLACEHOLDER_preview.png`;
+               // Jira 마크다운 이미지 삽입 문법 적용: !PLACEHOLDER_xxx|thumbnail!
+               const cThumb = imgUrl ? `!PLACEHOLDER_${imgName}|thumbnail!` : '';
+               let cBody = (c === 0 && imgUrl) ? `!PLACEHOLDER_preview.png|thumbnail!` : '';
                
-               if (cThumb) compressedThumbsHTML += `<img src="${cThumb}" style="max-width: 100%; border: 1px solid #ccc; border-radius: 4px; margin-bottom: 5px;" /><br>`;
+               if (cThumb) compressedThumbsHTML += `${cThumb}\n`;
+               if (cBody) compressedBodyHTML += `h4. [상태 ${c+1}: ${cardData.heroTitle || '미입력'}]\n${cBody}\n\n`;
+               else compressedBodyHTML += `h4. [상태 ${c+1}: ${cardData.heroTitle || '미입력'}]\n_{color:#888888}(본문 용량 제한으로 캡처 생략. 상위 종합 일감을 참조해 주세요.){color}_\n\n`;
                
-               if (cBody) compressedBodyHTML += `<h4>[상태 ${c+1}: ${cardData.heroTitle || '미입력'}]</h4><img src="${cBody}" style="max-width: 100%; border: 1px solid #e2e8f0; border-radius: 8px; margin-bottom: 15px;" /><br>`;
-               else compressedBodyHTML += `<h4>[상태 ${c+1}: ${cardData.heroTitle || '미입력'}]</h4><p style="color:#888;"><i>(본문 용량 제한으로 캡처 생략. 상위 종합 일감을 참조해 주세요.)</i></p><br>`;
-               
-               childTableRows += `
-                 <tr>
-                   <td style='padding: 8px; font-weight: bold; background-color: #f9f9fb;'>카드 ${c+1}</td>
-                   <td style='padding: 8px;'><b>Hero:</b> ${cardData.heroTitle}<br><b>Card:</b> ${cardData.cardCopy}</td>
-                   <td style='padding: 8px; word-break: break-all;'>${cardData.landingValue || '미지정'}</td>
-                 </tr>
-               `;
+               childTableRows += `|카드 ${c+1}|*Hero:* ${cardData.heroTitle}\n*Card:* ${cardData.cardCopy}|${cardData.landingValue || '미지정'}|\n`;
             }
 
-            parentTable += `<tr><td style="padding: 10px;">${idx + 1}</td><td style="padding: 10px; font-weight: bold;">${asset?.name || '미지정'} (세트형)</td><td style="padding: 10px;">${targetGnbs.join(', ')}</td><td style="padding: 10px; word-break: break-all;">복합 랜딩</td><td style="padding: 10px; color: #4f3df6; text-align: center;">` + 
-              compressedThumbsHTML + `<b>(세트 이미지 참조)</b></td></tr>`;
+            parentTable += `|${idx + 1}|*${asset?.name || '미지정'}* (세트형)|${targetGnbs.join(', ')}|복합 랜딩|${compressedThumbsHTML}|\n`;
 
             const childDesc = 
-              "<h3>🖼️ 세트 상세 기획</h3>" +
-              "<table border='1' style='border-collapse: collapse; width: 100%; text-align: left; font-size: 13px;'>" +
-              "<tr><th style='padding: 8px; background-color: #f4f5f7; width: 25%;'>편성 GNB</th><td colspan='2' style='padding: 8px; font-weight: bold;'>" + targetGnbs.join(', ') + "</td></tr>" +
-              "<tr><th style='padding: 8px; background-color: #f4f5f7;'>편성 일정</th><td colspan='2' style='padding: 8px;'>" + dateInfo + "</td></tr>" +
-              "<tr style='background-color: #e2e8f0;'><th style='padding: 8px; text-align: center;'>구분</th><th style='padding: 8px; text-align: center;'>주요 카피</th><th style='padding: 8px; text-align: center;'>랜딩 URL</th></tr>" +
-              childTableRows +
-              "</table><br><h3>🎨 캡처 시안 (상태별)</h3>" + compressedBodyHTML + "<p>※ 고화질 원본은 본문 하단 <b>첨부파일</b>을 확인해 주세요.</p>";
+              `h3. 🖼️ 세트 상세 기획\n` +
+              `||편성 GNB|${targetGnbs.join(', ')}|\n` +
+              `||편성 일정|${dateInfo}|\n\n` +
+              `${childTableRows}\n\n` +
+              `h3. 🎨 캡처 시안 (상태별)\n${compressedBodyHTML}\n※ 고화질 원본은 본문 하단 *첨부파일*을 확인해 주세요.`;
 
             return {
               title: `[디자인] ${meta.campaignName || "신규 캠페인"} _ ${asset?.name || '미지정'}`, 
-              desc: childDesc, assignee: mappedAssigneeJiraId, 
-              imageData: setImagesArr[0], // 하위 일감에는 1번 카드만 업로드
+              desc: childDesc, assignee: mappedAssigneeJiraId, imagesDataArr: setImagesArr, 
               startDate: data.startDate, dueDate: data.dueDate, gnb: targetGnbs 
             };
           } else {
             let copyText = data.mainTitle || data.copy || data.bannerCopy || data.previewTitle || '미지정';
-            const imgName = `banner_preview_${idx + 1}.jpg`;
+            const imgName = `banner_preview_${idx + 1}.png`;
             
             let imgDataUrl = capturedImages[asset.id];
             if (Array.isArray(imgDataUrl)) imgDataUrl = imgDataUrl[0];
             imgDataUrl = imgDataUrl || '';
 
-            const compressedThumb = imgDataUrl ? `PLACEHOLDER_${imgName}` : '';
-            const compressedBody = imgDataUrl ? `PLACEHOLDER_preview.png` : '';
+            const compressedThumb = imgDataUrl ? `!PLACEHOLDER_${imgName}|thumbnail!` : '';
+            const compressedBody = imgDataUrl ? `!PLACEHOLDER_preview.png|thumbnail!` : '';
             
-            parentTable += `<tr><td style="padding: 10px;">${idx + 1}</td><td style="padding: 10px; font-weight: bold;">${asset?.name || '미지정'}</td><td style="padding: 10px;">${targetGnbs.join(', ')}</td><td style="padding: 10px; word-break: break-all;">${data.landingValue || '미지정'}</td><td style="padding: 10px; color: #4f3df6; text-align: center;">` + 
-              (compressedThumb ? `<img src="${compressedThumb}" style="max-width: 100%; border: 1px solid #ccc; border-radius: 4px; margin-bottom: 5px;" /><br>` : '') + 
-              `<b>${imgName}</b></td></tr>`;
+            parentTable += `|${idx + 1}|*${asset?.name || '미지정'}*|${targetGnbs.join(', ')}|${data.landingValue || '미지정'}|${compressedThumb}|\n`;
               
             if (imgDataUrl) parentImagesToUpload.push({ filename: imgName, dataUrl: imgDataUrl });
 
             const childDesc = 
-              "<h3>🖼️ 상세 기획</h3>" +
-              "<table border='1' style='border-collapse: collapse; width: 100%; text-align: left; font-size: 13px;'>" +
-              "<tr><th style='padding: 8px; background-color: #f4f5f7; width: 25%;'>편성 GNB</th><td style='padding: 8px; font-weight: bold;'>" + targetGnbs.join(', ') + "</td></tr>" +
-              "<tr><th style='padding: 8px; background-color: #f4f5f7;'>편성 일정</th><td style='padding: 8px;'>" + dateInfo + "</td></tr>" +
-              "<tr><th style='padding: 8px; background-color: #f4f5f7;'>주요 카피</th><td style='padding: 8px;'>" + copyText.replace(/\n/g, '<br>') + "</td></tr>" +
-              "<tr><th style='padding: 8px; background-color: #f4f5f7;'>랜딩 URL</th><td style='padding: 8px;'>" + (data.landingValue || '미지정') + "</td></tr>" +
-              "<tr><th style='padding: 8px; background-color: #f4f5f7;'>비고</th><td style='padding: 8px;'>" + (data.note || '없음').replace(/\n/g, '<br>') + "</td></tr>" +
-              "</table><br><h3>🎨 시뮬레이터 캡처 시안</h3>" +
-              (compressedBody ? `<img src="${compressedBody}" style="max-width: 100%; border: 1px solid #e2e8f0; border-radius: 8px; margin: 10px 0;" />` : '') +
-              `<p>※ 고화질 원본은 본문 하단 <b>첨부파일(preview.png)</b>을 확인해 주세요.</p>`;
+              `h3. 🖼️ 상세 기획\n` +
+              `||편성 GNB|${targetGnbs.join(', ')}|\n` +
+              `||편성 일정|${dateInfo}|\n` +
+              `||주요 카피|${copyText.replace(/\n/g, ' ')}|\n` +
+              `||랜딩 URL|${data.landingValue || '미지정'}|\n` +
+              `||비고|${(data.note || '없음').replace(/\n/g, ' ')}|\n\n` +
+              `h3. 🎨 시뮬레이터 캡처 시안\n${compressedBody}\n\n※ 고화질 원본은 본문 하단 *첨부파일(preview.png)*을 확인해 주세요.`;
 
             return {
               title: `[디자인] ${meta.campaignName || "신규 캠페인"} _ ${asset?.name || '미지정'}`, 
@@ -1714,28 +1565,26 @@
           }
         }));
 
-        if (assets.length > 0) parentTable += `</tbody></table>`;
-        else parentTable = "<p>등록된 디자인(배너) 에셋이 없습니다. 타겟팅 운영 요청만 진행됩니다.</p>";
+        if (assets.length === 0) parentTable = "등록된 디자인(배너) 에셋이 없습니다. 타겟팅 운영 요청만 진행됩니다.";
 
         const safeHasCoupon = (meta.hasCoupon || '').trim().toUpperCase() === 'Y' ? 'Y' : 'N';
         
+        // Jira 부모 이슈 Description 조립
         const parentDescText = 
-          "<h3>📌 캠페인 공통 정보</h3>" +
-          "<ul>" +
-            "<li><b>캠페인명:</b> " + (meta.campaignName || "미지정") + "</li>" +
-            "<li><b>대상 상품:</b> " + (meta.product || "미지정") + "</li>" +
-            "<li><b>타겟 유형:</b> " + (meta.target || "MASS") + "</li>" +
-            "<li><b>예상 모수:</b> " + (meta.targetSize ? meta.targetSize + "명" : "미지정") + "</li>" +
-            "<li><b>타겟 조건:</b> " + (meta.targetCondition || "미지정") + "</li>" +
-            "<li><b>편성 일정:</b> " + (meta.startDate || "미지정") + " ~ " + (meta.dueDate || "미지정") + "</li>" +
-            "<li><b>B tv 쿠폰:</b> " + (safeHasCoupon === 'Y' ? "포함 (" + (meta.couponBenefit || "혜택 미상") + ")" : "미포함") + "</li>" +
-            "<li><b>외부 사은품:</b> " + (meta.externalGift || "없음") + "</li>" +
-            "<li><b>총 요청 건수:</b> " + assets.length + "건</li>" +
-          "</ul><br>" +
-          "<h3>🗺️ 고객 이동 경로 (AI 기획 초안)</h3>" +
-          (workflowCompressedUrl ? `<img src="${workflowCompressedUrl}" style="max-width: 100%; border: 1px solid #e2e8f0; border-radius: 8px; margin: 10px 0;" />` : `<pre>${mermaidCode || '유저플로우 데이터 없음'}</pre>`) + "<br><br>" +
-          changeLogHtml +
-          "<h3>📊 배너 편성 종합표</h3>" + parentTable + "<br><hr><br><p>하위 작업(Sub-task)으로 개별 상세 기획안이 첨부되어 있습니다.</p>";
+          `h3. 📌 캠페인 공통 정보\n` +
+          `* *캠페인명:* ${meta.campaignName || "미지정"}\n` +
+          `* *대상 상품:* ${meta.product || "미지정"}\n` +
+          `* *타겟 유형:* ${meta.target || "MASS"}\n` +
+          `* *예상 모수:* ${meta.targetSize ? meta.targetSize + "명" : "미지정"}\n` +
+          `* *타겟 조건:* ${meta.targetCondition || "미지정"}\n` +
+          `* *편성 일정:* ${meta.startDate || "미지정"} ~ ${meta.dueDate || "미지정"}\n` +
+          `* *B tv 쿠폰:* ${safeHasCoupon === 'Y' ? "포함 (" + (meta.couponBenefit || "혜택 미상") + ")" : "미포함"}\n` +
+          `* *외부 사은품:* ${meta.externalGift || "없음"}\n` +
+          `* *총 요청 건수:* ${assets.length}건\n\n` +
+          `h3. 🗺️ 고객 이동 경로 (AI 기획 초안)\n` +
+          `{code:none}\n${safeMermaidCode}\n{code}\n\n` +
+          `${changeLogHtml}\n` +
+          `h3. 📊 배너 편성 종합표\n${parentTable}\n\n하위 작업(Sub-task)으로 개별 상세 기획안이 첨부되어 있습니다.`;
         
         const mentionString = Array.from(uniqueAssignees).map(id => `[~${id}]`).join(' ');
         const parentCommentText = `${mentionString}\n담당자님, 신규 캠페인 프로모션이 등록(또는 업데이트) 되었습니다. 각 영역별 하위 일감(Sub-task)을 확인하시어 배너 편성 및 세팅을 부탁드립니다.`;
