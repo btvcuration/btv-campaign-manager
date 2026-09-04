@@ -1036,9 +1036,12 @@
         const meta = item.meta || {
           campaignName: item.campaignName, target: item.target, targetSize: item.targetSize,
           startDate: item.startDate, dueDate: item.dueDate, hasCoupon: item.hasCoupon, 
-          couponBenefit: item.couponBenefit, externalGift: item.externalGift || '', conceptCopy: item.conceptCopy, mainImageUrl: item.mainImageUrl, // 🌟 externalGift 추가
+          couponBenefit: item.couponBenefit, externalGift: item.externalGift || '', conceptCopy: item.conceptCopy, mainImageUrl: item.mainImageUrl,
           product: item.product, bannerTypes: item.bannerTypes, gnbLocations: item.gnbLocations
         };
+        // 🌟 [신규] "수정" 시엔 기존 Jira 부모 키를 반드시 함께 넘겨야 background.js가 업데이트로 인식함
+        //    jiraKey가 풀 URL(https://.../browse/KEY)로 저장돼 있을 수 있어 마지막 경로 조각만 추출
+        meta.parentJiraKey = item.jiraKey ? String(item.jiraKey).split('/').pop() : '';
         onLoadCampaign(meta, item.assets || [], item.mermaidCode || "");
       };
 
