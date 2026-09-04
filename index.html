@@ -1444,6 +1444,7 @@
         else if (activeTabId === id) setActiveTabId(filteredAssets[0].id);
       };
 
+      // 🌟 1. 확장프로그램 다운로드 함수 (에러 복구 완료)
       const handleDownloadExtension = async () => {
         setExportState({ isExporting: true, progress: 10, msg: "최신 확장프로그램 패킹 준비 중..." });
         try {
@@ -1453,17 +1454,92 @@
 
           for (let i = 0; i < filesToFetch.length; i++) {
             const fileName = filesToFetch[i];
-            setExportState({ isExporting: true, progress: 85, msg: "Jira 데이터 조립 중..." });
+            setExportState({ isExporting: true, progress: 10 + Math.floor((i / filesToFetch.length) * 60), msg: `${fileName} 가져오는 중...` });
+            const response = await fetch(`${baseUrl}/${fileName}?t=${new Date().getTime()}`);
+            if (!response.ok) throw new Error(`${fileName} 파일을 찾을 수 없습니다.`);
+            zip.file(fileName, await response.text());
+          }
 
-        // 🌟 [수정 1] 머메이드 코드에서 img 태그 삭제, 괄호 치환 적용 (Jira 문법 파괴 방지)
-        let safeMermaidCode = mermaidCode ? mermaidCode.replace(/<img[^>]*>/gi, '').replace(/\[/g, '【').replace(/\]/g, '】') : '유저플로우 데이터 없음';
+          setExportState({ isExporting: true, progress: 85, msg: "압축 파일 생성 중..." });
+          const blob = await zip.generateAsync({ type: "blob" });
+          const downloadUrl = URL.createObjectURL(blob);
+          const link = document.createElement("a");
+          link.href = downloadUrl; link.download = `btv-campaign-extension-${new Date().toISOString().slice(0,10)}.zip`;
+          document.body.appendChild(link); link.click(); document.body.removeChild(link); URL.revokeObjectURL(downloadUrl);
+          
+          setExportState({ isExporting: true, progress: 100, msg: "✅ 최신 버전 다운로드 완료!" });
+          setTimeout(() => {
+            setExportState({ isExporting: false, progress: 0, msg: '' });
+            alert("확장 프로그램 다운로드가 완료되었습니다.\n기존 버전 삭제 후 새로 등록하시고 키보드 F5를 눌러 새로고침 해주세요!");
+          }, 1500);
+        } catch (e) {
+          console.error("Extension Download Error:", e);
+          setExportState({ isExporting: true, progress: 100, msg: "⚠️ 다운로드 실패" });
+          setTimeout(() => setExportState({ isExporting: false, progress: 0, msg: '' }), 3000);
+          alert("다운로드 중 오류가 발생했습니다: " + e.message);
+        }
+      };
+
+      // 🌟 2. Jira 전송 함수 (마크다운 치환 및 용량 최적화 완벽 반영)
+      const handleExport = async () => {
+        if (!assets || assets.length === 0) {
+          if (campaignMeta.target !== 'TARGET') return alert("전송할 배너 기획안이 없고, 타겟팅 캠페인도 아닙니다.");
+        }
+        
+        const isConfirmed = window.confirm("Jira 일감 전송을 시작하시겠습니까?\n확인을 누르면 화면 캡처가 시작됩니다.");
+        if (!isConfirmed) return;
+
+        const meta = campaignMeta || {};
+        const myJiraId = localStorage.getItem('myJiraId') || '';
+        if (!myJiraId) { alert("🚨 지라 전송을 위해 담당자 ID가 필요합니다!"); return handleSettingsClick(); }
+        const cleanAssignee = myJiraId.split('@')[0].trim();
+
+        setExportState({ isExporting: true, progress: 10, msg: "이미지 추출 준비 중..." });
+        let capturedImages = {};
+
+        const captureElementNative = async (element) => {
+          const rect = element.getBoundingClientRect();
+          let dataUrl = await new Promise((resolve) => {
+            const timeout = setTimeout(() => resolve(null), 3500); 
+            const listener = (e) => { clearTimeout(timeout); window.removeEventListener('RECEIVE_SCREENSHOT', listener); resolve(e.detail?.dataUrl); };
+            window.addEventListener('RECEIVE_SCREENSHOT', listener);
+            window.dispatchEvent(new CustomEvent('REQUEST_SCREENSHOT', { detail: { x: rect.left, y: rect.top, width: rect.width, height: rect.height } }));
+          });
+          if (!dataUrl) { setExportState({ isExporting: false, progress: 0, msg: '' }); throw new Error("Capture failed"); }
+          return dataUrl;
+        };
+
+        for (let i = 0; i < assets.length; i++) {
+          const asset = assets[i];
+          const currentProgress = 10 + Math.floor((i / assets.length) * 40); 
+          setActiveTabId(asset.id);
+          
+          if (asset.type === 'GENERAL_SET_BANNER') {
+            const colCount = asset.data?.colType === '3단' ? 2 : 3;
+            let setImages = [];
+            for (let c = 0; c < colCount; c++) {
+              setExportState({ isExporting: true, progress: currentProgress, msg: `[${asset.name}] 세트 ${c+1}/${colCount} 캡처 중...` });
+              handleAssetChange(asset.id, 'selectedCardIndex', c);
+              await new Promise(r => setTimeout(r, 1000)); 
+              const element = document.getElementById('capture-preview-area');
+              if (element) { const dataUrl = await captureElementNative(element); if (dataUrl) setImages.push(dataUrl); }
+            }
+            capturedImages[asset.id] = setImages;
+          } else {
+            setExportState({ isExporting: true, progress: currentProgress, msg: `[${asset.name}] 캡처 진행 중...` });
+            await new Promise(r => setTimeout(r, 800)); 
+            const element = document.getElementById('capture-preview-area');
+            if (element) { const dataUrl = await captureElementNative(element); if (dataUrl) capturedImages[asset.id] = dataUrl; }
+          }
+        }
+
+        setExportState({ isExporting: true, progress: 60, msg: "AI 기획 변경 내역 분석 중..." });
 
         const originalAssets = meta.aiOriginalAssets || [];
         const currentAssetIds = assets.map(a => a.id);
         const addedAssets = assets.filter(a => !a.id.startsWith('ai-asset-') && !originalAssets.find(oa => oa.id === a.id));
         const deletedAssets = originalAssets.filter(oa => !currentAssetIds.includes(oa.id));
 
-        // 🌟 [수정 2] Jira 위키 마크다운 형식으로 테이블/패널 변경
         let changeLogHtml = "";
         if (addedAssets.length > 0 || deletedAssets.length > 0) {
             changeLogHtml += "{panel:title=🚨 기획 변경 사항 안내|borderStyle=dashed|borderColor=#ffccc7|titleBGColor=#fff0f0|bgColor=#ffffff}\n";
@@ -1472,13 +1548,13 @@
             changeLogHtml += "_{color:#666666}※ 하단 유저플로우는 기획 초안 기준이며, 실제 세팅은 위 변경 사항 및 하단 종합표를 기준으로 진행해 주세요.{color}_\n{panel}\n";
         }
 
-        let workflowCompressedUrl = '';
-        if (workflowDataUrl) workflowCompressedUrl = await compressImageForBody(workflowDataUrl, 600, 0.4);
+        // 🌟 머메이드 텍스트 추출 및 img 태그 날리기
+        let safeMermaidCode = mermaidCode ? mermaidCode.replace(/<img[^>]*>/gi, '').replace(/\[/g, '【').replace(/\]/g, '】') : '유저플로우 데이터 없음';
 
-        // HTML 테이블 ➔ 마크다운 테이블 (||)
+        setExportState({ isExporting: true, progress: 85, msg: "Jira 데이터 조립 중..." });
+
         let parentTable = `||순번||배너명||편성 GNB||랜딩 URL||시안 미리보기||\n`;
         let parentImagesToUpload = [];
-        if (workflowDataUrl) parentImagesToUpload.push({ filename: 'workflow_summary.png', dataUrl: workflowDataUrl });
         let uniqueAssignees = new Set();
 
         const childIssues = await Promise.all(assets.map(async (asset, idx) => {
@@ -1491,7 +1567,6 @@
           const assigneeInfo = configMap[targetGnbForAssign];
           const mappedAssigneeJiraId = assigneeInfo ? assigneeInfo.jiraId : cleanAssignee; 
           uniqueAssignees.add(mappedAssigneeJiraId);
-          
           const dateInfo = data.startDate ? `${data.startDate} ~ ${data.dueDate || ''}` : '미지정';
           
           if (asset.type === 'GENERAL_SET_BANNER') {
@@ -1508,7 +1583,6 @@
                
                if (imgUrl) parentImagesToUpload.push({ filename: imgName, dataUrl: imgUrl });
                
-               // Jira 마크다운 이미지 삽입 문법 적용: !PLACEHOLDER_xxx|thumbnail!
                const cThumb = imgUrl ? `!PLACEHOLDER_${imgName}|thumbnail!` : '';
                let cBody = (c === 0 && imgUrl) ? `!PLACEHOLDER_preview.png|thumbnail!` : '';
                
@@ -1520,23 +1594,12 @@
             }
 
             parentTable += `|${idx + 1}|*${asset?.name || '미지정'}* (세트형)|${targetGnbs.join(', ')}|복합 랜딩|${compressedThumbsHTML}|\n`;
+            const childDesc = `h3. 🖼️ 세트 상세 기획\n||편성 GNB|${targetGnbs.join(', ')}|\n||편성 일정|${dateInfo}|\n\n${childTableRows}\n\nh3. 🎨 캡처 시안 (상태별)\n${compressedBodyHTML}\n※ 고화질 원본은 본문 하단 *첨부파일*을 확인해 주세요.`;
 
-            const childDesc = 
-              `h3. 🖼️ 세트 상세 기획\n` +
-              `||편성 GNB|${targetGnbs.join(', ')}|\n` +
-              `||편성 일정|${dateInfo}|\n\n` +
-              `${childTableRows}\n\n` +
-              `h3. 🎨 캡처 시안 (상태별)\n${compressedBodyHTML}\n※ 고화질 원본은 본문 하단 *첨부파일*을 확인해 주세요.`;
-
-            return {
-              title: `[디자인] ${meta.campaignName || "신규 캠페인"} _ ${asset?.name || '미지정'}`, 
-              desc: childDesc, assignee: mappedAssigneeJiraId, imagesDataArr: setImagesArr, 
-              startDate: data.startDate, dueDate: data.dueDate, gnb: targetGnbs 
-            };
+            return { title: `[디자인] ${meta.campaignName || "신규 캠페인"} _ ${asset?.name || '미지정'}`, desc: childDesc, assignee: mappedAssigneeJiraId, imageData: setImagesArr[0], startDate: data.startDate, dueDate: data.dueDate, gnb: targetGnbs };
           } else {
             let copyText = data.mainTitle || data.copy || data.bannerCopy || data.previewTitle || '미지정';
             const imgName = `banner_preview_${idx + 1}.png`;
-            
             let imgDataUrl = capturedImages[asset.id];
             if (Array.isArray(imgDataUrl)) imgDataUrl = imgDataUrl[0];
             imgDataUrl = imgDataUrl || '';
@@ -1545,23 +1608,11 @@
             const compressedBody = imgDataUrl ? `!PLACEHOLDER_preview.png|thumbnail!` : '';
             
             parentTable += `|${idx + 1}|*${asset?.name || '미지정'}*|${targetGnbs.join(', ')}|${data.landingValue || '미지정'}|${compressedThumb}|\n`;
-              
             if (imgDataUrl) parentImagesToUpload.push({ filename: imgName, dataUrl: imgDataUrl });
 
-            const childDesc = 
-              `h3. 🖼️ 상세 기획\n` +
-              `||편성 GNB|${targetGnbs.join(', ')}|\n` +
-              `||편성 일정|${dateInfo}|\n` +
-              `||주요 카피|${copyText.replace(/\n/g, ' ')}|\n` +
-              `||랜딩 URL|${data.landingValue || '미지정'}|\n` +
-              `||비고|${(data.note || '없음').replace(/\n/g, ' ')}|\n\n` +
-              `h3. 🎨 시뮬레이터 캡처 시안\n${compressedBody}\n\n※ 고화질 원본은 본문 하단 *첨부파일(preview.png)*을 확인해 주세요.`;
+            const childDesc = `h3. 🖼️ 상세 기획\n||편성 GNB|${targetGnbs.join(', ')}|\n||편성 일정|${dateInfo}|\n||주요 카피|${copyText.replace(/\n/g, ' ')}|\n||랜딩 URL|${data.landingValue || '미지정'}|\n||비고|${(data.note || '없음').replace(/\n/g, ' ')}|\n\nh3. 🎨 시뮬레이터 캡처 시안\n${compressedBody}\n\n※ 고화질 원본은 본문 하단 *첨부파일(preview.png)*을 확인해 주세요.`;
 
-            return {
-              title: `[디자인] ${meta.campaignName || "신규 캠페인"} _ ${asset?.name || '미지정'}`, 
-              desc: childDesc, assignee: mappedAssigneeJiraId, imageData: imgDataUrl, 
-              startDate: data.startDate, dueDate: data.dueDate, gnb: targetGnbs 
-            };
+            return { title: `[디자인] ${meta.campaignName || "신규 캠페인"} _ ${asset?.name || '미지정'}`, desc: childDesc, assignee: mappedAssigneeJiraId, imageData: imgDataUrl, startDate: data.startDate, dueDate: data.dueDate, gnb: targetGnbs };
           }
         }));
 
@@ -1569,7 +1620,6 @@
 
         const safeHasCoupon = (meta.hasCoupon || '').trim().toUpperCase() === 'Y' ? 'Y' : 'N';
         
-        // Jira 부모 이슈 Description 조립
         const parentDescText = 
           `h3. 📌 캠페인 공통 정보\n` +
           `* *캠페인명:* ${meta.campaignName || "미지정"}\n` +
@@ -1593,28 +1643,18 @@
         const safeTargetSize = String(meta.targetSize || '0').replace(/[^0-9]/g, '');
 
         const finalData = {
-          skipJira: false,
-          parentJiraKey: meta.parentJiraKey || "",
-          uniqueCode: uniqueCode,
+          skipJira: false, parentJiraKey: meta.parentJiraKey || "", uniqueCode: uniqueCode,
           parent: { title: `[캠페인] ${meta.campaignName || "신규 캠페인"}`, desc: parentDescText, assignee: cleanAssignee, startDate: meta.startDate, dueDate: meta.dueDate, images: parentImagesToUpload, comment: parentCommentText },
           children: childIssues,
-          rawGasData: { 
-            meta: { ...meta, targetSize: safeTargetSize, uniqueCode: uniqueCode }, 
-            assignee: cleanAssignee, 
-            assets: assets, 
-            mermaidCode: mermaidCode 
-          }
+          rawGasData: { meta: { ...meta, targetSize: safeTargetSize, uniqueCode: uniqueCode }, assignee: cleanAssignee, assets: assets, mermaidCode: mermaidCode }
         };
+        
         const event = new CustomEvent('TEST_JIRA_SEND', { detail: finalData });
         window.dispatchEvent(event);
         
         setExportState({ isExporting: true, progress: 100, msg: "🚀 전송 완료! 잠시 후 Jira가 열립니다." });
-        setTimeout(() => {
-          setExportState({ isExporting: false, progress: 0, msg: '' });
-          setCurrentView('LIST');
-        }, 4000);
+        setTimeout(() => { setExportState({ isExporting: false, progress: 0, msg: '' }); setCurrentView('LIST'); }, 3000);
       };
-
       const activeAsset = assets.find(a => a.id === activeTabId) || assets[0];
 
       // 🌟 [수정됨] 기존 '수정' 버튼 동작: 시안 편집(EDITOR)으로 직행
