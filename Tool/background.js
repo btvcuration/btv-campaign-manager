@@ -10,11 +10,7 @@ async function fetchWithRetry(url, options, maxRetries = 3) {
       await sleep(retryAfter ? parseInt(retryAfter) * 1000 : baseDelay);
       baseDelay *= 2; continue;
     }
-    
-    if (response.status === 401) {
-      throw new Error(`[401 Unauthorized] Jira 세션이 만료되었습니다. 다시 로그인해주세요.`);
-    }
-
+    if (response.status === 401) throw new Error(`[401 Unauthorized] Jira 세션이 만료되었습니다. 다시 로그인해주세요.`);
     if (!response.ok) {
       const errorText = await response.text();
       throw new Error(`[HTTP ${response.status}] 서버 에러 발생!\n응답 내용: ${errorText.substring(0, 200)}...`);
@@ -49,12 +45,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.action === "TAKE_SCREENSHOT") {
     const targetWindowId = sender.tab ? sender.tab.windowId : null;
     chrome.tabs.captureVisibleTab(targetWindowId, { format: "png" }, (dataUrl) => {
-      if (chrome.runtime.lastError) {
-        console.error("캡처 에러:", chrome.runtime.lastError.message);
-        sendResponse({ dataUrl: null });
-      } else {
-        sendResponse({ dataUrl: dataUrl });
-      }
+      if (chrome.runtime.lastError) sendResponse({ dataUrl: null });
+      else sendResponse({ dataUrl: dataUrl });
     });
     return true;
   }
@@ -76,10 +68,10 @@ async function createJiraHierarchy(data, sourceTabId) {
   let createdIssues = [];
 
   try {
+    // 🌟 1단계: Jira 이슈 껍데기(텍스트) 먼저 모두 생성
     if (!data.skipJira) {
       const uniqueLabels = Array.from(new Set(data.children.flatMap(c => c.gnb.map(formatLabel))));
       const safeInitialDesc = data.parent.desc.replace(/data:image\/[a-zA-Z0-9+;/=]+/g, "UPLOADING_IMAGE_WAIT...");
-      
       const parentFields = {
         project: { key: projectKey }, summary: data.parent.title, description: safeInitialDesc,
         issuetype: { name: PARENT_ISSUE_TYPE }, reporter: { name: targetUserId }, assignee: { name: targetUserId }, labels: uniqueLabels
@@ -88,11 +80,8 @@ async function createJiraHierarchy(data, sourceTabId) {
       if (data.parent.dueDate) parentFields[FINISH_DATE_FIELD] = data.parent.dueDate;
 
       if (parentKey) {
-        console.log(`부모 이슈(${parentKey}) 업데이트 중...`);
-        const updateFields = { ...parentFields };
-        delete updateFields.project; delete updateFields.issuetype;
+        const updateFields = { ...parentFields }; delete updateFields.project; delete updateFields.issuetype;
         await fetchWithRetry(`${baseUrl}/rest/api/2/issue/${parentKey}`, { method: 'PUT', headers: { 'Content-Type': 'application/json', 'X-Atlassian-Token': 'no-check' }, credentials: 'include', body: JSON.stringify({ fields: updateFields }) });
-
         const pRes = await fetchWithRetry(`${baseUrl}/rest/api/2/issue/${parentKey}`, { method: 'GET', headers: { 'Content-Type': 'application/json' }, credentials: 'include' });
         const pData = await pRes.json();
         const existingSubtasks = pData.fields?.subtasks || [];
@@ -110,8 +99,7 @@ async function createJiraHierarchy(data, sourceTabId) {
           
           if (i < existingSubtasks.length) {
             const subKey = existingSubtasks[i].key;
-            const cUpdateFields = { ...childFields };
-            delete cUpdateFields.project; delete cUpdateFields.issuetype; delete cUpdateFields.parent;
+            const cUpdateFields = { ...childFields }; delete cUpdateFields.project; delete cUpdateFields.issuetype; delete cUpdateFields.parent;
             await fetchWithRetry(`${baseUrl}/rest/api/2/issue/${subKey}`, { method: 'PUT', headers: { 'Content-Type': 'application/json', 'X-Atlassian-Token': 'no-check' }, credentials: 'include', body: JSON.stringify({ fields: cUpdateFields }) });
             createdIssues.push({ key: subKey });
           } else {
@@ -120,11 +108,8 @@ async function createJiraHierarchy(data, sourceTabId) {
           }
         }
       } else {
-        console.log("부모 이슈 생성 중...");
         const parentRes = await fetchWithRetry(`${baseUrl}/rest/api/2/issue`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Atlassian-Token': 'no-check' }, credentials: 'include', body: JSON.stringify({ fields: parentFields }) });
         parentKey = (await parentRes.json()).key;
-        
-        // 🌟 타임아웃 방지: 1초 대기를 300ms로 대폭 단축
         await sleep(300);
 
         const childUpdates = data.children.map(child => {
@@ -137,40 +122,64 @@ async function createJiraHierarchy(data, sourceTabId) {
         const childBulkRes = await fetchWithRetry(`${baseUrl}/rest/api/2/issue/bulk`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Atlassian-Token': 'no-check' }, credentials: 'include', body: JSON.stringify({ issueUpdates: childUpdates }) });
         createdIssues = (await childBulkRes.json()).issues;
       }
+    }
 
-      // 🌟 부모 첨부파일 초고속 업로드 (Sleep 완전 제거)
+    // 🌟 2단계: DB(구글 시트) 동기화를 첨부파일 업로드보다 먼저 실행!! (Jira Key 확보 즉시 저장)
+    if (data.rawGasData) {
+      const { meta, assignee, assets } = data.rawGasData;
+      const uniqueCode = data.uniqueCode || meta.uniqueCode;
+      const safeTargetSize = parseInt(String(meta.targetSize).replace(/[^0-9]/g, '')) || 0;
+      
+      let bulkPayload = [];
+      bulkPayload.push({
+        jiraLink: parentKey ? `${baseUrl}/browse/${parentKey}` : "", uniqueCode: uniqueCode, campaignName: meta.campaignName || '-', product: meta.product || '', targetType: meta.target || 'MASS', channel: '-', hasBanner: assets.length > 0 ? 'Y' : 'N', taskType: data.skipJira ? '-' : '-', startDate: meta.startDate || '', endDate: meta.dueDate || '', assignee: assignee || '', targetSize: safeTargetSize, targetCondition: meta.targetCondition || '', notiChannel: '', mainCopy: meta.conceptCopy || '-', landingUrl: '', designLink: meta.mainImageUrl || '', hasCoupon: (meta.hasCoupon || '').trim().toUpperCase() === 'Y' ? 'Y' : 'N',
+        assets: assets, mermaidCode: data.rawGasData.mermaidCode || "", meta: meta
+      });
+      for (let i = 0; i < assets.length; i++) {
+        const asset = assets[i]; const assetData = asset.data || {};
+        const childJiraUrl = createdIssues[i] ? `${baseUrl}/browse/${createdIssues[i].key}` : '';
+        let textParts = [];
+        if (assetData.topText) textParts.push(assetData.topText); if (assetData.mainTitle) textParts.push(assetData.mainTitle); if (assetData.bannerCopy) textParts.push(assetData.bannerCopy); if (assetData.subTitle) textParts.push(assetData.subTitle);
+        bulkPayload.push({
+          jiraLink: childJiraUrl, uniqueCode: uniqueCode, campaignName: meta.campaignName || '-', product: meta.product || '', targetType: meta.target || 'MASS', channel: Array.isArray(assetData.gnb) ? assetData.gnb.join(', ') : (assetData.gnb || '-'), hasBanner: asset.type && (asset.type.includes("BANNER") || asset.type.includes("TODAY")) ? "Y" : "N", taskType: asset.type || '-', startDate: assetData.startDate || meta.startDate || '', endDate: assetData.dueDate || meta.dueDate || '', assignee: assignee || '', targetSize: 0, targetCondition: meta.targetCondition || '', notiChannel: '', mainCopy: textParts.length > 0 ? textParts.join(' / ') : '-', landingUrl: assetData.landingValue || '', designLink: assetData.imageUrl || assetData.bgImg || assetData.bannerImg || '', hasCoupon: (meta.hasCoupon || '').trim().toUpperCase() === 'Y' ? 'Y' : 'N'
+        });
+      }
+      if (meta.target === 'TARGET') {
+        const bannerTypes = assets.length > 0 ? assets.map(a => a.name).join(', ') : '-';
+        bulkPayload.push({
+          jiraLink: "", uniqueCode: uniqueCode, campaignName: meta.campaignName || '-', product: meta.product || '', targetType: meta.target || 'TARGET', channel: '-', hasBanner: 'N', taskType: 'TARGET_OPERATION', startDate: meta.startDate || '', endDate: meta.dueDate || '', assignee: assignee || '', targetSize: safeTargetSize, targetCondition: meta.targetCondition || '', notiChannel: '', mainCopy: `타겟 배정(${bannerTypes})`, landingUrl: '', designLink: '', hasCoupon: (meta.hasCoupon || '').trim().toUpperCase() === 'Y' ? 'Y' : 'N'
+        });
+      }
+      if (bulkPayload.length > 0) {
+        await fetch(CF_WORKER_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: "bulkInsert", rows: bulkPayload }) });
+      }
+    }
+
+    // 🌟 3단계: 성공했으니 사용자에게 Jira 창을 먼저 열어줌 (백그라운드에서 첨부파일이 올라가는 동안 사용자는 창을 볼 수 있음)
+    if (!data.skipJira && parentKey) {
+      chrome.tabs.create({ url: `${baseUrl}/browse/${parentKey}` });
+    }
+
+    // 🌟 4단계: (가장 오래 걸리는 작업) 첨부파일 업로드 및 텍스트(URL) 치환
+    if (!data.skipJira) {
       let uploadedParentAttachments = [];
       if (data.parent.images && data.parent.images.length > 0) {
         for (const imgObj of data.parent.images) {
           if (imgObj.dataUrl) {
             const formData = new FormData(); formData.append("file", dataURLtoBlob(imgObj.dataUrl), imgObj.filename);
             const attachRes = await fetchWithRetry(`${baseUrl}/rest/api/2/issue/${parentKey}/attachments`, { method: 'POST', headers: { 'X-Atlassian-Token': 'no-check' }, credentials: 'include', body: formData });
-            const attText = await attachRes.text();
-            let attJson;
-            try { attJson = JSON.parse(attText); } catch(e) { throw new Error(`[부모 첨부 파싱 에러] ${attText.substring(0, 150)}`); }
+            const attJson = await attachRes.json();
             uploadedParentAttachments.push(...attJson);
           }
         }
       }
-      
       if (uploadedParentAttachments.length > 0) {
         let finalParentDesc = data.parent.desc; 
-        uploadedParentAttachments.forEach(att => {
-          const placeholder = `PLACEHOLDER_${att.filename}`;
-          finalParentDesc = finalParentDesc.split(placeholder).join(att.content);
-        });
+        uploadedParentAttachments.forEach(att => { finalParentDesc = finalParentDesc.split(`PLACEHOLDER_${att.filename}`).join(att.content); });
         finalParentDesc = finalParentDesc.replace(/data:image\/[a-zA-Z0-9+;/=]+/g, uploadedParentAttachments[0].content);
         await fetchWithRetry(`${baseUrl}/rest/api/2/issue/${parentKey}`, { method: 'PUT', headers: { 'Content-Type': 'application/json', 'X-Atlassian-Token': 'no-check' }, credentials: 'include', body: JSON.stringify({ fields: { description: finalParentDesc } }) });
       }
 
-      if (data.parent.comment) {
-        try { await fetchWithRetry(`${baseUrl}/rest/api/2/issue/${parentKey}/comment`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Atlassian-Token': 'no-check' }, credentials: 'include', body: JSON.stringify({ body: data.parent.comment }) }); } catch(e){}
-      }
-
-      // 🌟 타임아웃 방지: 자식 이슈 인덱싱 대기 시간을 2.5초에서 1초로 단축
-      await sleep(1000);
-
-      // 🌟 자식 이슈 첨부파일 초고속 업로드 (Sleep 완전 제거)
       for (let i = 0; i < data.children.length; i++) {
         const childData = data.children[i];
         if (!createdIssues[i]) continue;
@@ -179,64 +188,13 @@ async function createJiraHierarchy(data, sourceTabId) {
         if (childData.imageData) {
           const formData = new FormData(); formData.append("file", dataURLtoBlob(childData.imageData), "preview.png");
           const attachRes = await fetchWithRetry(`${baseUrl}/rest/api/2/issue/${issueKey}/attachments`, { method: 'POST', headers: { 'X-Atlassian-Token': 'no-check' }, credentials: 'include', body: formData });
-          
-          const attText = await attachRes.text();
-          let uploadedChildAtt;
-          try { uploadedChildAtt = JSON.parse(attText); } catch(e) { throw new Error(`[자식 첨부 파싱 에러 - ${issueKey}] ${attText.substring(0, 150)}`); }
-
+          const uploadedChildAtt = await attachRes.json();
           if (uploadedChildAtt && uploadedChildAtt.length > 0) {
-            let finalChildDesc = childData.desc;
-            const placeholder = `PLACEHOLDER_preview.png`;
-            finalChildDesc = finalChildDesc.split(placeholder).join(uploadedChildAtt[0].content);
-            finalChildDesc = finalChildDesc.replace(/data:image\/[a-zA-Z0-9+;/=]+/g, uploadedChildAtt[0].content);
-            
+            let finalChildDesc = childData.desc.split(`PLACEHOLDER_preview.png`).join(uploadedChildAtt[0].content).replace(/data:image\/[a-zA-Z0-9+;/=]+/g, uploadedChildAtt[0].content);
             await fetchWithRetry(`${baseUrl}/rest/api/2/issue/${issueKey}`, { method: 'PUT', headers: { 'Content-Type': 'application/json', 'X-Atlassian-Token': 'no-check' }, credentials: 'include', body: JSON.stringify({ fields: { description: finalChildDesc } }) });
           }
         }
-
-        if (childData.assignee) {
-          try { await fetchWithRetry(`${baseUrl}/rest/api/2/issue/${issueKey}/comment`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Atlassian-Token': 'no-check' }, credentials: 'include', body: JSON.stringify({ body: `담당자님 [~${childData.assignee}] 할당되었습니다.` }) }); } catch(e){}
-        }
       }
-    }
-    
-    // DB 동기화 로직
-    if (data.rawGasData) {
-      const { meta, assignee, assets } = data.rawGasData;
-      const uniqueCode = data.uniqueCode || meta.uniqueCode;
-      let bulkPayload = [];
-      bulkPayload.push({
-        jiraLink: parentKey ? `${baseUrl}/browse/${parentKey}` : "", 
-        uniqueCode: uniqueCode, 
-        campaignName: meta.campaignName || '-', product: meta.product || '', targetType: meta.target || 'MASS', channel: '-', hasBanner: assets.length > 0 ? 'Y' : 'N', taskType: data.skipJira ? '-' : '-', startDate: meta.startDate || '', endDate: meta.dueDate || '', assignee: assignee || '', targetSize: parseInt(meta.targetSize) || 0, targetCondition: meta.targetCondition || '', notiChannel: '', mainCopy: meta.conceptCopy || '-', landingUrl: '', designLink: meta.mainImageUrl || '', hasCoupon: (meta.hasCoupon || '').trim().toUpperCase() === 'Y' ? 'Y' : 'N',
-        assets: assets, mermaidCode: data.rawGasData.mermaidCode || "", meta: meta
-      });
-      for (let i = 0; i < assets.length; i++) {
-        const asset = assets[i]; const assetData = asset.data || {};
-        const childJiraUrl = createdIssues[i] ? `${baseUrl}/browse/${createdIssues[i].key}` : '';
-        let textParts = [];
-        if (assetData.topText) textParts.push(assetData.topText); if (assetData.mainTitle) textParts.push(assetData.mainTitle); if (assetData.bannerCopy) textParts.push(assetData.bannerCopy); if (assetData.subTitle) textParts.push(assetData.subTitle);
-        
-        bulkPayload.push({
-          jiraLink: childJiraUrl,
-          uniqueCode: uniqueCode, 
-          campaignName: meta.campaignName || '-', product: meta.product || '', targetType: meta.target || 'MASS', channel: Array.isArray(assetData.gnb) ? assetData.gnb.join(', ') : (assetData.gnb || '-'), hasBanner: asset.type && (asset.type.includes("BANNER") || asset.type.includes("TODAY")) ? "Y" : "N", taskType: asset.type || '-', startDate: assetData.startDate || meta.startDate || '', endDate: assetData.dueDate || meta.dueDate || '', assignee: assignee || '', targetSize: 0, targetCondition: meta.targetCondition || '', notiChannel: '', mainCopy: textParts.length > 0 ? textParts.join(' / ') : '-', landingUrl: assetData.landingValue || '', designLink: assetData.imageUrl || assetData.bgImg || assetData.bannerImg || '', hasCoupon: (meta.hasCoupon || '').trim().toUpperCase() === 'Y' ? 'Y' : 'N'
-        });
-      }
-      if (meta.target === 'TARGET') {
-        const bannerTypes = assets.length > 0 ? assets.map(a => a.name).join(', ') : '-';
-        bulkPayload.push({
-          jiraLink: "", 
-          uniqueCode: uniqueCode,
-          campaignName: meta.campaignName || '-', product: meta.product || '', targetType: meta.target || 'TARGET', channel: '-', hasBanner: 'N', taskType: 'TARGET_OPERATION', startDate: meta.startDate || '', endDate: meta.dueDate || '', assignee: assignee || '', targetSize: parseInt(meta.targetSize) || 0, targetCondition: meta.targetCondition || '', notiChannel: '', mainCopy: `타겟 배정(${bannerTypes})`, landingUrl: '', designLink: '', hasCoupon: (meta.hasCoupon || '').trim().toUpperCase() === 'Y' ? 'Y' : 'N'
-        });
-      }
-      if (bulkPayload.length > 0) {
-        await fetch(CF_WORKER_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: "bulkInsert", rows: bulkPayload }) });
-      }
-    }
-    if (!data.skipJira && parentKey) {
-      chrome.tabs.create({ url: `${baseUrl}/browse/${parentKey}` });
     }
   } catch (error) {
     if (sourceTabId) chrome.scripting.executeScript({ target: { tabId: sourceTabId }, func: (errMsg) => alert("🚨 Jira 전송 에러 상세 정보:\n\n" + errMsg), args: [error.message] }).catch(e=>e);
