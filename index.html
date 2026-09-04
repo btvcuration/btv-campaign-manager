@@ -1531,18 +1531,19 @@
 
         let changeLogHtml = "";
         if (addedAssets.length > 0 || deletedAssets.length > 0) {
-            changeLogHtml += "{panel:title=🚨 기획 변경 사항 안내|borderStyle=dashed|borderColor=#ffccc7|titleBGColor=#fff0f0|bgColor=#ffffff}\n";
-            addedAssets.forEach(a => changeLogHtml += `* *(+) 추가된 배너:* ${a.name} (수동 추가)\n`);
-            deletedAssets.forEach(a => changeLogHtml += `* *(-) 삭제/제외된 배너:* ${a.name}\n`);
-            changeLogHtml += "_{color:#666666}※ 하단 유저플로우는 기획 초안 기준이며, 실제 세팅은 위 변경 사항 및 하단 종합표를 기준으로 진행해 주세요.{color}_\n{panel}\n";
+            changeLogHtml += "<div style='background-color:#fff0f0; border:1px solid #ffccc7; padding:15px; border-radius:8px; margin-bottom:20px;'>";
+            changeLogHtml += "<h3 style='color:#e74c3c; margin-top:0;'>🚨 기획 변경 사항 안내</h3><ul style='margin-bottom:0;'>";
+            addedAssets.forEach(a => changeLogHtml += `<li style='color:#333;'><b>➕ 추가된 배너:</b> ${a.name} (수동 추가)</li>`);
+            deletedAssets.forEach(a => changeLogHtml += `<li style='color:#333;'><b>➖ 삭제/제외된 배너:</b> ${a.name}</li>`);
+            changeLogHtml += "</ul><p style='color:#666; font-size:12px; margin-top:10px;'><i>※ 상단 유저플로우는 기획 초안 기준이며, 실제 세팅은 위 변경 사항 및 하단 종합표를 기준으로 진행해 주세요.</i></p></div>";
         }
 
-        // 🌟 머메이드 텍스트 추출 및 img 태그 날리기
+        // 🌟 [수정 핵심] 머메이드 코드만 정규식으로 안전하게 치환 (HTML 렌더링 유지)
         let safeMermaidCode = mermaidCode ? mermaidCode.replace(/<img[^>]*>/gi, '').replace(/\[/g, '【').replace(/\]/g, '】') : '유저플로우 데이터 없음';
 
         setExportState({ isExporting: true, progress: 85, msg: "Jira 데이터 조립 중..." });
 
-        let parentTable = `||순번||배너명||편성 GNB||랜딩 URL||시안 미리보기||\n`;
+        let parentTable = `<table border="1" style="border-collapse: collapse; width: 100%; text-align: center; font-size: 13px;"><tbody><tr style="background-color: #f4f5f7; color: #333;"><td style="padding: 10px; font-weight: bold; width: 5%;">순번</td><td style="padding: 10px; font-weight: bold; width: 25%;">배너명</td><td style="padding: 10px; font-weight: bold; width: 15%;">편성 GNB</td><td style="padding: 10px; font-weight: bold; width: 25%;">랜딩 URL</td><td style="padding: 10px; font-weight: bold; width: 30%;">시안 미리보기</td></tr>`;
         let parentImagesToUpload = [];
         let uniqueAssignees = new Set();
 
@@ -1563,7 +1564,7 @@
             const colCount = data.colType === '3단' ? 3 : 2;
             let compressedThumbsHTML = '';
             let compressedBodyHTML = '';
-            let childTableRows = `||구분||주요 카피||랜딩 URL||\n`;
+            let childTableRows = '';
             
             for (let c = 0; c < colCount; c++) {
                const imgUrl = setImagesArr[c] || '';
@@ -1572,18 +1573,34 @@
                
                if (imgUrl) parentImagesToUpload.push({ filename: imgName, dataUrl: imgUrl });
                
-               const cThumb = imgUrl ? `!PLACEHOLDER_${imgName}|thumbnail!` : '';
-               let cBody = (c === 0 && imgUrl) ? `!PLACEHOLDER_preview.png|thumbnail!` : '';
+               const cThumb = imgUrl ? `PLACEHOLDER_${imgName}` : '';
+               let cBody = (c === 0 && imgUrl) ? `PLACEHOLDER_preview.png` : '';
                
-               if (cThumb) compressedThumbsHTML += `${cThumb}\n`;
-               if (cBody) compressedBodyHTML += `h4. [상태 ${c+1}: ${cardData.heroTitle || '미입력'}]\n${cBody}\n\n`;
-               else compressedBodyHTML += `h4. [상태 ${c+1}: ${cardData.heroTitle || '미입력'}]\n_{color:#888888}(본문 용량 제한으로 캡처 생략. 상위 종합 일감을 참조해 주세요.){color}_\n\n`;
+               if (cThumb) compressedThumbsHTML += `<img src="${cThumb}" style="max-width: 100%; border: 1px solid #ccc; border-radius: 4px; margin-bottom: 5px;" /><br>`;
                
-               childTableRows += `|카드 ${c+1}|*Hero:* ${cardData.heroTitle}\n*Card:* ${cardData.cardCopy}|${cardData.landingValue || '미지정'}|\n`;
+               if (cBody) compressedBodyHTML += `<h4>[상태 ${c+1}: ${cardData.heroTitle || '미입력'}]</h4><img src="${cBody}" style="max-width: 100%; border: 1px solid #e2e8f0; border-radius: 8px; margin-bottom: 15px;" /><br>`;
+               else compressedBodyHTML += `<h4>[상태 ${c+1}: ${cardData.heroTitle || '미입력'}]</h4><p style="color:#888;"><i>(본문 용량 제한으로 캡처 생략. 상위 종합 일감을 참조해 주세요.)</i></p><br>`;
+               
+               childTableRows += `
+                 <tr>
+                   <td style='padding: 8px; font-weight: bold; background-color: #f9f9fb;'>카드 ${c+1}</td>
+                   <td style='padding: 8px;'><b>Hero:</b> ${cardData.heroTitle}<br><b>Card:</b> ${cardData.cardCopy}</td>
+                   <td style='padding: 8px; word-break: break-all;'>${cardData.landingValue || '미지정'}</td>
+                 </tr>
+               `;
             }
 
-            parentTable += `|${idx + 1}|*${asset?.name || '미지정'}* (세트형)|${targetGnbs.join(', ')}|복합 랜딩|${compressedThumbsHTML}|\n`;
-            const childDesc = `h3. 🖼️ 세트 상세 기획\n||편성 GNB|${targetGnbs.join(', ')}|\n||편성 일정|${dateInfo}|\n\n${childTableRows}\n\nh3. 🎨 캡처 시안 (상태별)\n${compressedBodyHTML}\n※ 고화질 원본은 본문 하단 *첨부파일*을 확인해 주세요.`;
+            parentTable += `<tr><td style="padding: 10px;">${idx + 1}</td><td style="padding: 10px; font-weight: bold;">${asset?.name || '미지정'} (세트형)</td><td style="padding: 10px;">${targetGnbs.join(', ')}</td><td style="padding: 10px; word-break: break-all;">복합 랜딩</td><td style="padding: 10px; color: #4f3df6; text-align: center;">` + 
+              compressedThumbsHTML + `<b>(세트 이미지 참조)</b></td></tr>`;
+
+            const childDesc = 
+              "<h3>🖼️ 세트 상세 기획</h3>" +
+              "<table border='1' style='border-collapse: collapse; width: 100%; text-align: left; font-size: 13px;'>" +
+              "<tr><th style='padding: 8px; background-color: #f4f5f7; width: 25%;'>편성 GNB</th><td colspan='2' style='padding: 8px; font-weight: bold;'>" + targetGnbs.join(', ') + "</td></tr>" +
+              "<tr><th style='padding: 8px; background-color: #f4f5f7;'>편성 일정</th><td colspan='2' style='padding: 8px;'>" + dateInfo + "</td></tr>" +
+              "<tr style='background-color: #e2e8f0;'><th style='padding: 8px; text-align: center;'>구분</th><th style='padding: 8px; text-align: center;'>주요 카피</th><th style='padding: 8px; text-align: center;'>랜딩 URL</th></tr>" +
+              childTableRows +
+              "</table><br><h3>🎨 캡처 시안 (상태별)</h3>" + compressedBodyHTML + "<p>※ 고화질 원본은 본문 하단 <b>첨부파일</b>을 확인해 주세요.</p>";
 
             return { title: `[디자인] ${meta.campaignName || "신규 캠페인"} _ ${asset?.name || '미지정'}`, desc: childDesc, assignee: mappedAssigneeJiraId, imageData: setImagesArr[0], startDate: data.startDate, dueDate: data.dueDate, gnb: targetGnbs };
           } else {
@@ -1593,37 +1610,52 @@
             if (Array.isArray(imgDataUrl)) imgDataUrl = imgDataUrl[0];
             imgDataUrl = imgDataUrl || '';
 
-            const compressedThumb = imgDataUrl ? `!PLACEHOLDER_${imgName}|thumbnail!` : '';
-            const compressedBody = imgDataUrl ? `!PLACEHOLDER_preview.png|thumbnail!` : '';
+            const compressedThumb = imgDataUrl ? `PLACEHOLDER_${imgName}` : '';
+            const compressedBody = imgDataUrl ? `PLACEHOLDER_preview.png` : '';
             
-            parentTable += `|${idx + 1}|*${asset?.name || '미지정'}*|${targetGnbs.join(', ')}|${data.landingValue || '미지정'}|${compressedThumb}|\n`;
+            parentTable += `<tr><td style="padding: 10px;">${idx + 1}</td><td style="padding: 10px; font-weight: bold;">${asset?.name || '미지정'}</td><td style="padding: 10px;">${targetGnbs.join(', ')}</td><td style="padding: 10px; word-break: break-all;">${data.landingValue || '미지정'}</td><td style="padding: 10px; color: #4f3df6; text-align: center;">` + 
+              (compressedThumb ? `<img src="${compressedThumb}" style="max-width: 100%; border: 1px solid #ccc; border-radius: 4px; margin-bottom: 5px;" /><br>` : '') + 
+              `<b>${imgName}</b></td></tr>`;
+              
             if (imgDataUrl) parentImagesToUpload.push({ filename: imgName, dataUrl: imgDataUrl });
 
-            const childDesc = `h3. 🖼️ 상세 기획\n||편성 GNB|${targetGnbs.join(', ')}|\n||편성 일정|${dateInfo}|\n||주요 카피|${copyText.replace(/\n/g, ' ')}|\n||랜딩 URL|${data.landingValue || '미지정'}|\n||비고|${(data.note || '없음').replace(/\n/g, ' ')}|\n\nh3. 🎨 시뮬레이터 캡처 시안\n${compressedBody}\n\n※ 고화질 원본은 본문 하단 *첨부파일(preview.png)*을 확인해 주세요.`;
+            const childDesc = 
+              "<h3>🖼️ 상세 기획</h3>" +
+              "<table border='1' style='border-collapse: collapse; width: 100%; text-align: left; font-size: 13px;'>" +
+              "<tr><th style='padding: 8px; background-color: #f4f5f7; width: 25%;'>편성 GNB</th><td style='padding: 8px; font-weight: bold;'>" + targetGnbs.join(', ') + "</td></tr>" +
+              "<tr><th style='padding: 8px; background-color: #f4f5f7;'>편성 일정</th><td style='padding: 8px;'>" + dateInfo + "</td></tr>" +
+              "<tr><th style='padding: 8px; background-color: #f4f5f7;'>주요 카피</th><td style='padding: 8px;'>" + copyText.replace(/\n/g, '<br>') + "</td></tr>" +
+              "<tr><th style='padding: 8px; background-color: #f4f5f7;'>랜딩 URL</th><td style='padding: 8px;'>" + (data.landingValue || '미지정') + "</td></tr>" +
+              "<tr><th style='padding: 8px; background-color: #f4f5f7;'>비고</th><td style='padding: 8px;'>" + (data.note || '없음').replace(/\n/g, '<br>') + "</td></tr>" +
+              "</table><br><h3>🎨 시뮬레이터 캡처 시안</h3>" +
+              (compressedBody ? `<img src="${compressedBody}" style="max-width: 100%; border: 1px solid #e2e8f0; border-radius: 8px; margin: 10px 0;" />` : '') +
+              `<p>※ 고화질 원본은 본문 하단 <b>첨부파일(preview.png)</b>을 확인해 주세요.</p>`;
 
             return { title: `[디자인] ${meta.campaignName || "신규 캠페인"} _ ${asset?.name || '미지정'}`, desc: childDesc, assignee: mappedAssigneeJiraId, imageData: imgDataUrl, startDate: data.startDate, dueDate: data.dueDate, gnb: targetGnbs };
           }
         }));
 
-        if (assets.length === 0) parentTable = "등록된 디자인(배너) 에셋이 없습니다. 타겟팅 운영 요청만 진행됩니다.";
+        if (assets.length === 0) parentTable = "<p>등록된 디자인(배너) 에셋이 없습니다. 타겟팅 운영 요청만 진행됩니다.</p>";
 
         const safeHasCoupon = (meta.hasCoupon || '').trim().toUpperCase() === 'Y' ? 'Y' : 'N';
         
         const parentDescText = 
-          `h3. 📌 캠페인 공통 정보\n` +
-          `* *캠페인명:* ${meta.campaignName || "미지정"}\n` +
-          `* *대상 상품:* ${meta.product || "미지정"}\n` +
-          `* *타겟 유형:* ${meta.target || "MASS"}\n` +
-          `* *예상 모수:* ${meta.targetSize ? meta.targetSize + "명" : "미지정"}\n` +
-          `* *타겟 조건:* ${meta.targetCondition || "미지정"}\n` +
-          `* *편성 일정:* ${meta.startDate || "미지정"} ~ ${meta.dueDate || "미지정"}\n` +
-          `* *B tv 쿠폰:* ${safeHasCoupon === 'Y' ? "포함 (" + (meta.couponBenefit || "혜택 미상") + ")" : "미포함"}\n` +
-          `* *외부 사은품:* ${meta.externalGift || "없음"}\n` +
-          `* *총 요청 건수:* ${assets.length}건\n\n` +
-          `h3. 🗺️ 고객 이동 경로 (AI 기획 초안)\n` +
-          `{code:none}\n${safeMermaidCode}\n{code}\n\n` +
-          `${changeLogHtml}\n` +
-          `h3. 📊 배너 편성 종합표\n${parentTable}\n\n하위 작업(Sub-task)으로 개별 상세 기획안이 첨부되어 있습니다.`;
+          "<h3>📌 캠페인 공통 정보</h3>" +
+          "<ul>" +
+            "<li><b>캠페인명:</b> " + (meta.campaignName || "미지정") + "</li>" +
+            "<li><b>대상 상품:</b> " + (meta.product || "미지정") + "</li>" +
+            "<li><b>타겟 유형:</b> " + (meta.target || "MASS") + "</li>" +
+            "<li><b>예상 모수:</b> " + (meta.targetSize ? meta.targetSize + "명" : "미지정") + "</li>" +
+            "<li><b>타겟 조건:</b> " + (meta.targetCondition || "미지정") + "</li>" +
+            "<li><b>편성 일정:</b> " + (meta.startDate || "미지정") + " ~ " + (meta.dueDate || "미지정") + "</li>" +
+            "<li><b>B tv 쿠폰:</b> " + (safeHasCoupon === 'Y' ? "포함 (" + (meta.couponBenefit || "혜택 미상") + ")" : "미포함") + "</li>" +
+            "<li><b>외부 사은품:</b> " + (meta.externalGift || "없음") + "</li>" +
+            "<li><b>총 요청 건수:</b> " + assets.length + "건</li>" +
+          "</ul><br>" +
+          "<h3>🗺️ 고객 이동 경로 (AI 기획 초안)</h3>" +
+          `<pre>${safeMermaidCode}</pre><br><br>` +
+          changeLogHtml +
+          "<h3>📊 배너 편성 종합표</h3>" + parentTable + "<br><hr><br><p>하위 작업(Sub-task)으로 개별 상세 기획안이 첨부되어 있습니다.</p>";
         
         const mentionString = Array.from(uniqueAssignees).map(id => `[~${id}]`).join(' ');
         const parentCommentText = `${mentionString}\n담당자님, 신규 캠페인 프로모션이 등록(또는 업데이트) 되었습니다. 각 영역별 하위 일감(Sub-task)을 확인하시어 배너 편성 및 세팅을 부탁드립니다.`;
@@ -1637,13 +1669,13 @@
           children: childIssues,
           rawGasData: { meta: { ...meta, targetSize: safeTargetSize, uniqueCode: uniqueCode }, assignee: cleanAssignee, assets: assets, mermaidCode: mermaidCode }
         };
-        
         const event = new CustomEvent('TEST_JIRA_SEND', { detail: finalData });
         window.dispatchEvent(event);
         
         setExportState({ isExporting: true, progress: 100, msg: "🚀 전송 완료! 잠시 후 Jira가 열립니다." });
         setTimeout(() => { setExportState({ isExporting: false, progress: 0, msg: '' }); setCurrentView('LIST'); }, 3000);
       };
+      
       const activeAsset = assets.find(a => a.id === activeTabId) || assets[0];
 
       // 🌟 [수정됨] 기존 '수정' 버튼 동작: 시안 편집(EDITOR)으로 직행
