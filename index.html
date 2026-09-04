@@ -1521,11 +1521,10 @@
         setExportState({ isExporting: true, progress: 10, msg: "이미지 추출 준비 중..." });
         let capturedImages = {};
 
-        // 🌟 [핵심] 2번 방식을 영구 삭제하고 네이티브 캡처(1번)만 강제
         const captureElementNative = async (element) => {
           const rect = element.getBoundingClientRect();
           let dataUrl = await new Promise((resolve) => {
-            const timeout = setTimeout(() => resolve(null), 3500); // 넉넉히 3.5초 대기
+            const timeout = setTimeout(() => resolve(null), 3500); 
             const listener = (e) => { 
               clearTimeout(timeout); 
               window.removeEventListener('RECEIVE_SCREENSHOT', listener); 
@@ -1581,7 +1580,6 @@
         let workflowDataUrl = null;
         const canvasOptions = { backgroundColor: '#0f111a', scale: 2, useCORS: true };
 
-        // 🌟 Userflow를 세로(Column) 형태로 길게 배치하여 가독성 개선
         if (!workflowDataUrl && assets.length > 0) {
           const workflowContainer = document.createElement('div');
           workflowContainer.style.cssText = 'position:absolute; top:0; left:0; width:1000px; background:#0f111a; padding:50px; border-radius:20px; display:flex; flex-direction:column; align-items:center; color:white; font-family:Pretendard, sans-serif; z-index:-9999;';
@@ -1615,29 +1613,14 @@
           document.body.removeChild(workflowContainer);
         }
 
-        setExportState({ isExporting: true, progress: 85, msg: "Jira 최적화 데이터 압축 중..." });
+        setExportState({ isExporting: true, progress: 85, msg: "Jira 데이터 조립 중..." });
 
-        const compressImageForBody = (dataUrl, maxWidth = 500, quality = 0.4) => {
-          if (!dataUrl || typeof dataUrl !== 'string' || !dataUrl.startsWith('data:image')) return Promise.resolve('');
-          return new Promise((resolve) => {
-            const img = new Image();
-            img.onload = () => {
-              const canvas = document.createElement('canvas');
-              let width = img.width; let height = img.height;
-              if (width > maxWidth) { height = Math.floor((maxWidth / width) * height); width = maxWidth; }
-              canvas.width = width; canvas.height = height;
-              const ctx = canvas.getContext('2d');
-              ctx.drawImage(img, 0, 0, width, height);
-              resolve(canvas.toDataURL('image/jpeg', quality));
-            };
-            img.src = dataUrl;
-          });
-        };
-
+        // 🌟 1. 불필요해진 압축 함수(compressImageForBody) 완전 삭제 및 텍스트 매핑으로 변경
         let workflowCompressedUrl = '';
-        if (workflowDataUrl) workflowCompressedUrl = await compressImageForBody(workflowDataUrl, 600, 0.4);
+        if (workflowDataUrl) workflowCompressedUrl = 'PLACEHOLDER_workflow_summary.png';
 
         let parentTable = `<table border="1" style="border-collapse: collapse; width: 100%; text-align: center; font-size: 13px;"><tbody><tr style="background-color: #f4f5f7; color: #333;"><td style="padding: 10px; font-weight: bold; width: 5%;">순번</td><td style="padding: 10px; font-weight: bold; width: 25%;">배너명</td><td style="padding: 10px; font-weight: bold; width: 15%;">편성 GNB</td><td style="padding: 10px; font-weight: bold; width: 25%;">랜딩 URL</td><td style="padding: 10px; font-weight: bold; width: 30%;">시안 미리보기</td></tr>`;
+        
         let parentImagesToUpload = [];
         if (workflowDataUrl) parentImagesToUpload.push({ filename: 'workflow_summary.png', dataUrl: workflowDataUrl });
         let uniqueAssignees = new Set();
@@ -1668,8 +1651,10 @@
                const cardData = data.cards[c] || {};
                if (imgUrl) parentImagesToUpload.push({ filename: imgName, dataUrl: imgUrl });
                
-               const cThumb = await compressImageForBody(imgUrl, 200, 0.3);
-               const cBody = await compressImageForBody(imgUrl, 500, 0.4);
+               // 🌟 2. 압축 로직 대신 PLACEHOLDER 텍스트 삽입
+               const cThumb = imgUrl ? `PLACEHOLDER_${imgName}` : '';
+               const cBody = imgUrl ? `PLACEHOLDER_${imgName}` : '';
+               
                if (cThumb) compressedThumbsHTML += `<img src="${cThumb}" style="max-width: 100%; border: 1px solid #ccc; border-radius: 4px; margin-bottom: 5px;" /><br>`;
                if (cBody) compressedBodyHTML += `<h4>[상태 ${c+1}: ${cardData.heroTitle || '미입력'}]</h4><img src="${cBody}" style="max-width: 100%; border: 1px solid #e2e8f0; border-radius: 8px; margin-bottom: 15px;" /><br>`;
                
@@ -1707,8 +1692,10 @@
             if (Array.isArray(imgDataUrl)) imgDataUrl = imgDataUrl[0];
             imgDataUrl = imgDataUrl || '';
 
-            const compressedThumb = await compressImageForBody(imgDataUrl, 200, 0.3);
-            const compressedBody = await compressImageForBody(imgDataUrl, 500, 0.4);
+            // 🌟 3. 압축 로직 대신 PLACEHOLDER 삽입 
+            // 부모 테이블은 고유 imgName, 자식은 preview.png로 background.js와 매핑!
+            const compressedThumb = imgDataUrl ? `PLACEHOLDER_${imgName}` : '';
+            const compressedBody = imgDataUrl ? `PLACEHOLDER_preview.png` : '';
             
             parentTable += `<tr><td style="padding: 10px;">${idx + 1}</td><td style="padding: 10px; font-weight: bold;">${asset?.name || '미지정'}</td><td style="padding: 10px;">${targetGnbs.join(', ')}</td><td style="padding: 10px; word-break: break-all;">${data.landingValue || '미지정'}</td><td style="padding: 10px; color: #4f3df6; text-align: center;">` + 
               (compressedThumb ? `<img src="${compressedThumb}" style="max-width: 100%; border: 1px solid #ccc; border-radius: 4px; margin-bottom: 5px;" /><br>` : '') + 
@@ -1739,7 +1726,6 @@
         if (assets.length > 0) parentTable += `</tbody></table>`;
         else parentTable = "<p>등록된 디자인(배너) 에셋이 없습니다. 타겟팅 운영 요청만 진행됩니다.</p>";
 
-        // 🌟 타겟 여부에 따른 Jira 생성 생략 처리 완료 (childIssues에 타겟 지라 푸시 삭제됨)
         const safeHasCoupon = (meta.hasCoupon || '').trim().toUpperCase() === 'Y' ? 'Y' : 'N';
         
         const parentDescText = 
