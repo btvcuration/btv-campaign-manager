@@ -10,12 +10,21 @@ async function fetchWithRetry(url, options, maxRetries = 5) {
       await sleep(retryAfter ? parseInt(retryAfter) * 1000 : baseDelay);
       baseDelay *= 2; continue;
     }
-    if (response.status === 401 || response.status === 403) throw new Error(`인증 에러(${response.status}). Jira 로그인을 확인해주세요.`);
-    if (response.headers.get("content-type")?.includes("text/html")) throw new Error("Jira 세션이 만료되었습니다.");
-    if (!response.ok) throw new Error(`Jira 통신 에러: ${response.status})\n${await response.text()}`);
+    
+    if (response.status === 401) {
+      throw new Error(`[401 Unauthorized] Jira 세션이 정말로 만료되었습니다.`);
+    }
+
+    // 🌟 [에러 마스킹 해제] 200번대 정상이 아니면 무조건 실제 상태코드와 에러 본문을 뱉도록 수정
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`[HTTP ${response.status}] 서버 에러 발생!\n요청 URL: ${url}\n응답 내용: ${errorText.substring(0, 300)}...`);
+    }
+    
+    // 기존에 있던 text/html 무조건 세션 만료 처리 로직 삭제
     return response;
   }
-  throw new Error("최대 재시도 횟수를 초과했습니다.");
+  throw new Error("서버 응답 지연으로 최대 재시도 횟수를 초과했습니다.");
 }
 
 function dataURLtoBlob(dataurl) {
@@ -72,8 +81,6 @@ async function createJiraHierarchy(data, sourceTabId) {
   try {
     if (!data.skipJira) {
       const uniqueLabels = Array.from(new Set(data.children.flatMap(c => c.gnb.map(formatLabel))));
-      
-      // 🌟 [A안 핵심 방어 1] 초기 생성 시 Description에 Base64가 남아있다면 임시 텍스트로 치환하여 이슈 생성 에러 원천 차단
       const safeInitialDesc = data.parent.desc.replace(/data:image\/[a-zA-Z0-9+;/=]+/g, "UPLOADING_IMAGE_WAIT...");
       
       const parentFields = {
@@ -132,29 +139,29 @@ async function createJiraHierarchy(data, sourceTabId) {
         createdIssues = (await childBulkRes.json()).issues;
       }
 
-      // 🌟 [A안 핵심 로직 2] 부모 이슈 첨부파일 업로드 및 Description 치환 (PUT)
+      // 🌟 부모 첨부파일 업로드 및 Description 치환
       let uploadedParentAttachments = [];
       if (data.parent.images && data.parent.images.length > 0) {
         for (const imgObj of data.parent.images) {
           if (imgObj.dataUrl) {
             const formData = new FormData(); formData.append("file", dataURLtoBlob(imgObj.dataUrl), imgObj.filename);
             const attachRes = await fetchWithRetry(`${baseUrl}/rest/api/2/issue/${parentKey}/attachments`, { method: 'POST', headers: { 'X-Atlassian-Token': 'no-check' }, credentials: 'include', body: formData });
-            uploadedParentAttachments.push(...(await attachRes.json()));
+            const attText = await attachRes.text();
+            let attJson;
+            try { attJson = JSON.parse(attText); } catch(e) { throw new Error(`[부모 첨부 파싱 에러] ${attText.substring(0, 150)}`); }
+            uploadedParentAttachments.push(...attJson);
             await sleep(500);
           }
         }
       }
       
       if (uploadedParentAttachments.length > 0) {
-        let finalParentDesc = data.parent.desc; // 프론트에서 받은 원본 (플레이스홀더 포함)
+        let finalParentDesc = data.parent.desc; 
         uploadedParentAttachments.forEach(att => {
-          // 프론트엔드에서 심어둔 PLACEHOLDER_파일명.png를 실제 URL로 치환!
           const placeholder = `PLACEHOLDER_${att.filename}`;
           finalParentDesc = finalParentDesc.split(placeholder).join(att.content);
         });
-        // 치환되지 못한 Base64가 혹시라도 남아있다면 첫 번째 이미지 URL로 덮어쓰기 방어
         finalParentDesc = finalParentDesc.replace(/data:image\/[a-zA-Z0-9+;/=]+/g, uploadedParentAttachments[0].content);
-        
         await fetchWithRetry(`${baseUrl}/rest/api/2/issue/${parentKey}`, { method: 'PUT', headers: { 'Content-Type': 'application/json', 'X-Atlassian-Token': 'no-check' }, credentials: 'include', body: JSON.stringify({ fields: { description: finalParentDesc } }) });
       }
 
@@ -162,7 +169,10 @@ async function createJiraHierarchy(data, sourceTabId) {
         try { await fetchWithRetry(`${baseUrl}/rest/api/2/issue/${parentKey}/comment`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Atlassian-Token': 'no-check' }, credentials: 'include', body: JSON.stringify({ body: data.parent.comment }) }); } catch(e){}
       }
 
-      // 🌟 [A안 핵심 로직 3] 자식 이슈 첨부파일 업로드 및 Description 치환 (PUT)
+      // 🌟 [안전장치] Jira가 하위 일감(Bulk)을 인덱싱할 시간을 조금 더 줍니다. (404 방지)
+      await sleep(2500);
+
+      // 🌟 자식 이슈 첨부파일 업로드 및 Description 치환
       for (let i = 0; i < data.children.length; i++) {
         const childData = data.children[i];
         if (!createdIssues[i]) continue;
@@ -171,8 +181,12 @@ async function createJiraHierarchy(data, sourceTabId) {
         if (childData.imageData) {
           const formData = new FormData(); formData.append("file", dataURLtoBlob(childData.imageData), "preview.png");
           const attachRes = await fetchWithRetry(`${baseUrl}/rest/api/2/issue/${issueKey}/attachments`, { method: 'POST', headers: { 'X-Atlassian-Token': 'no-check' }, credentials: 'include', body: formData });
-          const uploadedChildAtt = await attachRes.json();
-          await sleep(1000);
+          
+          const attText = await attachRes.text();
+          let uploadedChildAtt;
+          try { uploadedChildAtt = JSON.parse(attText); } catch(e) { throw new Error(`[자식 첨부 파싱 에러 - ${issueKey}] ${attText.substring(0, 150)}`); }
+          
+          await sleep(1000); // 🌟 방화벽 과부하(Rate Limit) 방지를 위한 대기
 
           if (uploadedChildAtt && uploadedChildAtt.length > 0) {
             let finalChildDesc = childData.desc;
@@ -190,7 +204,7 @@ async function createJiraHierarchy(data, sourceTabId) {
       }
     }
     
-    // DB 동기화 로직은 변경 없이 그대로 유지
+    // DB 동기화 로직
     if (data.rawGasData) {
       const { meta, assignee, assets } = data.rawGasData;
       const uniqueCode = data.uniqueCode || meta.uniqueCode;
@@ -229,6 +243,6 @@ async function createJiraHierarchy(data, sourceTabId) {
       chrome.tabs.create({ url: `${baseUrl}/browse/${parentKey}` });
     }
   } catch (error) {
-    if (sourceTabId) chrome.scripting.executeScript({ target: { tabId: sourceTabId }, func: (errMsg) => alert("Jira 전송 중 에러가 발생했습니다!\n\n" + errMsg), args: [error.message] }).catch(e=>e);
+    if (sourceTabId) chrome.scripting.executeScript({ target: { tabId: sourceTabId }, func: (errMsg) => alert("🚨 Jira 전송 에러 상세 정보:\n\n" + errMsg), args: [error.message] }).catch(e=>e);
   }
 }
