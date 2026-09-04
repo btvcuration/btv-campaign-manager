@@ -55,7 +55,6 @@
       Database // 🌟 추가됨
     } from 'lucide-react';
     
-    // 🌟 [신규 추가] 3단 유저플로우 시뮬레이터 렌더링용 컴포넌트
     const MermaidViewer = ({ code }) => {
       const containerRef = useRef(null);
       useEffect(() => {
@@ -69,7 +68,8 @@
       }, [code]);
       
       if (!code) return null;
-      return <div ref={containerRef} className="w-full flex justify-center items-center overflow-auto custom-scrollbar p-4" />;
+      // 👇 여기에 id="mermaid-export-area" 가 추가되었습니다!
+      return <div id="mermaid-export-area" ref={containerRef} className="w-full flex justify-center items-center overflow-auto custom-scrollbar p-4" />;
     };
 
     const GNB_OPTIONS = ['홈', 'Btv+', '영화시리즈', 'TV 방송', '무료', '애니메이션', '해피시니어', '키즈', 'OTT홈', '실시간 채널', '광고 홈', '콘텐츠', '기타'];
@@ -1294,50 +1294,36 @@
 
       const handleMoveToEditor = (payload) => {
         setCampaignMeta({ ...aiCampaignMeta });
-
         if (!payload || payload.action !== "CREATE_CAMPAIGN_ASSETS") {
-          setCurrentView('EDITOR');
-          return;
+          setCurrentView('EDITOR'); return;
         }
-
-        // 🌟 1. 변수 선언은 여기서 한 번만!
         const aiMeta = payload.rawGasData?.meta || {};
         const aiAssets = payload.rawGasData?.assets || [];
         const aiMermaid = payload.mermaidCode || payload.rawGasData?.mermaidCode || "";
 
-        // 🌟 2. 방어 로직: 만약 데이터가 완전히 누락되었다면 Editor 진입 차단
         if (aiAssets.length === 0 && !aiMermaid) {
           alert("🚨 AI가 최종 시안 데이터를 정상적으로 렌더링하지 못했습니다. (서버 응답 오류)\n수동으로 배너를 추가하거나, AI에게 다시 시안 생성을 요청해 주세요.");
-          setPendingAiPayload(null); // 버튼 다시 비활성화
-          return;
+          setPendingAiPayload(null); return;
         }
         
-        // 🌟 3. 기존에 작업 중인 시안이 있을 경우 덮어쓰기 확인
         if (assets.length > 0) {
           const confirmOverwrite = window.confirm("⚠️ 이미 시안 편집 화면에 작업 중인 배너가 존재합니다.\n새로운 AI 기획안으로 덮어씌우시겠습니까?");
-          if (!confirmOverwrite) {
-            setCurrentView('EDITOR');
-            return; 
-          }
+          if (!confirmOverwrite) { setCurrentView('EDITOR'); return; }
         }
 
-        // 🌟 4. 데이터 정상 매핑 처리
         if (aiMermaid) setMermaidCode(aiMermaid);
-        
         if (aiMeta) {
           if (!aiMeta.conceptCopy && (aiMeta.concept || aiMeta.mainCopy || aiMeta.keyConcept)) {
              aiMeta.conceptCopy = aiMeta.concept || aiMeta.mainCopy || aiMeta.keyConcept;
           }
           if (Array.isArray(aiMeta.bannerTypes)) aiMeta.bannerTypes = aiMeta.bannerTypes.join(', ');
           if (Array.isArray(aiMeta.gnbLocations)) aiMeta.gnbLocations = aiMeta.gnbLocations.join(', ');
-          
           setCampaignMeta(prev => ({ ...prev, ...aiMeta }));
         }
 
         if (aiAssets && Array.isArray(aiAssets)) {
           if (aiAssets.length === 0) {
-            setAssets([]);
-            setActiveTabId(null);
+            setAssets([]); setActiveTabId(null);
           } else {
             const timestamp = Date.now();
             const newAssets = aiAssets.map((aiAsset, index) => {
@@ -1354,10 +1340,7 @@
               else if (aiAsset.type === 'MINI_EPG_BANNER') baseData = { ...DEFAULT_MINI_EPG_BANNER };
 
               let aiData = aiAsset.data || {};
-              
-              if (aiAsset.type === 'TODAY_BTV') {
-                if (aiData.subTitle && !aiData.subText) aiData.subText = aiData.subTitle;
-              } 
+              if (aiAsset.type === 'TODAY_BTV') { if (aiData.subTitle && !aiData.subText) aiData.subText = aiData.subTitle; } 
               else if (aiAsset.type === 'GENERAL_BANNER') {
                 if (aiData.subTitle && !aiData.previewSub) aiData.previewSub = aiData.subTitle;
                 if (aiData.mainTitle && !aiData.previewTitle) aiData.previewTitle = aiData.mainTitle;
@@ -1370,9 +1353,7 @@
 
               let rawGnb = aiData.gnb || baseData.gnb;
               let gnbArray = Array.isArray(rawGnb) ? rawGnb : [rawGnb];
-              let cleanedGnb = gnbArray
-                .filter(g => typeof g === 'string' && g.trim() !== '')   
-                .map(g => {
+              let cleanedGnb = gnbArray.filter(g => typeof g === 'string' && g.trim() !== '').map(g => {
                   if (g.includes('영화') && g.includes('시리즈')) return '영화시리즈';
                   if (g.includes('TV') && g.includes('방송')) return 'TV 방송';
                   if (g === 'OTT 홈' || g === 'OTT') return 'OTT홈';
@@ -1380,14 +1361,11 @@
                 });
               if (cleanedGnb.length === 0) cleanedGnb = ['홈'];  
 
-              return {
-                id: `ai-asset-${index}-${timestamp}`, type: aiAsset.type, name: aiAsset.name || `${aiAsset.type.replace('_', ' ')} (AI)`, 
-                data: { ...baseData, ...aiData, gnb: cleanedGnb, startDate: aiMeta?.startDate || baseData.startDate, dueDate: aiMeta?.dueDate || baseData.dueDate } 
-              };
+              return { id: `ai-asset-${index}-${timestamp}`, type: aiAsset.type, name: aiAsset.name || `${aiAsset.type.replace('_', ' ')} (AI)`, data: { ...baseData, ...aiData, gnb: cleanedGnb, startDate: aiMeta?.startDate || baseData.startDate, dueDate: aiMeta?.dueDate || baseData.dueDate } };
             });
-
-            setAssets(newAssets);
-            setActiveTabId(newAssets[0].id); 
+            setAssets(newAssets); setActiveTabId(newAssets[0].id); 
+            // 🌟 원본 기록 저장
+            setCampaignMeta(prev => ({ ...prev, aiOriginalAssets: newAssets.map(a => ({ id: a.id, name: a.name })) }));
           }
         }
         setCurrentView('EDITOR');
@@ -1518,8 +1496,26 @@
         }
         const cleanAssignee = myJiraId.split('@')[0].trim();
 
-        setExportState({ isExporting: true, progress: 10, msg: "이미지 추출 준비 중..." });
+        setExportState({ isExporting: true, progress: 10, msg: "이미지 추출 및 최적화 준비 중..." });
         let capturedImages = {};
+
+        // 🌟 1. 이미지 다이어트 (압축) 함수 부활 (용량 폭발 에러 방지)
+        const compressImage = (dataUrl, maxWidth = 1200, quality = 0.7) => {
+          if (!dataUrl || typeof dataUrl !== 'string' || !dataUrl.startsWith('data:image')) return Promise.resolve('');
+          return new Promise((resolve) => {
+            const img = new Image();
+            img.onload = () => {
+              const canvas = document.createElement('canvas');
+              let width = img.width; let height = img.height;
+              if (width > maxWidth) { height = Math.floor((maxWidth / width) * height); width = maxWidth; }
+              canvas.width = width; canvas.height = height;
+              const ctx = canvas.getContext('2d');
+              ctx.drawImage(img, 0, 0, width, height);
+              resolve(canvas.toDataURL('image/jpeg', quality));
+            };
+            img.src = dataUrl;
+          });
+        };
 
         const captureElementNative = async (element) => {
           const rect = element.getBoundingClientRect();
@@ -1539,7 +1535,8 @@
             alert("🚨 화면 캡처에 실패했습니다!\n\n확장프로그램과 통신이 끊어졌을 수 있습니다. [F5]를 눌러 새로고침 후 다시 시도해주세요.");
             throw new Error("Capture failed");
           }
-          return dataUrl;
+          // 🌟 캡처 후 즉시 가볍게 압축하여 메모리 및 업로드 용량 절약
+          return await compressImage(dataUrl, 1000, 0.7);
         };
 
         for (let i = 0; i < assets.length; i++) {
@@ -1575,54 +1572,45 @@
           }
         }
 
-        setExportState({ isExporting: true, progress: 60, msg: "워크플로우 플로우차트 생성 중..." });
+        setExportState({ isExporting: true, progress: 60, msg: "AI 기획 유저플로우 및 변경 내역 분석 중..." });
 
+        // 🌟 2. 변경 내역 추적 로직 (추가/삭제된 배너 파악)
+        const originalAssets = meta.aiOriginalAssets || [];
+        const currentAssetIds = assets.map(a => a.id);
+        const addedAssets = assets.filter(a => !a.id.startsWith('ai-asset-') && !originalAssets.find(oa => oa.id === a.id));
+        const deletedAssets = originalAssets.filter(oa => !currentAssetIds.includes(oa.id));
+
+        let changeLogHtml = "";
+        if (addedAssets.length > 0 || deletedAssets.length > 0) {
+            changeLogHtml += "<div style='background-color:#fff0f0; border:1px solid #ffccc7; padding:15px; border-radius:8px; margin-bottom:20px;'>";
+            changeLogHtml += "<h3 style='color:#e74c3c; margin-top:0;'>🚨 기획 변경 사항 안내</h3><ul style='margin-bottom:0;'>";
+            addedAssets.forEach(a => changeLogHtml += `<li style='color:#333;'><b>➕ 추가된 배너:</b> ${a.name} (수동 추가)</li>`);
+            deletedAssets.forEach(a => changeLogHtml += `<li style='color:#333;'><b>➖ 삭제/제외된 배너:</b> ${a.name}</li>`);
+            changeLogHtml += "</ul><p style='color:#666; font-size:12px; margin-top:10px;'><i>※ 상단 유저플로우는 기획 초안 기준이며, 실제 세팅은 위 변경 사항 및 하단 종합표를 기준으로 진행해 주세요.</i></p></div>";
+        }
+
+        // 🌟 3. 머메이드 SVG 순수 영역만 캡처 (가짜 플로우차트 삭제!)
         let workflowDataUrl = null;
-        const canvasOptions = { backgroundColor: '#0f111a', scale: 2, useCORS: true };
-
-        if (!workflowDataUrl && assets.length > 0) {
-          const workflowContainer = document.createElement('div');
-          workflowContainer.style.cssText = 'position:absolute; top:0; left:0; width:1000px; background:#0f111a; padding:50px; border-radius:20px; display:flex; flex-direction:column; align-items:center; color:white; font-family:Pretendard, sans-serif; z-index:-9999;';
-          
-          let flowHtml = `<div style="width:100%; text-align:left; margin-bottom:40px; border-bottom:2px solid #262833; padding-bottom:15px;"><h2 style="color:#7387ff; margin:0; font-size:32px; font-weight:900;">🎯 B tv Campaign Userflow</h2><p style="color:#cbd5e1; margin:8px 0 0 0; font-size:18px;">${meta.campaignName || "신규 캠페인"}</p></div>`;
-          flowHtml += `<div style="display:flex; flex-direction:column; align-items:center; width:100%; padding: 20px 0;">`;
-          
-          assets.forEach((asset, idx) => {
-             const imgData = Array.isArray(capturedImages[asset.id]) ? capturedImages[asset.id][0] : capturedImages[asset.id];
-             flowHtml += `
-              <div style="display:flex; flex-direction:column; align-items:center; width: 600px;">
-                <div style="width:100%; background:#1a1c26; padding:20px; border-radius:16px; border:1px solid #303340; box-shadow:0 10px 25px rgba(0,0,0,0.5);">
-                  <img src="${imgData}" style="width:100%; border-radius:8px; object-fit:contain; display:block;" />
-                </div>
-                <div style="margin-top:20px; text-align:center;">
-                  <span style="background:#4f3df6; color:white; padding:6px 16px; border-radius:20px; font-size:15px; font-weight:bold;">Step ${idx + 1}</span>
-                  <p style="margin:12px 0 0 0; font-size:20px; font-weight:bold; color:#e2e8f0; word-break:keep-all;">${asset.name}</p>
-                  <p style="margin:6px 0 0 0; font-size:16px; color:#7387ff; font-weight:bold;">[${asset.data?.gnb || '미지정'}]</p>
-                </div>
-              </div>`;
-             if (idx < assets.length - 1) { 
-               flowHtml += `<div style="color:#7387ff; font-size:40px; font-weight:bold; margin: 30px 0;">⬇️</div>`; 
-             }
-          });
-          flowHtml += `</div>`;
-          workflowContainer.innerHTML = flowHtml;
-          document.body.appendChild(workflowContainer);
-          await new Promise(r => setTimeout(r, 1500));
-          const workflowCanvas = await window.html2canvas(workflowContainer, canvasOptions);
-          workflowDataUrl = workflowCanvas.toDataURL('image/png');
-          document.body.removeChild(workflowContainer);
+        const mermaidEl = document.getElementById('mermaid-export-area');
+        if (mermaidEl && mermaidCode) {
+           try {
+               const canvas = await window.html2canvas(mermaidEl, { backgroundColor: '#0f111a', scale: 2 });
+               workflowDataUrl = await compressImage(canvas.toDataURL('image/png'), 1000, 0.7);
+           } catch(e) { console.warn("Mermaid capture failed", e); }
         }
 
         setExportState({ isExporting: true, progress: 85, msg: "Jira 데이터 조립 중..." });
 
-        // 🌟 1. 불필요해진 압축 함수(compressImageForBody) 완전 삭제 및 텍스트 매핑으로 변경
         let workflowCompressedUrl = '';
-        if (workflowDataUrl) workflowCompressedUrl = 'PLACEHOLDER_workflow_summary.png';
+        let parentImagesToUpload = [];
+        
+        if (workflowDataUrl) {
+            workflowCompressedUrl = 'PLACEHOLDER_workflow_summary.jpg';
+            parentImagesToUpload.push({ filename: 'workflow_summary.jpg', dataUrl: workflowDataUrl });
+        }
 
         let parentTable = `<table border="1" style="border-collapse: collapse; width: 100%; text-align: center; font-size: 13px;"><tbody><tr style="background-color: #f4f5f7; color: #333;"><td style="padding: 10px; font-weight: bold; width: 5%;">순번</td><td style="padding: 10px; font-weight: bold; width: 25%;">배너명</td><td style="padding: 10px; font-weight: bold; width: 15%;">편성 GNB</td><td style="padding: 10px; font-weight: bold; width: 25%;">랜딩 URL</td><td style="padding: 10px; font-weight: bold; width: 30%;">시안 미리보기</td></tr>`;
         
-        let parentImagesToUpload = [];
-        if (workflowDataUrl) parentImagesToUpload.push({ filename: 'workflow_summary.png', dataUrl: workflowDataUrl });
         let uniqueAssignees = new Set();
 
         const childIssues = await Promise.all(assets.map(async (asset, idx) => {
@@ -1647,16 +1635,20 @@
             
             for (let c = 0; c < colCount; c++) {
                const imgUrl = setImagesArr[c] || '';
-               const imgName = `banner_set_${idx + 1}_card_${c + 1}.png`;
+               const imgName = `banner_set_${idx + 1}_card_${c + 1}.jpg`;
                const cardData = data.cards[c] || {};
+               
                if (imgUrl) parentImagesToUpload.push({ filename: imgName, dataUrl: imgUrl });
                
-               // 🌟 2. 압축 로직 대신 PLACEHOLDER 텍스트 삽입
                const cThumb = imgUrl ? `PLACEHOLDER_${imgName}` : '';
-               const cBody = imgUrl ? `PLACEHOLDER_${imgName}` : '';
+               // 🌟 하위 일감에는 첫 번째 카드 이미지만 preview.png로 업로드되도록 방어 로직 적용
+               let cBody = "";
+               if (c === 0 && imgUrl) cBody = `PLACEHOLDER_preview.png`;
                
                if (cThumb) compressedThumbsHTML += `<img src="${cThumb}" style="max-width: 100%; border: 1px solid #ccc; border-radius: 4px; margin-bottom: 5px;" /><br>`;
+               
                if (cBody) compressedBodyHTML += `<h4>[상태 ${c+1}: ${cardData.heroTitle || '미입력'}]</h4><img src="${cBody}" style="max-width: 100%; border: 1px solid #e2e8f0; border-radius: 8px; margin-bottom: 15px;" /><br>`;
+               else compressedBodyHTML += `<h4>[상태 ${c+1}: ${cardData.heroTitle || '미입력'}]</h4><p style="color:#888;"><i>(본문 용량 제한으로 캡처 생략. 상위 종합 일감을 참조해 주세요.)</i></p><br>`;
                
                childTableRows += `
                  <tr>
@@ -1681,19 +1673,18 @@
 
             return {
               title: `[디자인] ${meta.campaignName || "신규 캠페인"} _ ${asset?.name || '미지정'}`, 
-              desc: childDesc, assignee: mappedAssigneeJiraId, imagesDataArr: setImagesArr, 
+              desc: childDesc, assignee: mappedAssigneeJiraId, 
+              imageData: setImagesArr[0], // 하위 일감에는 1번 카드만 업로드
               startDate: data.startDate, dueDate: data.dueDate, gnb: targetGnbs 
             };
           } else {
             let copyText = data.mainTitle || data.copy || data.bannerCopy || data.previewTitle || '미지정';
-            const imgName = `banner_preview_${idx + 1}.png`;
+            const imgName = `banner_preview_${idx + 1}.jpg`;
             
             let imgDataUrl = capturedImages[asset.id];
             if (Array.isArray(imgDataUrl)) imgDataUrl = imgDataUrl[0];
             imgDataUrl = imgDataUrl || '';
 
-            // 🌟 3. 압축 로직 대신 PLACEHOLDER 삽입 
-            // 부모 테이블은 고유 imgName, 자식은 preview.png로 background.js와 매핑!
             const compressedThumb = imgDataUrl ? `PLACEHOLDER_${imgName}` : '';
             const compressedBody = imgDataUrl ? `PLACEHOLDER_preview.png` : '';
             
@@ -1713,7 +1704,7 @@
               "<tr><th style='padding: 8px; background-color: #f4f5f7;'>비고</th><td style='padding: 8px;'>" + (data.note || '없음').replace(/\n/g, '<br>') + "</td></tr>" +
               "</table><br><h3>🎨 시뮬레이터 캡처 시안</h3>" +
               (compressedBody ? `<img src="${compressedBody}" style="max-width: 100%; border: 1px solid #e2e8f0; border-radius: 8px; margin: 10px 0;" />` : '') +
-              `<p>※ 고화질 원본은 본문 하단 <b>첨부파일(${imgName})</b>을 확인해 주세요.</p>`;
+              `<p>※ 고화질 원본은 본문 하단 <b>첨부파일(preview.png)</b>을 확인해 주세요.</p>`;
 
             return {
               title: `[디자인] ${meta.campaignName || "신규 캠페인"} _ ${asset?.name || '미지정'}`, 
@@ -1741,8 +1732,9 @@
             "<li><b>외부 사은품:</b> " + (meta.externalGift || "없음") + "</li>" +
             "<li><b>총 요청 건수:</b> " + assets.length + "건</li>" +
           "</ul><br>" +
-          "<h3>🗺️ 고객 이동 경로 (Userflow)</h3>" +
-          (workflowCompressedUrl ? `<img src="${workflowCompressedUrl}" style="max-width: 100%; border: 1px solid #e2e8f0; border-radius: 8px; margin: 10px 0;" /><p>※ 고화질 원본은 본문 하단 첨부파일(<b>workflow_summary.png</b>)을 확인해 주세요.</p>` : "<p>배너 없는 프로모션</p>") + "<br><br>" +
+          "<h3>🗺️ 고객 이동 경로 (AI 기획 초안)</h3>" +
+          (workflowCompressedUrl ? `<img src="${workflowCompressedUrl}" style="max-width: 100%; border: 1px solid #e2e8f0; border-radius: 8px; margin: 10px 0;" />` : `<pre>${mermaidCode || '유저플로우 데이터 없음'}</pre>`) + "<br><br>" +
+          changeLogHtml +
           "<h3>📊 배너 편성 종합표</h3>" + parentTable + "<br><hr><br><p>하위 작업(Sub-task)으로 개별 상세 기획안이 첨부되어 있습니다.</p>";
         
         const mentionString = Array.from(uniqueAssignees).map(id => `[~${id}]`).join(' ');
@@ -1778,33 +1770,33 @@
 
       // 🌟 [수정됨] 기존 '수정' 버튼 동작: 시안 편집(EDITOR)으로 직행
       const handleLoadCampaign = (meta, loadedAssets, loadedMermaid) => {
-        setCampaignMeta(prev => ({ ...prev, ...meta }));
+        setCampaignMeta(prev => ({ 
+            ...prev, ...meta,
+            aiOriginalAssets: loadedAssets ? loadedAssets.map(a => ({ id: a.id, name: a.name })) : []
+        }));
         if (loadedAssets && loadedAssets.length > 0) {
-          setAssets(loadedAssets);
-          setActiveTabId(loadedAssets[0].id);
+          setAssets(loadedAssets); setActiveTabId(loadedAssets[0].id);
         } else {
           setAssets([]); setActiveTabId(null);
         }
         if (loadedMermaid) setMermaidCode(loadedMermaid); else setMermaidCode('');
-        
-        setCurrentView('EDITOR'); 
-        setIsSidebarOpen(true);
+        setCurrentView('EDITOR'); setIsSidebarOpen(true);
       };
 
       // 🌟 [추가됨] 신규 '복제' 버튼 동작: AI 프로모션 기획(PLANNER)으로 이동
       const handleDuplicateCampaign = (meta, loadedAssets, loadedMermaid) => {
-        setCampaignMeta(prev => ({ ...prev, ...meta }));
+        setCampaignMeta(prev => ({ 
+            ...prev, ...meta,
+            aiOriginalAssets: loadedAssets ? loadedAssets.map(a => ({ id: a.id, name: a.name })) : []
+        }));
         setAiCampaignMeta(prev => ({ ...prev, ...meta }));
         if (loadedAssets && loadedAssets.length > 0) {
-          setAssets(loadedAssets);
-          setActiveTabId(loadedAssets[0].id);
+          setAssets(loadedAssets); setActiveTabId(loadedAssets[0].id);
         } else {
           setAssets([]); setActiveTabId(null);
         }
         if (loadedMermaid) setMermaidCode(loadedMermaid); else setMermaidCode('');
-        
-        setCurrentView('PLANNER'); 
-        setIsSidebarOpen(true);
+        setCurrentView('PLANNER'); setIsSidebarOpen(true);
       };
 
       // ============================================================================
