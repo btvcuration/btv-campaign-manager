@@ -1,8 +1,8 @@
 const CF_WORKER_URL = "https://btv-proxy.alcheminos.workers.dev";
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
-async function fetchWithRetry(url, options, maxRetries = 5) {
-  let baseDelay = 3000;
+async function fetchWithRetry(url, options, maxRetries = 3) {
+  let baseDelay = 1000;
   for (let i = 0; i < maxRetries; i++) {
     const response = await fetch(url, options);
     if (response.status === 429) {
@@ -12,16 +12,13 @@ async function fetchWithRetry(url, options, maxRetries = 5) {
     }
     
     if (response.status === 401) {
-      throw new Error(`[401 Unauthorized] Jira 세션이 정말로 만료되었습니다.`);
+      throw new Error(`[401 Unauthorized] Jira 세션이 만료되었습니다. 다시 로그인해주세요.`);
     }
 
-    // 🌟 [에러 마스킹 해제] 200번대 정상이 아니면 무조건 실제 상태코드와 에러 본문을 뱉도록 수정
     if (!response.ok) {
       const errorText = await response.text();
-      throw new Error(`[HTTP ${response.status}] 서버 에러 발생!\n요청 URL: ${url}\n응답 내용: ${errorText.substring(0, 300)}...`);
+      throw new Error(`[HTTP ${response.status}] 서버 에러 발생!\n응답 내용: ${errorText.substring(0, 200)}...`);
     }
-    
-    // 기존에 있던 text/html 무조건 세션 만료 처리 로직 삭제
     return response;
   }
   throw new Error("서버 응답 지연으로 최대 재시도 횟수를 초과했습니다.");
@@ -126,7 +123,9 @@ async function createJiraHierarchy(data, sourceTabId) {
         console.log("부모 이슈 생성 중...");
         const parentRes = await fetchWithRetry(`${baseUrl}/rest/api/2/issue`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Atlassian-Token': 'no-check' }, credentials: 'include', body: JSON.stringify({ fields: parentFields }) });
         parentKey = (await parentRes.json()).key;
-        await sleep(1000);
+        
+        // 🌟 타임아웃 방지: 1초 대기를 300ms로 대폭 단축
+        await sleep(300);
 
         const childUpdates = data.children.map(child => {
           const safeChildDesc = child.desc.replace(/data:image\/[a-zA-Z0-9+;/=]+/g, "UPLOADING_IMAGE_WAIT...");
@@ -139,7 +138,7 @@ async function createJiraHierarchy(data, sourceTabId) {
         createdIssues = (await childBulkRes.json()).issues;
       }
 
-      // 🌟 부모 첨부파일 업로드 및 Description 치환
+      // 🌟 부모 첨부파일 초고속 업로드 (Sleep 완전 제거)
       let uploadedParentAttachments = [];
       if (data.parent.images && data.parent.images.length > 0) {
         for (const imgObj of data.parent.images) {
@@ -150,7 +149,6 @@ async function createJiraHierarchy(data, sourceTabId) {
             let attJson;
             try { attJson = JSON.parse(attText); } catch(e) { throw new Error(`[부모 첨부 파싱 에러] ${attText.substring(0, 150)}`); }
             uploadedParentAttachments.push(...attJson);
-            await sleep(500);
           }
         }
       }
@@ -169,10 +167,10 @@ async function createJiraHierarchy(data, sourceTabId) {
         try { await fetchWithRetry(`${baseUrl}/rest/api/2/issue/${parentKey}/comment`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Atlassian-Token': 'no-check' }, credentials: 'include', body: JSON.stringify({ body: data.parent.comment }) }); } catch(e){}
       }
 
-      // 🌟 [안전장치] Jira가 하위 일감(Bulk)을 인덱싱할 시간을 조금 더 줍니다. (404 방지)
-      await sleep(2500);
+      // 🌟 타임아웃 방지: 자식 이슈 인덱싱 대기 시간을 2.5초에서 1초로 단축
+      await sleep(1000);
 
-      // 🌟 자식 이슈 첨부파일 업로드 및 Description 치환
+      // 🌟 자식 이슈 첨부파일 초고속 업로드 (Sleep 완전 제거)
       for (let i = 0; i < data.children.length; i++) {
         const childData = data.children[i];
         if (!createdIssues[i]) continue;
@@ -185,8 +183,6 @@ async function createJiraHierarchy(data, sourceTabId) {
           const attText = await attachRes.text();
           let uploadedChildAtt;
           try { uploadedChildAtt = JSON.parse(attText); } catch(e) { throw new Error(`[자식 첨부 파싱 에러 - ${issueKey}] ${attText.substring(0, 150)}`); }
-          
-          await sleep(1000); // 🌟 방화벽 과부하(Rate Limit) 방지를 위한 대기
 
           if (uploadedChildAtt && uploadedChildAtt.length > 0) {
             let finalChildDesc = childData.desc;
