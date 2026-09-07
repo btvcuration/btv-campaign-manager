@@ -46,6 +46,26 @@ function dataURLtoBlob(dataurl) {
   while(n--) { u8arr[n] = bstr.charCodeAt(n); }
   return new Blob([u8arr], { type: mime });
 }
+// 🌟 [신규] 이슈의 기존 첨부파일을 모두 삭제 (수정 재전송 시 이미지 누적 방지)
+async function deleteAllAttachments(baseUrl, issueKey) {
+  try {
+    const res = await fetchWithRetry(
+      `${baseUrl}/rest/api/2/issue/${issueKey}?fields=attachment`,
+      { method: 'GET', headers: { 'Content-Type': 'application/json' }, credentials: 'include' }
+    );
+    const data = await res.json();
+    const attachments = data.fields?.attachment || [];
+    for (const att of attachments) {
+      await fetchWithRetry(
+        `${baseUrl}/rest/api/2/attachment/${att.id}`,
+        { method: 'DELETE', headers: { 'X-Atlassian-Token': 'no-check' }, credentials: 'include' }
+      );
+    }
+  } catch (e) {
+    // 삭제 권한이 없거나 일부 실패해도 전체 플로우는 막지 않음
+    console.warn(`⚠️ [${issueKey}] 기존 첨부파일 삭제 중 문제 발생:`, e.message);
+  }
+}
 
 const formatLabel = (str) => str ? str.replace(/\s+/g, '_') : '';
 
@@ -108,6 +128,7 @@ async function createJiraHierarchy(data, sourceTabId) {
       if (parentKey) {
         const updateFields = { ...parentFields }; delete updateFields.project; delete updateFields.issuetype;
         await fetchWithRetry(`${baseUrl}/rest/api/2/issue/${parentKey}`, { method: 'PUT', headers: { 'Content-Type': 'application/json', 'X-Atlassian-Token': 'no-check' }, credentials: 'include', body: JSON.stringify({ fields: updateFields }) });
+        await deleteAllAttachments(baseUrl, parentKey);
         const pRes = await fetchWithRetry(`${baseUrl}/rest/api/2/issue/${parentKey}`, { method: 'GET', headers: { 'Content-Type': 'application/json' }, credentials: 'include' });
         const pData = await pRes.json();
         const existingSubtasks = pData.fields?.subtasks || [];
@@ -125,6 +146,7 @@ async function createJiraHierarchy(data, sourceTabId) {
           
           if (i < existingSubtasks.length) {
             const subKey = existingSubtasks[i].key;
+            await deleteAllAttachments(baseUrl, subKey);
             const cUpdateFields = { ...childFields }; delete cUpdateFields.project; delete cUpdateFields.issuetype; delete cUpdateFields.parent;
             await fetchWithRetry(`${baseUrl}/rest/api/2/issue/${subKey}`, { method: 'PUT', headers: { 'Content-Type': 'application/json', 'X-Atlassian-Token': 'no-check' }, credentials: 'include', body: JSON.stringify({ fields: cUpdateFields }) });
             createdIssues.push({ key: subKey });
