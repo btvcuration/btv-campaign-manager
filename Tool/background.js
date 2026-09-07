@@ -1,5 +1,5 @@
 // 🌟 [신규] description 안의 mermaid 코드 블록(```...```)을 찾아냄
-const MERMAID_BLOCK_REGEX = /```(?:mermaid)?\s*\n?(graph\s[\s\S]*?)```/;
+const MERMAID_BLOCK_REGEX = /<!--MERMAID_START-->([\s\S]*?)<!--MERMAID_END-->/;
 function extractMermaidBlock(desc) {
   if (!desc) return null;
   const match = desc.match(MERMAID_BLOCK_REGEX);
@@ -275,11 +275,18 @@ async function createJiraHierarchy(data, sourceTabId) {
         uploadedParentAttachments.forEach(att => {
           finalParentDesc = finalParentDesc.split(`PLACEHOLDER_${att.filename}`).join(att.content);
         });
-        if (uploadedParentAttachments.length > 0) {
+        if (uploadedParentAttachments.length > 0 || mermaidBlock) {
           finalParentDesc = finalParentDesc.replace(/data:image\/[a-zA-Z0-9+;/=]+/g, uploadedParentAttachments[0].content);
         }
         if (mermaidAttachment) {
-          finalParentDesc = finalParentDesc.split(MERMAID_PLACEHOLDER).join(`!${mermaidAttachment.filename}|width=760!`);
+          finalParentDesc = finalParentDesc.split(MERMAID_PLACEHOLDER).join(
+            `<img src="${mermaidAttachment.content}" style="max-width:100%;border:1px solid #e2e8f0;border-radius:8px;" />`
+          );
+        } else if (mermaidBlock) {
+          // 변환 실패 시 최소한 안내 문구라도 남김
+          finalParentDesc = finalParentDesc.split(MERMAID_PLACEHOLDER).join(
+            `<p style="color:#888;"><i>(유저플로우 다이어그램 렌더링에 실패했습니다. AI 기획 화면에서 확인해 주세요.)</i></p>`
+          );
         }
         await fetchWithRetry(
           `${baseUrl}/rest/api/2/issue/${parentKey}`,
