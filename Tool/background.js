@@ -270,12 +270,12 @@ async function createJiraHierarchy(data, sourceTabId) {
         }
       }
     
-      if (uploadedParentAttachments.length > 0 || mermaidAttachment) {
+      if (uploadedParentAttachments.length > 0 || mermaidAttachment || mermaidBlock) {
         let finalParentDesc = data.parent.desc;
         uploadedParentAttachments.forEach(att => {
           finalParentDesc = finalParentDesc.split(`PLACEHOLDER_${att.filename}`).join(att.content);
         });
-        if (uploadedParentAttachments.length > 0 || mermaidBlock) {
+        if (uploadedParentAttachments.length > 0) {
           finalParentDesc = finalParentDesc.replace(/data:image\/[a-zA-Z0-9+;/=]+/g, uploadedParentAttachments[0].content);
         }
         if (mermaidAttachment) {
@@ -283,7 +283,6 @@ async function createJiraHierarchy(data, sourceTabId) {
             `<img src="${mermaidAttachment.content}" style="max-width:100%;border:1px solid #e2e8f0;border-radius:8px;" />`
           );
         } else if (mermaidBlock) {
-          // 변환 실패 시 최소한 안내 문구라도 남김
           finalParentDesc = finalParentDesc.split(MERMAID_PLACEHOLDER).join(
             `<p style="color:#888;"><i>(유저플로우 다이어그램 렌더링에 실패했습니다. AI 기획 화면에서 확인해 주세요.)</i></p>`
           );
