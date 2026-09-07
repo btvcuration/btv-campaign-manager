@@ -1541,8 +1541,10 @@
             changeLogHtml += "</ul><p style='color:#666; font-size:12px; margin-top:10px;'><i>※ 상단 유저플로우는 기획 초안 기준이며, 실제 세팅은 위 변경 사항 및 하단 종합표를 기준으로 진행해 주세요.</i></p></div>";
         }
 
-        // 🌟 [수정 핵심] 머메이드 코드만 정규식으로 안전하게 치환 (HTML 렌더링 유지)
-        let safeMermaidCode = mermaidCode ? mermaidCode.replace(/<img[^>]*>/gi, '').replace(/\[/g, '【').replace(/\]/g, '】') : '유저플로우 데이터 없음';
+        const rawMermaidForJira = mermaidCode ? mermaidCode.replace(/<img[^>]*>/gi, '').trim() : '';
+        const mermaidSectionHtml = rawMermaidForJira
+          ? `<!--MERMAID_START-->${rawMermaidForJira}<!--MERMAID_END-->`
+          : '<p style="color:#888;">유저플로우 데이터 없음</p>';
 
         setExportState({ isExporting: true, progress: 85, msg: "Jira 데이터 조립 중..." });
 
@@ -1656,8 +1658,7 @@
             "<li><b>총 요청 건수:</b> " + assets.length + "건</li>" +
           "</ul><br>" +
           "<h3>🗺️ 고객 이동 경로 (AI 기획 초안)</h3>" +
-          `<pre>${safeMermaidCode}</pre><br><br>` +
-          changeLogHtml +
+          mermaidSectionHtml + "<br><br>" +
           "<h3>📊 배너 편성 종합표</h3>" + parentTable + "<br><hr><br><p>하위 작업(Sub-task)으로 개별 상세 기획안이 첨부되어 있습니다.</p>";
         
         const mentionString = Array.from(uniqueAssignees).map(id => `[~${id}]`).join(' ');
