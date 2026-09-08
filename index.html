@@ -1704,6 +1704,7 @@
           "</ul><br>" +
           "<h3>🗺️ 고객 이동 경로 (AI 기획 초안)</h3>" +
           mermaidSectionHtml + "<br><br>" +
+          changeLogHtml +  // 🌟 계산만 되고 누락됐던 변경 이력 삽입
           "<h3>📊 배너 편성 종합표</h3>" + parentTable + "<br><hr><br><p>하위 작업(Sub-task)으로 개별 상세 기획안이 첨부되어 있습니다.</p>";
         
         const mentionString = Array.from(uniqueAssignees).map(id => `[~${id}]`).join(' ');
