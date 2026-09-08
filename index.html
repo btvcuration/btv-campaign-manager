@@ -707,21 +707,25 @@
           else if (resData.action === "CREATE_CAMPAIGN_ASSETS" && resData.rawGasData) {
             const metaData = resData.rawGasData.meta || {};
             const generatedAssets = resData.rawGasData.assets || [];
-
-            // 🌟 [방어 로직 추가] GAS 스키마 에러로 인해 에셋이 텅 비어서 올 경우
+          
             if (generatedAssets.length === 0) {
               displayAiText = "🚨 앗, 배너 시안 데이터를 생성하는 중에 문제가 발생했어요. (서버 스키마 에러 의심)\n번거로우시겠지만 '다시 생성해줘'라고 한 번 더 말씀해 주시겠어요?";
             } else {
               if (Array.isArray(metaData.bannerTypes)) metaData.bannerTypes = metaData.bannerTypes.join(', ');
               if (Array.isArray(metaData.gnbLocations)) metaData.gnbLocations = metaData.gnbLocations.join(', ');
+              // 🌟 [신규] 실제 배너별 GNB 매핑을 assets에서 직접 추출해 bannerPlan을 더 정확한 값으로 덮어씀
+              metaData.bannerPlan = generatedAssets.map(a => ({
+                name: a.name || a.type,
+                gnb: Array.isArray(a.data?.gnb) ? a.data.gnb.join(', ') : (a.data?.gnb || '')
+              }));
               setCampaignMeta(prev => ({ ...prev, ...metaData }));
-            
+          
               setPendingAiPayload({
                 action: "CREATE_CAMPAIGN_ASSETS",
                 mermaidCode: resData.mermaidCode || "",
                 rawGasData: resData.rawGasData
               });
-            
+          
               if (!displayAiText) {
                 displayAiText = "매니저님, 우측 **'비주얼 유저플로우 시뮬레이터'**에 플로우차트가 렌더링되었습니다! 확인해 보시고, 하단의 **[완성된 기획안으로 시안 편집 이동 〉]** 버튼을 눌러주세요.";
               }
@@ -873,8 +877,28 @@
                     <input type="text" name="targetSize" value={campaignMeta.targetSize || ''} onChange={handleMetaChange} onBlur={handleTargetSizeBlur} disabled={campaignMeta.target !== 'TARGET'} placeholder="입력 후 폼 밖을 누르면 자동 변환" className="w-full bg-[#0a0812] border border-[#303340] rounded-lg px-3 py-2 text-xs text-white focus:border-pink-500 outline-none disabled:opacity-30" />
                   </div>
                   <div>
-                    <label className="block text-[11px] font-bold text-slate-400 mb-1.5 ml-1">제작 배너 / GNB (자동 추출)</label>
-                    <input type="text" value={`${campaignMeta.bannerTypes || ''} / ${campaignMeta.gnbLocations || ''}`} disabled className="w-full bg-[#1a1c26] border border-[#303340] rounded-lg px-3 py-2 text-xs text-slate-400 opacity-60 outline-none" placeholder="AI가 자동으로 추출합니다" />
+                    <label className="block text-[11px] font-bold text-slate-400 mb-1.5 ml-1">제작 배너 · 편성 GNB</label>
+                    <div className="w-full bg-[#1a1c26] border border-[#303340] rounded-lg px-3 py-2 min-h-[38px] max-h-[104px] overflow-y-auto custom-scrollbar flex flex-col gap-1.5">
+                      {Array.isArray(campaignMeta.bannerPlan) && campaignMeta.bannerPlan.length > 0 ? (
+                        campaignMeta.bannerPlan.map((b, i) => (
+                          <div key={i} className="flex items-center gap-2 flex-wrap">
+                            <span className="text-[11px] font-bold text-slate-200 shrink-0">{b.name}</span>
+                            <span className="text-slate-600 text-[10px]">→</span>
+                            {(b.gnb || '').split(',').map(g => g.trim()).filter(Boolean).map((g, gi) => (
+                              <span key={gi} className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-[#4f3df6]/15 text-[#7387ff] border border-[#4f3df6]/30">{g}</span>
+                            ))}
+                          </div>
+                        ))
+                      ) : (campaignMeta.bannerTypes || campaignMeta.gnbLocations) ? (
+                        <div className="text-[10px] text-slate-500">
+                          <div className="mb-0.5 text-slate-600">(구버전 캠페인 — 배너별 매핑 정보 없음)</div>
+                          {campaignMeta.bannerTypes && <div>배너: {campaignMeta.bannerTypes}</div>}
+                          {campaignMeta.gnbLocations && <div>GNB: {campaignMeta.gnbLocations}</div>}
+                        </div>
+                      ) : (
+                        <span className="text-[10px] text-slate-500">아직 배너 구성이 정해지지 않았어요</span>
+                      )}
+                    </div>
                   </div>
                 </div>
 
@@ -896,25 +920,36 @@
                   </div>
                 </div>
                 
-                {/* 수동 클릭 차단된 Capa 검증 블록 */}
-                <div className={`p-4 rounded-xl border transition-colors ${campaignMeta.target === 'TARGET' ? 'bg-[#1a1325] border-pink-500/50 shadow-[0_0_15px_rgba(236,72,153,0.1)]' : 'bg-[#1a1c26] border-[#303340]'} pointer-events-none select-none`}>
-                   {campaignMeta.target === 'TARGET' ? (
-                      <div className="flex flex-col items-center justify-center gap-2">
-                        {campaignMeta.isCapaChecked ? (
-                           <div className="text-[#32d782] font-black text-[15px] flex items-center gap-2"><CheckCircle size={18}/> ✅ 시스템 자동 Capa 검증 통과 완료</div>
-                        ) : (
-                           <div className="text-pink-400 font-bold text-[14px] flex items-center gap-2 animate-pulse"><Loader2 className="animate-spin" size={16}/> 시스템 자동 Capa 검증 대기 중...</div>
-                        )}
-                        <span className="text-[10px] text-slate-500">* AI가 타겟 모수와 일정을 확인하여 자동으로 승인합니다.</span>
+                {(() => {
+                  // 🌟 [신규] 레이아웃/타이포는 고정, 색상만 상태별로 교체
+                  let statusColor, StatusIcon, statusText, isSpinning = false;
+                  if (campaignMeta.target !== 'TARGET') {
+                    statusColor = 'slate'; StatusIcon = CheckCircle; statusText = 'MASS 캠페인 모드';
+                  } else if (campaignMeta.isCapaChecked) {
+                    statusColor = 'emerald'; StatusIcon = CheckCircle; statusText = 'Capa 검증 통과 완료';
+                  } else {
+                    statusColor = 'pink'; StatusIcon = Loader2; statusText = 'Capa 검증 대기 중...'; isSpinning = true;
+                  }
+                  const colorMap = {
+                    slate:   { bg: 'bg-[#1a1c26]', border: 'border-[#303340]', text: 'text-slate-400' },
+                    pink:    { bg: 'bg-pink-500/10', border: 'border-pink-500/30', text: 'text-pink-400' },
+                    emerald: { bg: 'bg-[#32d782]/10', border: 'border-[#32d782]/30', text: 'text-[#32d782]' },
+                  };
+                  const c = colorMap[statusColor];
+                  const subText = campaignMeta.target !== 'TARGET'
+                    ? '전체 고객 대상이므로 타겟 Capa 검증이 생략됩니다.'
+                    : '* AI가 타겟 모수와 일정을 확인하여 자동으로 승인합니다.';
+                
+                  return (
+                    <div className={`p-4 rounded-xl border transition-colors ${c.bg} ${c.border} pointer-events-none select-none flex flex-col items-center justify-center gap-2`}>
+                      <div className={`flex items-center gap-2 font-bold text-[14px] ${c.text}`}>
+                        <StatusIcon size={18} className={isSpinning ? 'animate-spin' : ''} />
+                        {statusText}
                       </div>
-                   ) : (
-                       <div className="text-center text-xs font-bold text-slate-400 flex flex-col items-center justify-center gap-1">
-                         <CheckCircle className="text-slate-500" size={16}/>
-                         <span>MASS 캠페인 모드</span>
-                         <span className="text-[10px] font-medium opacity-70">전체 고객 대상이므로 타겟 Capa 검증이 생략됩니다.</span>
-                       </div>
-                   )}
-                </div>
+                      <span className="text-[10px] text-slate-500">{subText}</span>
+                    </div>
+                  );
+                })()}
               </div>
 
               {/* 이미지 팝업 모달 */}
