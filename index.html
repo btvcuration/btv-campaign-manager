@@ -60,7 +60,15 @@
       useEffect(() => {
         if (code && containerRef.current && window.mermaid) {
           containerRef.current.innerHTML = ''; 
-          window.mermaid.initialize({ startOnLoad: false, theme: 'dark', securityLevel: 'loose' });
+          window.mermaid.initialize({
+            startOnLoad: false,
+            theme: 'dark',
+            securityLevel: 'loose',
+            flowchart: { htmlLabels: true, nodeSpacing: 40, rankSpacing: 60 },
+            themeCSS: `
+              .nodeLabel { font-size: 13px !important; width: 140px !important; white-space: normal !important; text-align: center !important; }
+            `
+          });
           window.mermaid.render(`mermaid-${Date.now()}`, code).then(({svg}) => {
             if(containerRef.current) containerRef.current.innerHTML = svg;
           }).catch(e => console.error("Mermaid Render Error:", e));
@@ -69,7 +77,7 @@
       
       if (!code) return null;
       // 👇 여기에 id="mermaid-export-area" 가 추가되었습니다!
-      return <div id="mermaid-export-area" ref={containerRef} className="w-full flex justify-center items-center overflow-auto custom-scrollbar p-4" />;
+      return <div id="mermaid-export-area" ref={containerRef} className="w-full h-full overflow-auto custom-scrollbar p-4 [&>svg]:mx-auto [&>svg]:block" />;
     };
 
     const GNB_OPTIONS = ['홈', 'Btv+', '영화시리즈', 'TV 방송', '무료', '애니메이션', '해피시니어', '키즈', 'OTT홈', '실시간 채널', '광고 홈', '콘텐츠', '기타'];
@@ -989,7 +997,7 @@
             <div className="px-5 py-4 border-b border-[#262833] bg-[#12141c] flex items-center justify-between">
               <h3 className="text-white font-bold text-[15px] tracking-tight flex items-center gap-2"><LayoutTemplate size={16} className="text-cyan-400" /> 비주얼 유저플로우 시뮬레이터</h3>
             </div>
-            <div className="flex-1 overflow-y-auto custom-scrollbar bg-[#0a0812] flex flex-col items-center justify-center relative">
+            <div className="flex-1 overflow-hidden custom-scrollbar bg-[#0a0812] relative">
               {displayMermaid ? (
                 <MermaidViewer code={displayMermaid} />
               ) : (
@@ -1452,7 +1460,8 @@
         else if (type === 'STRIP_BANNER') newData = { ...DEFAULT_STRIP_BANNER };
         else if (type === 'SYNOPSIS_BANNER') newData = { ...DEFAULT_SYNOPSIS_BANNER };
         else if (type === 'PROMO_POPUP') newData = { ...DEFAULT_PROMO_POPUP };
-        
+        else if (type === 'MINI_EPG_BANNER') newData = { ...DEFAULT_MINI_EPG_BANNER }; // 🌟 누락 분기 추가
+      
         newData.startDate = campaignMeta.startDate;
         newData.dueDate = campaignMeta.dueDate;
 
@@ -1592,6 +1601,7 @@
           let targetGnbs = Array.isArray(data.gnb) ? data.gnb : [data.gnb || '미지정'];
           if (asset?.type === 'TODAY_BTV') targetGnbs = ['홈'];
           if (asset?.type === 'SYNOPSIS_BANNER') targetGnbs = ['콘텐츠'];
+          if (asset?.type === 'MINI_EPG_BANNER') targetGnbs = ['실시간 채널']; // 🌟 누락된 오버라이드 추가
           
           const targetGnbForAssign = targetGnbs[0];
           const assigneeInfo = configMap[targetGnbForAssign];
